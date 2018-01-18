@@ -1,5 +1,7 @@
 using FDM
 using Base.Test
 
-# write your own tests here
-@test 1 == 2
+@testset "FDM" begin
+    include("methods.jl")
+    include("numerics.jl")
+end

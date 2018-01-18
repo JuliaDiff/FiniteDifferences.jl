@@ -1,5 +1,4 @@
 module FDM
-
-# package code goes here
-
-end # module
+    include("methods.jl")
+    include("numerics.jl")
+end
