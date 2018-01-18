@@ -33,3 +33,6 @@ after_success:
   - julia -e 'cd(Pkg.dir("FDM")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
   # push coverage results to Codecov
   - julia -e 'cd(Pkg.dir("FDM")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+  # build docs
+  - julia -e 'Pkg.add("Documenter")'
+  - julia -e 'cd(Pkg.dir("Nabla")); include(joinpath("docs", "make.jl"))'
