@@ -1,10 +1,9 @@
-export FDMReport, fdm, backward_fdm, forward_fdm, central_fdm, central_3_1, central_5_1,
-    central_7_1
+export FDMReport, fdm, backward_fdm, forward_fdm, central_fdm
 
 """
     FDMReport
 
-Details of a finite-difference method to estimate a derivative. Instances of `FDMReport`
+Details of a finite difference method to estimate a derivative. Instances of `FDMReport`
 `Base.show` nicely.
 
 # Fields
@@ -51,7 +50,7 @@ end
 Construct a function `method(f::Function, x::Real, h::Real=ĥ)` that takes in a
 function `f`, a point `x` in the domain of `f`, and optionally a step size `h`, and
 estimates the `q`'th order derivative of `f` at `x` with a `length(grid)`'th order
-finite-difference method.
+finite difference method.
 
 # Arguments
 - `grid::Vector{<:Real}`: Relative spacing of samples of `f` that are used by the method.
@@ -110,8 +109,7 @@ fdm(grid::UnitRange{Int}, args...; kws...) = fdm(Array(grid), args...; kws...)
     forward_fdm(p::Int, ...)
     central_fdm(p::Int, ...)
 
-Construct a backward, forward, or central finite-difference method of order `p`. See `fdm`
-for further details.
+Construct a backward finite difference method of order `p`. See `fdm` for further details.
 
 # Arguments
 - `p::Int`: Order of the method.
@@ -119,13 +117,30 @@ for further details.
 Further takes, in the following order, the arguments `q`, `ε`, `M`, and `report` from `fdm`.
 """
 backward_fdm(p::Int, args...; kws...) = fdm(1 - p:0, args...; kws...)
+
+"""
+    forward_fdm(p::Int, ...)
+
+Construct a forward finite difference method of order `p`. See `fdm` for further details.
+
+# Arguments
+- `p::Int`: Order of the method.
+
+Further takes, in the following order, the arguments `q`, `ε`, `M`, and `report` from `fdm`.
+"""
 forward_fdm(p::Int, args...; kws...) = fdm(0:p - 1, args...; kws...)
+
+"""
+    central_fdm(p::Int, ...)
+
+Construct a central finite difference method of order `p`. See `fdm` for further details.
+
+# Arguments
+- `p::Int`: Order of the method.
+
+Further takes, in the following order, the arguments `q`, `ε`, `M`, and `report` from `fdm`.
+"""
 function central_fdm(p::Int, args...; kws...)
     return isodd(p) ? fdm(Int(-(p - 1) / 2):Int((p - 1) / 2), args...; kws...) :
                       fdm([Int(-p/2):-1; 1:Int(p/2)], args...; kws...)
 end
-
-# Precompute some FDMs.
-central_3_1 = central_fdm(3, 1)
-central_5_1 = central_fdm(5, 1)
-central_7_1 = central_fdm(7, 1)
