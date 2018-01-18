@@ -39,3 +39,13 @@ julia> method, report = fdm([-2, 0, 5], 1, report=true)
 julia> method(sin, 1) - cos(1)
 -2.05648831297367e-11
 ```
+
+Compute a directional derivative:
+
+```julia
+julia> f(x) = sum(x)
+f (generic function with 1 method)
+
+julia> central_fdm(5, 1)(ε -> f([1, 1, 1] + ε * [1, 2, 3]), 0) - 6
+-2.922107000813412e-13
+```
