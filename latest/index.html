@@ -14,4 +14,8 @@
 )
 
 julia&gt; method(sin, 1) - cos(1)
--2.05648831297367e-11</code></pre><footer><hr/><a class="next" href="pages/api.html"><span class="direction">Next</span><span class="title">API</span></a></footer></article></body></html>
+-2.05648831297367e-11</code></pre><p>Compute a directional derivative:</p><pre><code class="language-julia">julia&gt; f(x) = sum(x)
+f (generic function with 1 method)
+
+julia&gt; central_fdm(5, 1)(ε -&gt; f([1, 1, 1] + ε * [1, 2, 3]), 0) - 6
+-2.922107000813412e-13</code></pre><footer><hr/><a class="next" href="pages/api.html"><span class="direction">Next</span><span class="title">API</span></a></footer></article></body></html>
