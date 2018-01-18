@@ -8,31 +8,13 @@ julia:
   - nightly
 notifications:
   email: false
-git:
-  depth: 99999999
-
-## uncomment the following lines to allow failures on nightly julia
-## (tests will run but not make your overall status red)
-#matrix:
-#  allow_failures:
-#  - julia: nightly
-
-## uncomment and modify the following lines to manually install system packages
-#addons:
-#  apt: # apt-get for linux
-#    packages:
-#    - gfortran
-#before_script: # homebrew for mac
-#  - if [ $TRAVIS_OS_NAME = osx ]; then brew install gcc; fi
-
-## uncomment the following lines to override the default test script
-#script:
-#  - julia -e 'Pkg.clone(pwd()); Pkg.build("FDM"); Pkg.test("FDM"; coverage=true)'
+matrix:
+  allow_failures:
+    - julia: nightly
+  fast_finish: true
 after_success:
-  # push coverage results to Coveralls
-  - julia -e 'cd(Pkg.dir("FDM")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
-  # push coverage results to Codecov
+  # Push coverage results to Codecov.
   - julia -e 'cd(Pkg.dir("FDM")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
-  # build docs
+  # Build docs.
   - julia -e 'Pkg.add("Documenter")'
-  - julia -e 'cd(Pkg.dir("Nabla")); include(joinpath("docs", "make.jl"))'
+  - julia -e 'cd(Pkg.dir("FDM")); include(joinpath("docs", "make.jl"))'
