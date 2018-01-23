@@ -106,8 +106,6 @@ fdm(grid::UnitRange{Int}, args...; kws...) = fdm(Array(grid), args...; kws...)
 
 """
     backward_fdm(p::Int, ...)
-    forward_fdm(p::Int, ...)
-    central_fdm(p::Int, ...)
 
 Construct a backward finite difference method of order `p`. See `fdm` for further details.
 
