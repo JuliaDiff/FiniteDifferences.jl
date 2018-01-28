@@ -47,7 +47,7 @@ end
         report::Bool=false
     )
 
-Construct a function `method(f::Function, x::Real, h::Real=ĥ)` that takes in a
+Construct a function `method(f, x::Real, h::Real=ĥ)` that takes in a
 function `f`, a point `x` in the domain of `f`, and optionally a step size `h`, and
 estimates the `q`'th order derivative of `f` at `x` with a `length(grid)`'th order
 finite difference method.
@@ -97,7 +97,7 @@ function fdm(
     acc = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
 
     # Construct the FDM.
-    method(f::Function, x::Real=0, h::Real=ĥ) = sum(coefs .* f.(x .+ h .* grid)) / h^q
+    method(f, x::Real=0, h::Real=ĥ) = sum(coefs .* f.(x .+ h .* grid)) / h^q
 
     # If asked for, also return information.
     return report ? (method, FDMReport(p, q, grid, coefs, ε, M, ĥ, acc)) : method
