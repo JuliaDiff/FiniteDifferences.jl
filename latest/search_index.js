@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "API",
     "title": "FDM.backward_fdm",
     "category": "Method",
-    "text": "backward_fdm(p::Int, ...)\nforward_fdm(p::Int, ...)\ncentral_fdm(p::Int, ...)\n\nConstruct a backward finite difference method of order p. See fdm for further details.\n\nArguments\n\np::Int: Order of the method.\n\nFurther takes, in the following order, the arguments q, ε, M, and report from fdm.\n\n\n\n"
+    "text": "backward_fdm(p::Int, ...)\n\nConstruct a backward finite difference method of order p. See fdm for further details.\n\nArguments\n\np::Int: Order of the method.\n\nFurther takes, in the following order, the arguments q, ε, M, and report from fdm.\n\n\n\n"
 },
 
 {
