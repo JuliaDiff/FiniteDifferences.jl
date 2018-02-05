@@ -9,8 +9,6 @@ julia:
 notifications:
   email: false
 matrix:
-  allow_failures:
-    - julia: nightly
   fast_finish: true
 after_success:
   # Push coverage results to Codecov.
