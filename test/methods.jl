@@ -19,10 +19,10 @@
     # contain.
     buffer = IOBuffer()
     show(buffer, central_fdm(2, 1; report=true)[2])
-    report = String(buffer)
+    report = @compat String(take!(copy(buffer)))
     regex_float = r"[\d\.\+-e]+"
     regex_array = r"\[([\d.+-e]+(, )?)+\]"
-    @test ismatch(Regex(join(map(x -> x.pattern,
+    @test @compat contains(report, Regex(join(map(x -> x.pattern,
         [
             r"FDMReport:",
             r"order of method:", r"\d+",
@@ -35,5 +35,5 @@
             r"accuracy:", regex_float,
             r""
         ]
-    ), r"\s*".pattern)), report)
+    ), r"\s*".pattern)))
 end

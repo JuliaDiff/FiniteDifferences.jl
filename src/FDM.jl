@@ -3,8 +3,7 @@ __precompile__()
 module FDM
 
     using Compat
-    import Compat.String
-    @compat using Printf
+    using Compat.Printf
 
     include("methods.jl")
     include("numerics.jl")
