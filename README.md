@@ -9,6 +9,8 @@
 
 FDM.jl estimates derivatives with finite differences.
 
+See also [FDM](https://github.com/wesselb/fdm).
+
 ## Examples
 
 Compute the first derivative of `sin` with a 5th order central method:
