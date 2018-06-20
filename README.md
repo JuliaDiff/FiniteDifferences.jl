@@ -7,7 +7,7 @@
 [![codecov.io](http://codecov.io/github/invenia/FDM.jl/coverage.svg?branch=master)](http://codecov.io/github/invenia/FDM.jl?branch=master)
 [![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://invenia.github.io/FDM.jl/latest/)
 
-FDM.jl approximates derivatives of functions using finite difference methods.
+FDM.jl estimates derivatives with finite differences.
 
 ## Examples
 
