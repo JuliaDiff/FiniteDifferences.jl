@@ -22,7 +22,7 @@
     report = @compat String(take!(copy(buffer)))
     regex_float = r"[\d\.\+-e]+"
     regex_array = r"\[([\d.+-e]+(, )?)+\]"
-    @test @compat contains(report, Regex(join(map(x -> x.pattern,
+    @test @compat occursin(Regex(join(map(x -> x.pattern,
         [
             r"FDMReport:",
             r"order of method:", r"\d+",
@@ -35,5 +35,5 @@
             r"accuracy:", regex_float,
             r""
         ]
-    ), r"\s*".pattern)))
+    ), r"\s*".pattern)), report)
 end
