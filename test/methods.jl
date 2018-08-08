@@ -18,11 +18,11 @@
     # Test that printing an instance of `FDMReport` contains the information that it should
     # contain.
     buffer = IOBuffer()
-    show(buffer, central_fdm(2, 1; report=true)[2])
-    report = @compat String(take!(copy(buffer)))
+    show(buffer, central_fdm(2, 1, Val(true))[2])
+    report = String(take!(copy(buffer)))
     regex_float = r"[\d\.\+-e]+"
     regex_array = r"\[([\d.+-e]+(, )?)+\]"
-    @test @compat contains(report, Regex(join(map(x -> x.pattern,
+    @test occursin(Regex(join(map(x -> x.pattern,
         [
             r"FDMReport:",
             r"order of method:", r"\d+",
@@ -35,5 +35,5 @@
             r"accuracy:", regex_float,
             r""
         ]
-    ), r"\s*".pattern)))
+    ), r"\s*".pattern)), report)
 end

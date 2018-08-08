@@ -1,10 +1,8 @@
-__precompile__()
-
 module FDM
 
-    using Compat
-    using Compat.Printf
+    using Printf, LinearAlgebra
 
     include("methods.jl")
     include("numerics.jl")
+    include("grad.jl")
 end

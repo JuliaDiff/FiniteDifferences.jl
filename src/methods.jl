@@ -16,15 +16,15 @@ Details of a finite difference method to estimate a derivative. Instances of `FD
 - `ĥ::Real`: Step size.
 - `err::Real`: Estimated absolute accuracy.
 """
-struct FDMReport
+struct FDMReport{Tε, TM, Tĥ, Tacc}
     p::Int
     q::Int
     grid::Vector{<:Real}
     coefs::Vector{<:Real}
-    ε::Real
-    M::Real
-    ĥ::Real
-    acc::Real
+    ε::Tε
+    M::TM
+    ĥ::Tĥ
+    acc::Tacc
 end
 function Base.show(io::IO, x::FDMReport)
     @printf io "FDMReport:\n"
@@ -61,16 +61,24 @@ finite difference method.
 # Keywords
 - `ε::Real=eps()`: Absolute roundoff error on the function evaluations.
 - `M::Real=1`: Upper bound on `f` and all its derivatives.
-- `report::Bool=false`: Also return an instance of `FDMReport` containing information
+- `::Bool=false`: Also return an instance of `FDMReport` containing information
     about the method constructed.
 """
-function fdm(
-    grid::Vector{<:Real},
-    q::Int;
-    ε::Real=eps(),
-    M::Real=1,
-    report::Bool=false
-)
+function fdm(grid::AbstractVector{T}, q::Int, ::Val{false}; ε::Real=eps(), M::Real=one(T),
+    ) where {T<:Real}
+    method, p, q, grid, coefs, ε, M, ĥ, acc = _fdm(grid, q, ε, M)
+    return method
+end
+function fdm(grid::AbstractVector{T}, q::Int, ::Val{true}; ε::Real=eps(), M::Real=one(T),
+    ) where {T<:Real}
+    method, p, q, grid, coefs, ε, M, ĥ, acc = _fdm(grid, q, ε, M)
+    return method, FDMReport(p, q, grid, coefs, ε, M, ĥ, acc)
+end
+function fdm(grid::AbstractVector{T}, q::Int; ε::Real=eps(), M::Real=one(T)) where T<:Real
+    return fdm(grid, q, Val(false); ε=ε, M=M)
+end
+
+function _fdm(grid::AbstractVector{T}, q::Int, ε::Real, M::Real) where T
     p = length(grid)  # Order of the method.
     q < p || throw(ArgumentError("Order of the method must be strictly greater than that " *
                                  "of the derivative."))
@@ -82,27 +90,27 @@ function fdm(
         isa(e, OverflowError) && throw(ArgumentError("Order of the method is too large " *
                                                      "to be computed."))
     end
-
+    
     # Compute the coefficients of the FDM.
-    C = hcat([grid.^i for i = 0:p - 1]...)'
+    C = [grid[n]^i for i in 0:p - 1, n in eachindex(grid)]
     x = [i == q + 1 ? factorial(q) : 0 for i = 1:p]
     coefs = C \ x
 
     # Set the step size by minimising an upper bound on the error of the estimate.
-    C₁ = ε * sum(abs.(coefs))
-    C₂ = M * sum(abs.(coefs .* grid.^p)) / factorial(p)
-    ĥ = (q / (p - q) * C₁ / C₂) .^ (1 / p)
+    C₁ = ε * sum(abs, coefs)
+    C₂ = M * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factorial(p)
+    ĥ = (q / (p - q) * C₁ / C₂) ^ (1 / p)
 
     # Estimate the accuracy of the method.
     acc = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
 
     # Construct the FDM.
-    method(f, x::Real=0, h::Real=ĥ) = sum(coefs .* f.(x .+ h .* grid)) / h^q
-
-    # If asked for, also return information.
-    return report ? (method, FDMReport(p, q, grid, coefs, ε, M, ĥ, acc)) : method
+    function method(f, x::Real=zero(T), h::Real=ĥ)
+        return sum(n->coefs[n] * f(x + h * grid[n]), eachindex(grid)) / h^q
+    end
+    return method, p, q, grid, coefs, ε, M, ĥ, acc
 end
-fdm(grid::UnitRange{Int}, args...; kws...) = fdm(Array(grid), args...; kws...)
+
 
 """
     backward_fdm(p::Int, ...)
