@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "API",
     "title": "FDM.FDMReport",
     "category": "type",
-    "text": "FDMReport\n\nDetails of a finite difference method to estimate a derivative. Instances of FDMReport Base.show nicely.\n\nFields\n\np::Int: Order of the method.\nq::Int: Order of the derivative that is estimated.\ngrid::Vector{<:Real}: Relative spacing of samples of f that are used by the method.\ncoefs::Vector{<:Real}: Weights of the samples of f.\nε::Real: Absolute roundoff error of the function evaluations.\nM::Real: Assumed upper bound of f and all its derivatives at x.\nĥ::Real: Step size.\nerr::Real: Estimated absolute accuracy.\n\n\n\n"
+    "text": "FDMReport\n\nDetails of a finite difference method to estimate a derivative. Instances of FDMReport Base.show nicely.\n\nFields\n\np::Int: Order of the method.\nq::Int: Order of the derivative that is estimated.\ngrid::Vector{<:Real}: Relative spacing of samples of f that are used by the method.\ncoefs::Vector{<:Real}: Weights of the samples of f.\nε::Real: Absolute roundoff error of the function evaluations.\nM::Real: Assumed upper bound of f and all its derivatives at x.\nĥ::Real: Step size.\nerr::Real: Estimated absolute accuracy.\n\n\n\n\n\n"
 },
 
 {
@@ -37,7 +37,7 @@ var documenterSearchIndex = {"docs": [
     "page": "API",
     "title": "FDM.assert_approx_equal",
     "category": "method",
-    "text": "assert_approx_equal(x, y, ε_abs, ε_rel[, desc])\n\nAssert that x is approximately equal to y.\n\nLet eps_z = eps_abs / eps_rel. Call x and y small if abs(x) < eps_z and abs(y) < eps_z, and call x and y large otherwise.  If this function returns True, then it is guaranteed that abs(x - y) < 2 eps_rel max(abs(x), abs(y)) if x and y are large, and abs(x - y) < 2 eps_abs if x and y are small.\n\nArguments\n\nx: First object to compare.\ny: Second object to compare.\nε_abs: Absolute tolerance.\nε_rel: Relative tolerance.\ndesc: Description of the comparison. Omit or set to false to have no description.\n\n\n\n"
+    "text": "assert_approx_equal(x, y, ε_abs, ε_rel[, desc])\n\nAssert that x is approximately equal to y.\n\nLet eps_z = eps_abs / eps_rel. Call x and y small if abs(x) < eps_z and abs(y) < eps_z, and call x and y large otherwise.  If this function returns True, then it is guaranteed that abs(x - y) < 2 eps_rel max(abs(x), abs(y)) if x and y are large, and abs(x - y) < 2 eps_abs if x and y are small.\n\nArguments\n\nx: First object to compare.\ny: Second object to compare.\nε_abs: Absolute tolerance.\nε_rel: Relative tolerance.\ndesc: Description of the comparison. Omit or set to false to have no description.\n\n\n\n\n\n"
 },
 
 {
@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "API",
     "title": "FDM.backward_fdm",
     "category": "method",
-    "text": "backward_fdm(p::Int, ...)\n\nConstruct a backward finite difference method of order p. See fdm for further details.\n\nArguments\n\np::Int: Order of the method.\n\nFurther takes, in the following order, the arguments q, ε, M, and report from fdm.\n\n\n\n"
+    "text": "backward_fdm(p::Int, ...)\n\nConstruct a backward finite difference method of order p. See fdm for further details.\n\nArguments\n\np::Int: Order of the method.\n\nFurther takes, in the following order, the arguments q, ε, M, and report from fdm.\n\n\n\n\n\n"
 },
 
 {
@@ -53,15 +53,15 @@ var documenterSearchIndex = {"docs": [
     "page": "API",
     "title": "FDM.central_fdm",
     "category": "method",
-    "text": "central_fdm(p::Int, ...)\n\nConstruct a central finite difference method of order p. See fdm for further details.\n\nArguments\n\np::Int: Order of the method.\n\nFurther takes, in the following order, the arguments q, ε, M, and report from fdm.\n\n\n\n"
+    "text": "central_fdm(p::Int, ...)\n\nConstruct a central finite difference method of order p. See fdm for further details.\n\nArguments\n\np::Int: Order of the method.\n\nFurther takes, in the following order, the arguments q, ε, M, and report from fdm.\n\n\n\n\n\n"
 },
 
 {
-    "location": "pages/api.html#FDM.fdm-Tuple{Array{#s102,1} where #s102<:Real,Int64}",
+    "location": "pages/api.html#FDM.fdm-Union{Tuple{T}, Tuple{AbstractArray{T,1},Int64,Val{false}}} where T<:Real",
     "page": "API",
     "title": "FDM.fdm",
     "category": "method",
-    "text": "function fdm(\n    grid::Vector{<:Real},\n    q::Int;\n    ε::Real=eps(),\n    M::Real=1,\n    report::Bool=false\n)\n\nConstruct a function method(f, x::Real, h::Real=ĥ) that takes in a function f, a point x in the domain of f, and optionally a step size h, and estimates the q\'th order derivative of f at x with a length(grid)\'th order finite difference method.\n\nArguments\n\ngrid::Vector{<:Real}: Relative spacing of samples of f that are used by the method.   The length of grid determines the order of the method.\nq::Int: Order of the derivative to estimate. q must be strictly less than the order   of the method.\n\nKeywords\n\nε::Real=eps(): Absolute roundoff error on the function evaluations.\nM::Real=1: Upper bound on f and all its derivatives.\nreport::Bool=false: Also return an instance of FDMReport containing information   about the method constructed.\n\n\n\n"
+    "text": "function fdm(\n    grid::Vector{<:Real},\n    q::Int;\n    ε::Real=eps(),\n    M::Real=1,\n    report::Bool=false\n)\n\nConstruct a function method(f, x::Real, h::Real=ĥ) that takes in a function f, a point x in the domain of f, and optionally a step size h, and estimates the q\'th order derivative of f at x with a length(grid)\'th order finite difference method.\n\nArguments\n\ngrid::Vector{<:Real}: Relative spacing of samples of f that are used by the method.   The length of grid determines the order of the method.\nq::Int: Order of the derivative to estimate. q must be strictly less than the order   of the method.\n\nKeywords\n\nε::Real=eps(): Absolute roundoff error on the function evaluations.\nM::Real=1: Upper bound on f and all its derivatives.\n::Bool=false: Also return an instance of FDMReport containing information   about the method constructed.\n\n\n\n\n\n"
 },
 
 {
@@ -69,7 +69,7 @@ var documenterSearchIndex = {"docs": [
     "page": "API",
     "title": "FDM.forward_fdm",
     "category": "method",
-    "text": "forward_fdm(p::Int, ...)\n\nConstruct a forward finite difference method of order p. See fdm for further details.\n\nArguments\n\np::Int: Order of the method.\n\nFurther takes, in the following order, the arguments q, ε, M, and report from fdm.\n\n\n\n"
+    "text": "forward_fdm(p::Int, ...)\n\nConstruct a forward finite difference method of order p. See fdm for further details.\n\nArguments\n\np::Int: Order of the method.\n\nFurther takes, in the following order, the arguments q, ε, M, and report from fdm.\n\n\n\n\n\n"
 },
 
 {
