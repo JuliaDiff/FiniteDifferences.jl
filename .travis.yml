@@ -4,15 +4,24 @@ os:
   - linux
   - osx
 julia:
-  - 0.6
+  - 0.7
+  - 1.0
   - nightly
 notifications:
   email: false
 matrix:
+  allow_failures:
+    - julia: nightly
   fast_finish: true
 after_success:
   # Push coverage results to Codecov.
-  - julia -e 'cd(Pkg.dir("FDM")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
-  # Build docs.
-  - julia -e 'Pkg.add("Documenter")'
-  - julia -e 'cd(Pkg.dir("FDM")); include(joinpath("docs", "make.jl"))'
+  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+jobs:
+  include:
+    - stage: "Documentation"
+      julia: 1.0
+      os: linux
+      script:
+        - julia --project=docs/ -e 'using Pkg; Pkg.instantiate(); Pkg.develop(PackageSpec(path=pwd()))'
+        - julia --project=docs/ docs/make.jl
+      after_success: skip
