@@ -16,7 +16,7 @@ makedocs(
 
 deploydocs(
     repo = "github.com/invenia/FDM.jl.git",
-    julia = "0.6",
+    julia = "1.0",
     target = "build",
     deps = nothing,
     make = nothing,
