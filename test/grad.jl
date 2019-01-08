@@ -10,7 +10,7 @@ end
 function check_jac_and_adjoint(fdm, f, ȳ, x, J_exact)
     xc = copy(x)
     @test jacobian(fdm, f, x, length(ȳ)) ≈ J_exact
-    @test jacobian(fdm, f, x) == jacoabian(fdm, f, x, length(ȳ))
+    @test jacobian(fdm, f, x) == jacobian(fdm, f, x, length(ȳ))
     @test adjoint(fdm, f, ȳ, x) ≈ ȳ' * J_exact
     @test xc == x
 end
