@@ -40,5 +40,5 @@ jacobian(fdm, f, x::AbstractVector{<:Real}) = jacobian(fdm, f, x, length(f(x)))
 Convenience function to compute `ȳ' * jacobian(f, x)`.
 """
 function Base.adjoint(fdm, f, ȳ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
-    return ȳ' * jacobian(fdm, f, x, length(ȳ))
+    return jacobian(fdm, f, x, length(ȳ))' * ȳ
 end
