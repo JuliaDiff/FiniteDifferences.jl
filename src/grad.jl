@@ -25,20 +25,25 @@ end
 Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `D` vector. If
 `D` is not provided, then `f(x)` is computed once to determine the output size.
 """
-function jacobian(fdm, f, x::AbstractVector{T}, D::Int) where {T<:Real}
+function jacobian(fdm, f, x::AV{T}, D::Int) where {T<:Real}
     J = Matrix{T}(undef, D, length(x))
     for d in 1:D
         J[d, :] = grad(fdm, x->f(x)[d], x)
     end
     return J
 end
-jacobian(fdm, f, x::AbstractVector{<:Real}) = jacobian(fdm, f, x, length(f(x)))
+jacobian(fdm, f, x::AV{<:Real}) = jacobian(fdm, f, x, length(f(x)))
 
 """
-    adjoint(fdm, f, ȳ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
+    jvp(fdm, f, x::AbstractVector{<:Real}, ẋ::AbstractVector{<:Real})
 
-Convenience function to compute `ȳ' * jacobian(f, x)`.
+Convenience function to compute `jacobian(f, x) * ẋ`.
 """
-function Base.adjoint(fdm, f, ȳ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
-    return jacobian(fdm, f, x, length(ȳ))' * ȳ
-end
+jvp(fdm, f, x::AV{<:Real}, ẋ::AV{<:Real}) = jacobian(fdm, f, x) * ẋ
+
+"""
+    j′vp(fdm, f, ȳ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
+
+Convenience function to compute `jacobian(f, x)' * ȳ`.
+"""
+j′vp(fdm, f, ȳ::AV{<:Real}, x::AV{<:Real}) = jacobian(fdm, f, x, length(ȳ))' * ȳ
