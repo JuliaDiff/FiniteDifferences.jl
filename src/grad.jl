@@ -19,8 +19,8 @@ function grad(fdm, f, x::AbstractArray{T}) where T<:Real
 end
 
 """
-    jacobian(fdm, f, x::AbstractVector, D::Int)
-    jacobian(fdm, f, x::AbstractVector)
+    jacobian(fdm, f, x::AbstractVector{<:Real}, D::Int)
+    jacobian(fdm, f, x::AbstractVector{<:Real})
 
 Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `D` vector. If
 `D` is not provided, then `f(x)` is computed once to determine the output size.
@@ -35,7 +35,7 @@ end
 jacobian(fdm, f, x::AbstractVector{<:Real}) = jacobian(fdm, f, x, length(f(x)))
 
 """
-    adjoint(fdm, f, ȳ::AbstractVector, x::AbstractVector)
+    adjoint(fdm, f, ȳ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
 
 Convenience function to compute `ȳ' * jacobian(f, x)`.
 """
