@@ -1,6 +1,5 @@
 name = "FDM"
 uuid = "e25cca7e-83ef-51fa-be6c-dfe2a3123128"
-version = "0.2.0"
 
 [deps]
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
