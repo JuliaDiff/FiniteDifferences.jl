@@ -3,7 +3,7 @@
 
 Approximate the gradient of `f` at `x` using `fdm`. Assumes that `f(x)` is scalar.
 """
-function grad(fdm, f, x::Array{T}) where T<:Real
+function grad(fdm, f, x::Vector{T}) where T<:Real
     v, dx, tmp = fill(zero(T), size(x)), similar(x), similar(x)
     for n in eachindex(x)
         v[n] = one(T)
