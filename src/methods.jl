@@ -83,22 +83,21 @@ function _fdm(grid::AbstractVector{T}, q::Int, ε::Real, M::Real) where T
     q < p || throw(ArgumentError("Order of the method must be strictly greater than that " *
                                  "of the derivative."))
 
-    # Check whether the method can be computed.
-    try
-        factorial(p)
-    catch e
-        isa(e, OverflowError) && throw(ArgumentError("Order of the method is too large " *
-                                                     "to be computed."))
-    end
-    
+    # Check whether the method can be computed. We require the factorial of the method
+    # order to be computable with regular `Int`s, but `factorial` will overflow after 20,
+    # so 20 is the largest we can allow.
+    p > 20 && throw(ArgumentError("Order of the method is too large to be computed"))
+    factp = factorial(p)
+
     # Compute the coefficients of the FDM.
     C = [grid[n]^i for i in 0:p - 1, n in eachindex(grid)]
-    x = [i == q + 1 ? factorial(q) : 0 for i = 1:p]
+    x = zeros(Int, p)
+    x[q+1] = factorial(q)
     coefs = C \ x
 
     # Set the step size by minimising an upper bound on the error of the estimate.
     C₁ = ε * sum(abs, coefs)
-    C₂ = M * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factorial(p)
+    C₂ = M * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factp
     ĥ = (q / (p - q) * C₁ / C₂) ^ (1 / p)
 
     # Estimate the accuracy of the method.

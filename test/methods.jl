@@ -36,4 +36,9 @@
             r""
         ]
     ), r"\s*".pattern)), report)
+
+    @testset "Error conditions" begin
+        @test_throws ArgumentError fdm([1,2,3], 4)
+        @test_throws ArgumentError fdm(zeros(40), 5)
+    end
 end
