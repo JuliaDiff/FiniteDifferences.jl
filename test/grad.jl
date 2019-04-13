@@ -1,4 +1,4 @@
-using FDM: grad, jacobian, jvp, j′vp, to_vec
+using FDM: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
 
 @testset "grad" begin
 
@@ -14,8 +14,8 @@ using FDM: grad, jacobian, jvp, j′vp, to_vec
         xc = copy(x)
         @test jacobian(fdm, f, x, length(ȳ)) ≈ J_exact
         @test jacobian(fdm, f, x) == jacobian(fdm, f, x, length(ȳ))
-        @test jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
-        @test j′vp(fdm, f, ȳ, x) ≈ J_exact' * ȳ
+        @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
+        @test _j′vp(fdm, f, ȳ, x) ≈ J_exact' * ȳ
         @test xc == x
     end
 
@@ -62,9 +62,11 @@ using FDM: grad, jacobian, jvp, j′vp, to_vec
         x, y = randn(rng, N), randn(rng, M)
         ẋ, ẏ = randn(rng, N), randn(rng, M)
         xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
-        ż_manual = jvp(fdm, (xy)->sum(sin.(xy)), xy, ẋẏ)
-        ż_auto = jvp(fdm, x->sum(sin.(x[1])) + sum(sin.(x[2])), (x, y), (ẋ, ẏ))
+        ż_manual = _jvp(fdm, (xy)->sum(sin.(xy)), xy, ẋẏ)[1]
+        ż_auto = jvp(fdm, x->sum(sin.(x[1])) + sum(sin.(x[2])), ((x, y), (ẋ, ẏ)))
+        ż_multi = jvp(fdm, (x, y)->sum(sin.(x)) + sum(sin.(y)), (x, ẋ), (y, ẏ))
         @test ż_manual ≈ ż_auto
+        @test ż_manual ≈ ż_multi
     end
 
     @testset "j′vp" begin
@@ -74,16 +76,8 @@ using FDM: grad, jacobian, jvp, j′vp, to_vec
         xy = vcat(x, y)
         x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)
         x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))
+        x̄ȳ_multi = j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y)
         @test x̄ȳ_manual ≈ vcat(x̄ȳ_auto...)
-    end
-
-    @testset "j′vp multiple args" begin
-        rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
-        x, y = randn(rng, N), randn(rng, M)
-        z̄ = randn(rng, N + M)
-        xy = vcat(x, y)
-        x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)
-        x̄ȳ_auto = j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y)
-        @test x̄ȳ_manual ≈ vcat(x̄ȳ_auto...)
+        @test x̄ȳ_manual ≈ vcat(x̄ȳ_multi...)
     end
 end
