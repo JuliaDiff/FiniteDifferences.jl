@@ -35,15 +35,81 @@ end
 jacobian(fdm, f, x::Vector{<:Real}) = jacobian(fdm, f, x, length(f(x)))
 
 """
-    jvp(fdm, f, x::AbstractVector{<:Real}, ẋ::AbstractVector{<:Real})
+    jvp(fdm, f, x::Vector{<:Real}, ẋ::AbstractVector{<:Real})
 
 Convenience function to compute `jacobian(f, x) * ẋ`.
 """
-jvp(fdm, f, x::Vector{<:Real}, ẋ::AV{<:Real}) = jacobian(fdm, f, x) * ẋ
+_jvp(fdm, f, x::Vector{<:Real}, ẋ::AV{<:Real}) = jacobian(fdm, f, x) * ẋ
 
 """
-    j′vp(fdm, f, ȳ::AbstractVector{<:Real}, x::AbstractVector{<:Real})
+    j′vp(fdm, f, ȳ::AbstractVector{<:Real}, x::Vector{<:Real})
 
 Convenience function to compute `jacobian(f, x)' * ȳ`.
 """
-j′vp(fdm, f, ȳ::AV{<:Real}, x::Vector{<:Real}) = jacobian(fdm, f, x, length(ȳ))' * ȳ
+_j′vp(fdm, f, ȳ::AV{<:Real}, x::Vector{<:Real}) = jacobian(fdm, f, x, length(ȳ))' * ȳ
+
+
+
+
+# Transform `x` into a vector, and return a closure which inverts the transformation.
+to_vec(x::Real) = ([x], x->x[1])
+
+# Arrays.
+to_vec(x::Vector{<:Real}) = (x, identity)
+to_vec(x::Array) = vec(x), x_vec->reshape(x_vec, size(x))
+
+# AbstractArrays.
+function to_vec(x::T) where {T<:LinearAlgebra.AbstractTriangular}
+    x_vec, back = to_vec(Matrix(x))
+    return x_vec, x_vec->T(reshape(back(x_vec), size(x)))
+end
+to_vec(x::Symmetric) = vec(Matrix(x)), x_vec->Symmetric(reshape(x_vec, size(x)))
+to_vec(X::Diagonal) = vec(Matrix(X)), x_vec->Diagonal(reshape(x_vec, size(X)...))
+
+# Non-array data structures.
+function to_vec(x::Tuple)
+    x_vecs, x_backs = zip(map(to_vec, x)...)
+    sz = cumsum([map(length, x_vecs)...])
+    return vcat(x_vecs...), function(v)
+        return ([x_backs[n](v[sz[n]-length(x[n])+1:sz[n]]) for n in 1:length(x)]...,)
+    end
+end
+
+"""
+    jvp(fdm, f, x, ẋ)
+
+Compute a Jacobian-vector product with any types of arguments for which `to_vec` is defined.
+"""
+function jvp(fdm, f, x, ẋ)
+    x_vec, vec_to_x = to_vec(x)
+    ẋ_vec, _ = to_vec(ẋ)
+    y = f(x)
+    _, vec_to_y = to_vec(y)
+    return vec_to_y(_jvp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], x_vec, ẋ_vec))
+end
+
+"""
+    j′vp(fdm, f, x, ẋ)
+
+Compute an adjoint with any types of arguments for which `to_vec` is defined.
+"""
+function j′vp(fdm, f, ȳ, x)
+    x_vec, vec_to_x = to_vec(x)
+    ȳ_vec, _ = to_vec(ȳ)
+    return vec_to_x(_j′vp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], ȳ_vec, x_vec))
+end
+
+function j′vp(fdm, f, ȳ, xs...)
+    return (map(enumerate(xs)) do (p, x)
+        return FDM.j′vp(
+            fdm,
+            function(x)
+                xs_ = [xs...]
+                xs_[p] = x
+                return f(xs_...)
+            end,
+            ȳ,
+            x,
+        )    
+    end...,)
+end
