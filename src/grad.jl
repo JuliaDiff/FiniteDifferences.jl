@@ -75,8 +75,12 @@ function j′vp(fdm, f, ȳ, x)
 end
 j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)
 
-# Transform `x` into a vector, and return a closure which inverts the transformation.
-to_vec(x::Real) = ([x], x->x[1])
+"""
+    to_vec(x)
+
+Transform `x` into a `Vector`, and return a closure which inverts the transformation.
+"""
+to_vec(x::Real) = ([x], first)
 
 # Arrays.
 to_vec(x::Vector{<:Real}) = (x, identity)
@@ -95,6 +99,6 @@ function to_vec(x::Tuple)
     x_vecs, x_backs = zip(map(to_vec, x)...)
     sz = cumsum([map(length, x_vecs)...])
     return vcat(x_vecs...), function(v)
-        return ([x_backs[n](v[sz[n]-length(x[n])+1:sz[n]]) for n in 1:length(x)]...,)
+        return ntuple(n->x_backs[n](v[sz[n]-length(x[n])+1:sz[n]]), length(x))
     end
 end

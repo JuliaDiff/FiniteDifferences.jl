@@ -62,9 +62,9 @@ using FDM: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
         x, y = randn(rng, N), randn(rng, M)
         ẋ, ẏ = randn(rng, N), randn(rng, M)
         xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
-        ż_manual = _jvp(fdm, (xy)->sum(sin.(xy)), xy, ẋẏ)[1]
-        ż_auto = jvp(fdm, x->sum(sin.(x[1])) + sum(sin.(x[2])), ((x, y), (ẋ, ẏ)))
-        ż_multi = jvp(fdm, (x, y)->sum(sin.(x)) + sum(sin.(y)), (x, ẋ), (y, ẏ))
+        ż_manual = _jvp(fdm, (xy)->sum(sin, xy), xy, ẋẏ)[1]
+        ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))
+        ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))
         @test ż_manual ≈ ż_auto
         @test ż_manual ≈ ż_multi
     end
