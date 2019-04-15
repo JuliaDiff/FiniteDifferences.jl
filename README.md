@@ -1,9 +1,7 @@
 # FDM.jl: Finite Difference Methods
 
 [![Build Status](https://travis-ci.org/invenia/FDM.jl.svg?branch=master)](https://travis-ci.org/invenia/FDM.jl)
-[![Windows Build status](https://ci.appveyor.com/api/projects/status/g0gun5dxbkt631am/branch/master?svg=true)](https://ci.appveyor.com/project/invenia/difflinearalgebra-jl/branch/master)
-[![FDM](http://pkg.julialang.org/badges/FDM_0.6.svg)](http://pkg.julialang.org/detail/FDM)
-[![FDM](http://pkg.julialang.org/badges/FDM_0.7.svg)](http://pkg.julialang.org/detail/FDM)
+[![Windows Build status](https://ci.appveyor.com/api/projects/status/g0gun5dxbkt631am/branch/master?svg=true)](https://ci.appveyor.com/project/invenia/fdm-jl/branch/master)
 [![codecov.io](http://codecov.io/github/invenia/FDM.jl/coverage.svg?branch=master)](http://codecov.io/github/invenia/FDM.jl?branch=master)
 [![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://invenia.github.io/FDM.jl/latest/)
 
