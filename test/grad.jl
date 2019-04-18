@@ -48,6 +48,12 @@ using FDM: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
         test_to_vec(Symmetric(randn(11, 11)))
         test_to_vec(Diagonal(randn(7)))
 
+        @testset "$T" for T in (Adjoint, Transpose)
+            test_to_vec(T(randn(4, 4)))
+            test_to_vec(T(randn(6)))
+            test_to_vec(T(randn(2, 5)))
+        end
+
         @testset "Tuples" begin
             test_to_vec((5, 4))
             test_to_vec((5, randn(5)))
