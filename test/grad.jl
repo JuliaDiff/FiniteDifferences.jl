@@ -54,6 +54,7 @@ using FDM: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
             test_to_vec((randn(4), randn(4, 3, 2), 1))
             test_to_vec((5, randn(4, 3, 2), UpperTriangular(randn(4, 4)), 2.5))
             test_to_vec(((6, 5), 3, randn(3, 2, 0, 1)))
+            test_to_vec((Diagonal(randn(7)),))
         end
     end
 

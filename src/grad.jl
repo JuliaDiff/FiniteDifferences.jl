@@ -92,7 +92,10 @@ function to_vec(x::T) where {T<:LinearAlgebra.AbstractTriangular}
     return x_vec, x_vec->T(reshape(back(x_vec), size(x)))
 end
 to_vec(x::Symmetric) = vec(Matrix(x)), x_vec->Symmetric(reshape(x_vec, size(x)))
-to_vec(X::Diagonal) = vec(Matrix(X)), x_vec->Diagonal(reshape(x_vec, size(X)...))
+function to_vec(X::Diagonal)
+    diag_vec, from_diag = to_vec(X.diag)
+    return diag_vec, x_vec->Diagonal(from_diag(x_vec))
+end
 
 # Non-array data structures.
 function to_vec(x::Tuple)
