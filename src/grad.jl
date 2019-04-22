@@ -94,6 +94,11 @@ end
 to_vec(x::Symmetric) = vec(Matrix(x)), x_vec->Symmetric(reshape(x_vec, size(x)))
 to_vec(X::Diagonal) = vec(Matrix(X)), x_vec->Diagonal(reshape(x_vec, size(X)...))
 
+function to_vec(X::T) where T<:Union{Adjoint,Transpose}
+    U = T.name.wrapper
+    return vec(Matrix(X)), x_vec->U(permutedims(reshape(x_vec, size(X))))
+end
+
 # Non-array data structures.
 function to_vec(x::Tuple)
     x_vecs, x_backs = zip(map(to_vec, x)...)
