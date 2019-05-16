@@ -1,5 +1,88 @@
 export FDMReport, fdm, backward_fdm, forward_fdm, central_fdm
 
+forward_grid(p::Int) = 0:(p - 1)
+backward_grid(p::Int) = (1 - p):0
+function central_grid(p::Int)
+    if isodd(p)
+        return div(1 - p, 2):div(p - 1, 2)
+    else
+        return vcat(div(-p, 2):-1, 1:div(p, 2))
+    end
+end
+
+abstract type FDMethod end
+
+for D in (:Forward, :Backward, :Central)
+    gridf = Symbol(lowercase(String(D)), "_grid")
+    @eval begin
+        struct $D{G<:AbstractVector, C<:AbstractVector} <: FDMethod
+            p::Int
+            q::Int
+            grid::G
+            coefs::C
+        end
+        function $D(p::Integer, q::Integer)
+            q < p || throw(ArgumentError("order of the method must be strictly greater " *
+                                         "than that of the derivative"))
+            # Check whether the method can be computed. We require the factorial of the
+            # method order to be computable with regular `Int`s, but `factorial` will overflow
+            # after 20, so 20 is the largest we can allow.
+            p > 20 && throw(ArgumentError("order of the method is too large to be computed"))
+
+            grid = $gridf(p)
+
+            C = [g^i for i in 0:(p - 1), g in grid]
+            x = zeros(Int, p)
+            x[q + 1] = factorial(q)
+            coefs = C \ x
+
+            return $D{typeof(grid), typeof(coefs)}(p, q, grid, coefs)
+        end
+        (d::$D)(f, x; kwargs...) = fdm(d, f, x; kwargs...)
+    end
+end
+
+maxabs(x) = maximum(abs, x)
+
+function fdm(
+    m::M,
+    f,
+    x;
+    bound=maxabs(f(x)),
+    eps=Base.eps(bound),
+    adapt=1,
+    report=false,
+) where M<:FDMethod
+    p = m.p
+    q = m.q
+    grid = m.grid
+    coefs = m.coefs
+
+    # Adaptively compute the bound on the function and derivative values, if applicable.
+    if 0 < adapt < p
+        newm = (M.name.wrapper)(p + 1, q)
+        dfdx, = fdm(newm, f, x; eps=eps, bound=bound, adapt=(adapt - 1))
+        bound = maxabs(dfdx)
+    end
+
+    # Set the step size by minimising an upper bound on the error of the estimate.
+    C₁ = eps * sum(abs, coefs)
+    C₂ = bound * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factorial(p)
+    ĥ = (q / (p - q) * C₁ / C₂) ^ (1 / p)
+
+    # Estimate the accuracy of the method.
+    accuracy = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
+
+    # Estimate the value of the derivative.
+    dfdx = sum(i->coefs[i] * f(x + ĥ * grid[i]), eachindex(grid)) / ĥ^q
+
+    if report
+        return dfdx, FDMReport(p, q, grid, coefs, eps, bound, ĥ, accuracy)
+    else
+        return dfdx
+    end
+end
+
 """
     FDMReport
 

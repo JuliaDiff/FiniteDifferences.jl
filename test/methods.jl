@@ -1,3 +1,5 @@
+using FDM: Forward, Backward, Central
+
 @testset "Methods" begin
     for f in [:forward_fdm, :backward_fdm, :central_fdm]
         @eval @test $f(10, 1; M=1)(sin, 1) ≈ cos(1)
@@ -40,5 +42,13 @@
     @testset "Error conditions" begin
         @test_throws ArgumentError fdm([1,2,3], 4)
         @test_throws ArgumentError fdm(zeros(40), 5)
+    end
+
+    @testset "Types" begin
+        @testset "$T" for T in (Forward, Backward, Central)
+            @test T(5, 1)(sin, 1; adapt=4) ≈ cos(1)
+            @test_throws ArgumentError T(3, 4)
+            @test_throws ArgumentError T(40, 5)
+        end
     end
 end
