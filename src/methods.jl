@@ -1,5 +1,21 @@
 export FDMReport, fdm, backward_fdm, forward_fdm, central_fdm
 
+"""
+    FDM.DEFAULT_CONDITION
+
+The default [condition number](https://en.wikipedia.org/wiki/Condition_number) used when
+computing bounds. It provides amplification of the ∞-norm when passed to the function's
+derivatives.
+"""
+const DEFAULT_CONDITION = 100
+
+"""
+    FDM.TINY
+
+A tiny number added to some quantities to ensure that division by 0 does not occur.
+"""
+const TINY = 1e-20
+
 forward_grid(p::Int) = 0:(p - 1)
 backward_grid(p::Int) = (1 - p):0
 function central_grid(p::Int)
@@ -42,17 +58,22 @@ for D in (:Forward, :Backward, :Central)
     end
 end
 
-maxabs(x) = maximum(abs, x)
+estimate_bound(x, cond) = cond * maximum(abs, x) + TINY
 
 function fdm(
     m::M,
     f,
     x;
-    bound=maxabs(f(x)),
+    condition=DEFAULT_CONDITION,
+    bound=estimate_bound(f(x), condition),
     eps=Base.eps(bound),
     adapt=1,
     report=false,
 ) where M<:FDMethod
+    eps > 0 || throw(ArgumentError("eps must be positive, got $eps"))
+    bound > 0 || throw(ArgumentError("bound must be positive, got $bound"))
+    0 <= adapt < 20 - m.p || throw(ArgumentError("can't perform $adapt adaptation steps"))
+
     p = m.p
     q = m.q
     grid = m.grid
@@ -60,9 +81,9 @@ function fdm(
 
     # Adaptively compute the bound on the function and derivative values, if applicable.
     if 0 < adapt < p
-        newm = (M.name.wrapper)(p + 1, q)
+        newm = (M.name.wrapper)(p + 1, p)
         dfdx, = fdm(newm, f, x; eps=eps, bound=bound, adapt=(adapt - 1))
-        bound = maxabs(dfdx)
+        bound = estimate_bound(dfdx, condition)
     end
 
     # Set the step size by minimising an upper bound on the error of the estimate.

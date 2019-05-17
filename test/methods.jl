@@ -49,6 +49,9 @@ using FDM: Forward, Backward, Central
             @test T(5, 1)(sin, 1; adapt=4) ≈ cos(1)
             @test_throws ArgumentError T(3, 4)
             @test_throws ArgumentError T(40, 5)
+            @test_throws ArgumentError T(5, 1)(sin, 1; adapt=200)
+            @test_throws ArgumentError T(5, 1)(sin, 1; eps=0.0)
+            @test_throws ArgumentError T(5, 1)(sin, 1; bound=0.0)
         end
     end
 end
