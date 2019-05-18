@@ -26,6 +26,22 @@ function central_grid(p::Int)
     end
 end
 
+mutable struct History
+    adapt::Int
+    eps::Real
+    bound::Real
+    step::Real
+    accuracy::Real
+
+    function History(; kwargs...)
+        h = new()
+        for (k, v) in kwargs
+            setfield!(h, k, v)
+        end
+        return h
+    end
+end
+
 abstract type FDMethod end
 
 for D in (:Forward, :Backward, :Central)
@@ -36,8 +52,9 @@ for D in (:Forward, :Backward, :Central)
             q::Int
             grid::G
             coefs::C
+            history::History
         end
-        function $D(p::Integer, q::Integer)
+        function $D(p::Integer, q::Integer; adapt=1, kwargs...)
             q < p || throw(ArgumentError("order of the method must be strictly greater " *
                                          "than that of the derivative"))
             # Check whether the method can be computed. We require the factorial of the
@@ -52,7 +69,9 @@ for D in (:Forward, :Backward, :Central)
             x[q + 1] = factorial(q)
             coefs = C \ x
 
-            return $D{typeof(grid), typeof(coefs)}(p, q, grid, coefs)
+            hist = History(; adapt=adapt, kwargs...)
+
+            return $D{typeof(grid), typeof(coefs)}(p, q, grid, coefs, hist)
         end
         (d::$D)(f, x; kwargs...) = fdm(d, f, x; kwargs...)
     end
@@ -66,9 +85,8 @@ function fdm(
     x;
     condition=DEFAULT_CONDITION,
     bound=estimate_bound(f(x), condition),
-    eps=Base.eps(bound),
-    adapt=1,
-    report=false,
+    eps=(Base.eps(bound) + TINY),
+    adapt=m.history.adapt,
 ) where M<:FDMethod
     eps > 0 || throw(ArgumentError("eps must be positive, got $eps"))
     bound > 0 || throw(ArgumentError("bound must be positive, got $bound"))
@@ -80,9 +98,9 @@ function fdm(
     coefs = m.coefs
 
     # Adaptively compute the bound on the function and derivative values, if applicable.
-    if 0 < adapt < p
+    if adapt > 0
         newm = (M.name.wrapper)(p + 1, p)
-        dfdx, = fdm(newm, f, x; eps=eps, bound=bound, adapt=(adapt - 1))
+        dfdx = fdm(newm, f, x; condition=condition, eps=eps, bound=bound, adapt=(adapt - 1))
         bound = estimate_bound(dfdx, condition)
     end
 
@@ -97,11 +115,12 @@ function fdm(
     # Estimate the value of the derivative.
     dfdx = sum(i->coefs[i] * f(x + ĥ * grid[i]), eachindex(grid)) / ĥ^q
 
-    if report
-        return dfdx, FDMReport(p, q, grid, coefs, eps, bound, ĥ, accuracy)
-    else
-        return dfdx
-    end
+    m.history.eps = eps
+    m.history.bound = bound
+    m.history.step = ĥ
+    m.history.accuracy = accuracy
+
+    return dfdx
 end
 
 """
