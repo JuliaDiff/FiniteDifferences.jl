@@ -1,4 +1,4 @@
-export FDMReport, fdm, backward_fdm, forward_fdm, central_fdm
+export fdm, backward_fdm, forward_fdm, central_fdm
 
 """
     FDM.DEFAULT_CONDITION
@@ -26,6 +26,11 @@ function central_grid(p::Int)
     end
 end
 
+"""
+    History
+
+A mutable type that tracks several values during adaptive bound computation.
+"""
 mutable struct History
     adapt::Int
     eps::Real
@@ -42,10 +47,41 @@ mutable struct History
     end
 end
 
+"""
+    FDMethod
+
+Abstract type for all finite differencing method types.
+Subtypes of `FDMethod` are callable with the signature
+
+```
+method(f, x; kwargs...)
+```
+
+where the keyword arguments can be any of
+
+* `adapt`: The number of adaptive steps to use improve the estimate of `bound`.
+* `bound`: Bound on the value of the function and its derivatives at `x`.
+* `condition`: The condition number. See [`DEFAULT_CONDITION`](@ref).
+* `eps`: The assumed roundoff error. Defaults to `eps()` plus [`TINY`](@ref).
+"""
 abstract type FDMethod end
 
-for D in (:Forward, :Backward, :Central)
-    gridf = Symbol(lowercase(String(D)), "_grid")
+function Base.show(io::IO, x::FDMethod)
+    @printf io "FDMethod:\n"
+    @printf io "  order of method:       %d\n" x.p
+    @printf io "  order of derivative:   %d\n" x.q
+    @printf io "  grid:                  %s\n" x.grid
+    @printf io "  coefficients:          %s\n" x.coefs
+    h = x.history
+    if all(p->isdefined(h, p), propertynames(h))
+        @printf io "  roundoff error:        %.2e\n" h.eps
+        @printf io "  bounds on derivatives: %.2e\n" h.bound
+        @printf io "  step size:             %.2e\n" h.step
+        @printf io "  accuracy:              %.2e\n" h.accuracy
+    end
+end
+
+for D in (:Forward, :Backward, :Central, :Nonstandard)
     @eval begin
         struct $D{G<:AbstractVector, C<:AbstractVector} <: FDMethod
             p::Int
@@ -54,40 +90,136 @@ for D in (:Forward, :Backward, :Central)
             coefs::C
             history::History
         end
-        function $D(p::Integer, q::Integer; adapt=1, kwargs...)
-            q < p || throw(ArgumentError("order of the method must be strictly greater " *
-                                         "than that of the derivative"))
-            # Check whether the method can be computed. We require the factorial of the
-            # method order to be computable with regular `Int`s, but `factorial` will overflow
-            # after 20, so 20 is the largest we can allow.
-            p > 20 && throw(ArgumentError("order of the method is too large to be computed"))
-
-            grid = $gridf(p)
-
-            C = [g^i for i in 0:(p - 1), g in grid]
-            x = zeros(Int, p)
-            x[q + 1] = factorial(q)
-            coefs = C \ x
-
-            hist = History(; adapt=adapt, kwargs...)
-
-            return $D{typeof(grid), typeof(coefs)}(p, q, grid, coefs, hist)
-        end
         (d::$D)(f, x; kwargs...) = fdm(d, f, x; kwargs...)
     end
 end
 
-estimate_bound(x, cond) = cond * maximum(abs, x) + TINY
+# The below does not apply to Nonstandard, as it has its own constructor
+for D in (:Forward, :Backward, :Central)
+    lcname = lowercase(String(D))
+    gridf = Symbol(lcname, "_grid")
+    fdmf = Symbol(lcname, "_fdm")
 
+    @eval begin
+        # Compatibility layer over the "old" API
+        function $fdmf(p::Integer, q::Integer; adapt=1, kwargs...)
+            _dep_kwarg(kwargs)
+            return $D(p, q; adapt=adapt, kwargs...)
+        end
+
+        function $D(p::Integer, q::Integer; adapt=1, kwargs...)
+            _check_p_q(p, q)
+            grid = $gridf(p)
+            coefs = _coefs(grid, p, q)
+            hist = History(; adapt=adapt, kwargs...)
+            return $D{typeof(grid), typeof(coefs)}(Int(p), Int(q), grid, coefs, hist)
+        end
+
+        @doc """
+            FDM.$($(Meta.quot(D)))(p, q; kwargs...)
+            $($(Meta.quot(fdmf)))(p, q; kwargs...)
+
+        Construct a $($lcname) finite difference method of order `p` to compute the `q`th
+        derivative.
+        See [`FDMethod`](@ref) for more details.
+        """
+        ($D, $fdmf)
+    end
+end
+
+"""
+    FDM.Nonstandard(grid, q; kwargs...)
+
+An finite differencing method which is constructed based on a user-defined grid. It is
+nonstandard in the sense that it represents neither forward, backward, nor central
+differencing.
+See [`FDMethod`](@ref) for further details.
+"""
+function Nonstandard(grid::AbstractVector{<:Real}, q::Integer; adapt=0, kwargs...)
+    p = length(grid)
+    _check_p_q(p, q)
+    coefs = _coefs(grid, p, q)
+    hist = History(; adapt=adapt, kwargs...)
+    return Nonstandard{typeof(grid), typeof(coefs)}(Int(p), Int(q), grid, coefs, hist)
+end
+
+# Check the method and derivative orders for consistency
+function _check_p_q(p::Integer, q::Integer)
+    q < p || throw(ArgumentError("order of the method must be strictly greater than that " *
+                                 "of the derivative"))
+    # Check whether the method can be computed. We require the factorial of the
+    # method order to be computable with regular `Int`s, but `factorial` will overflow
+    # after 20, so 20 is the largest we can allow.
+    p > 20 && throw(ArgumentError("order of the method is too large to be computed"))
+    return
+end
+
+# Compute coefficients for the method
+function _coefs(grid::AbstractVector{<:Real}, p::Integer, q::Integer)
+    C = [g^i for i in 0:(p - 1), g in grid]
+    x = zeros(Int, p)
+    x[q + 1] = factorial(q)
+    return C \ x
+end
+
+# Estimate the bound on the function value and its derivatives at a point
+_estimate_bound(x, cond) = cond * maximum(abs, x) + TINY
+
+"""
+    fdm(m::FDMethod, f, x[, Val(false)]; kwargs...) -> Real
+    fdm(m::FDMethod, f, x, Val(true); kwargs...) -> Tuple{FDMethod, Real}
+
+Compute the derivative of `f` at `x` using the finite differencing method `m`.
+The optional `Val` argument dictates whether the method should be returned alongside the
+derivative value, which can be useful for examining the step size used and other such
+parameters.
+
+The recognized keywords are:
+
+* `adapt`: The number of adaptive steps to use improve the estimate of `bound`.
+* `bound`: Bound on the value of the function and its derivatives at `x`.
+* `condition`: The condition number. See [`DEFAULT_CONDITION`](@ref).
+* `eps`: The assumed roundoff error. Defaults to `eps()` plus [`TINY`](@ref).
+
+!!! warning
+    Bounds can't be adaptively computed over nonstandard grids; passing a value for
+    `adapt` greater than 0 when `m::Nonstandard` results in an error.
+
+!!! note
+    Calling [`FDMethod`](@ref) objects is equivalent to passing them to `fdm`.
+
+# Examples
+
+```julia-repl
+julia> fdm(central_fdm(5, 1), sin, 1; adapt=2)
+0.5403023058681039
+
+julia> fdm(central_fdm(2, 1), exp, 0, Val(true))
+(FDMethod:
+  order of method:       2
+  order of derivative:   1
+  grid:                  [-1, 1]
+  coefficients:          [-0.5, 0.5]
+  roundoff error:        1.42e-14
+  bounds on derivatives: 1.00e+02
+  step size:             1.69e-08
+  accuracy:              1.69e-06
+, 1.0000000031817473)
+```
+"""
 function fdm(
     m::M,
     f,
-    x;
+    x,
+    ::Val{true};
     condition=DEFAULT_CONDITION,
-    bound=estimate_bound(f(x), condition),
-    eps=(Base.eps(bound) + TINY),
+    bound=_estimate_bound(f(x), condition),
+    eps=(Base.eps(float(bound)) + TINY),
     adapt=m.history.adapt,
 ) where M<:FDMethod
+    if M <: Nonstandard && adapt > 0
+        throw(ArgumentError("can't adaptively compute bounds over Nonstandard grids"))
+    end
     eps > 0 || throw(ArgumentError("eps must be positive, got $eps"))
     bound > 0 || throw(ArgumentError("bound must be positive, got $bound"))
     0 <= adapt < 20 - m.p || throw(ArgumentError("can't perform $adapt adaptation steps"))
@@ -101,7 +233,7 @@ function fdm(
     if adapt > 0
         newm = (M.name.wrapper)(p + 1, p)
         dfdx = fdm(newm, f, x; condition=condition, eps=eps, bound=bound, adapt=(adapt - 1))
-        bound = estimate_bound(dfdx, condition)
+        bound = _estimate_bound(dfdx, condition)
     end
 
     # Set the step size by minimising an upper bound on the error of the estimate.
@@ -120,155 +252,46 @@ function fdm(
     m.history.step = ĥ
     m.history.accuracy = accuracy
 
+    return m, dfdx
+end
+
+function fdm(m::FDMethod, f, x, ::Val{false}=Val(false); kwargs...)
+    _, dfdx = fdm(m, f, x, Val(true); kwargs...)
     return dfdx
 end
 
-"""
-    FDMReport
 
-Details of a finite difference method to estimate a derivative. Instances of `FDMReport`
-`Base.show` nicely.
+## Deprecations
 
-# Fields
-- `p::Int`: Order of the method.
-- `q::Int`: Order of the derivative that is estimated.
-- `grid::Vector{<:Real}`: Relative spacing of samples of `f` that are used by the method.
-- `coefs::Vector{<:Real}`: Weights of the samples of `f`.
-- `ε::Real`: Absolute roundoff error of the function evaluations.
-- `M::Real`: Assumed upper bound of `f` and all its derivatives at `x`.
-- `ĥ::Real`: Step size.
-- `err::Real`: Estimated absolute accuracy.
-"""
-struct FDMReport{Tε, TM, Tĥ, Tacc}
-    p::Int
-    q::Int
-    grid::Vector{<:Real}
-    coefs::Vector{<:Real}
-    ε::Tε
-    M::TM
-    ĥ::Tĥ
-    acc::Tacc
-end
-function Base.show(io::IO, x::FDMReport)
-    @printf io "FDMReport:\n"
-    @printf io "  order of method:       %d\n" x.p
-    @printf io "  order of derivative:   %d\n" x.q
-    @printf io "  grid:                  %s\n" x.grid
-    @printf io "  coefficients:          %s\n" x.coefs
-    @printf io "  roundoff error:        %.2e\n" x.ε
-    @printf io "  bounds on derivatives: %.2e\n" x.M
-    @printf io "  step size:             %.2e\n" x.ĥ
-    @printf io "  accuracy:              %.2e\n" x.acc
-end
-
-"""
-    function fdm(
-        grid::Vector{<:Real},
-        q::Int;
-        ε::Real=eps(),
-        M::Real=1,
-        report::Bool=false
-    )
-
-Construct a function `method(f, x::Real, h::Real=ĥ)` that takes in a
-function `f`, a point `x` in the domain of `f`, and optionally a step size `h`, and
-estimates the `q`'th order derivative of `f` at `x` with a `length(grid)`'th order
-finite difference method.
-
-# Arguments
-- `grid::Vector{<:Real}`: Relative spacing of samples of `f` that are used by the method.
-    The length of `grid` determines the order of the method.
-- `q::Int`: Order of the derivative to estimate. `q` must be strictly less than the order
-    of the method.
-
-# Keywords
-- `ε::Real=eps()`: Absolute roundoff error on the function evaluations.
-- `M::Real=1`: Upper bound on `f` and all its derivatives.
-- `::Bool=false`: Also return an instance of `FDMReport` containing information
-    about the method constructed.
-"""
-function fdm(grid::AbstractVector{T}, q::Int, ::Val{false}; ε::Real=eps(), M::Real=one(T),
-    ) where {T<:Real}
-    method, p, q, grid, coefs, ε, M, ĥ, acc = _fdm(grid, q, ε, M)
-    return method
-end
-function fdm(grid::AbstractVector{T}, q::Int, ::Val{true}; ε::Real=eps(), M::Real=one(T),
-    ) where {T<:Real}
-    method, p, q, grid, coefs, ε, M, ĥ, acc = _fdm(grid, q, ε, M)
-    return method, FDMReport(p, q, grid, coefs, ε, M, ĥ, acc)
-end
-function fdm(grid::AbstractVector{T}, q::Int; ε::Real=eps(), M::Real=one(T)) where T<:Real
-    return fdm(grid, q, Val(false); ε=ε, M=M)
-end
-
-function _fdm(grid::AbstractVector{T}, q::Int, ε::Real, M::Real) where T
-    p = length(grid)  # Order of the method.
-    q < p || throw(ArgumentError("Order of the method must be strictly greater than that " *
-                                 "of the derivative."))
-
-    # Check whether the method can be computed. We require the factorial of the method
-    # order to be computable with regular `Int`s, but `factorial` will overflow after 20,
-    # so 20 is the largest we can allow.
-    p > 20 && throw(ArgumentError("Order of the method is too large to be computed"))
-    factp = factorial(p)
-
-    # Compute the coefficients of the FDM.
-    C = [grid[n]^i for i in 0:p - 1, n in eachindex(grid)]
-    x = zeros(Int, p)
-    x[q+1] = factorial(q)
-    coefs = C \ x
-
-    # Set the step size by minimising an upper bound on the error of the estimate.
-    C₁ = ε * sum(abs, coefs)
-    C₂ = M * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factp
-    ĥ = (q / (p - q) * C₁ / C₂) ^ (1 / p)
-
-    # Estimate the accuracy of the method.
-    acc = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
-
-    # Construct the FDM.
-    function method(f, x::Real=zero(T), h::Real=ĥ)
-        return sum(n->coefs[n] * f(x + h * grid[n]), eachindex(grid)) / h^q
+# Used for keyword argument name deprecations
+function _dep_kwarg(kwargs)
+    for (old, new) in [(:ε, :eps), (:M, :bound)]
+        haskey(kwargs, old) || continue
+        val = kwargs[old]
+        error(
+            "keyword argument `", old, "` should now be passed as `", new, "` upon ",
+            "application of the method. For example:\n    ",
+            "central_fdm(5, 1)(f, x; $new=$val)\n",
+            "not\n    ",
+            "central_fdm(5, 1; $old=$val)(f, x)"
+        )
     end
-    return method, p, q, grid, coefs, ε, M, ĥ, acc
 end
 
+function fdm(
+    grid::AbstractVector{<:Real},
+    q::Int,
+    ::Union{Val{true}, Val{false}}=Val(false);
+    kwargs...,
+)
+    error("to use a custom grid, use `Nonstandard(grid, q)` and pass the result to `fdm`")
+end
 
-"""
-    backward_fdm(p::Int, ...)
-
-Construct a backward finite difference method of order `p`. See `fdm` for further details.
-
-# Arguments
-- `p::Int`: Order of the method.
-
-Further takes, in the following order, the arguments `q`, `ε`, `M`, and `report` from `fdm`.
-"""
-backward_fdm(p::Int, args...; kws...) = fdm(1 - p:0, args...; kws...)
-
-"""
-    forward_fdm(p::Int, ...)
-
-Construct a forward finite difference method of order `p`. See `fdm` for further details.
-
-# Arguments
-- `p::Int`: Order of the method.
-
-Further takes, in the following order, the arguments `q`, `ε`, `M`, and `report` from `fdm`.
-"""
-forward_fdm(p::Int, args...; kws...) = fdm(0:p - 1, args...; kws...)
-
-"""
-    central_fdm(p::Int, ...)
-
-Construct a central finite difference method of order `p`. See `fdm` for further details.
-
-# Arguments
-- `p::Int`: Order of the method.
-
-Further takes, in the following order, the arguments `q`, `ε`, `M`, and `report` from `fdm`.
-"""
-function central_fdm(p::Int, args...; kws...)
-    return isodd(p) ? fdm(Int(-(p - 1) / 2):Int((p - 1) / 2), args...; kws...) :
-                      fdm([Int(-p/2):-1; 1:Int(p/2)], args...; kws...)
+for fdmf in (:central_fdm, :backward_fdm, :forward_fdm)
+    @eval function $fdmf(p::Int, q::Int, ::Union{Val{true}, Val{false}}; kwargs...)
+        error(
+            "the `Val` argument should now be passed directly to `fdm` after ",
+            "constructing the method, not to the method constructor itself"
+        )
+    end
 end
