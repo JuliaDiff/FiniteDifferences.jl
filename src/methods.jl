@@ -233,7 +233,16 @@ function fdm(
     # Adaptively compute the bound on the function and derivative values, if applicable.
     if adapt > 0
         newm = (M.name.wrapper)(p + 1, p)
-        dfdx = fdm(newm, f, x; condition=condition, eps=eps, bound=bound, adapt=(adapt - 1))
+        dfdx = fdm(
+            newm,
+            f,
+            x;
+            condition=condition,
+            eps=eps,
+            bound=bound,
+            max_step=max_step,
+            adapt=(adapt - 1),
+        )
         bound = _estimate_bound(dfdx, condition)
     end
 
