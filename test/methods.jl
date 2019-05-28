@@ -20,6 +20,11 @@ using FDM: Forward, Backward, Central, Nonstandard
         @test forward_fdm(5, 1)(log, 0.001; adapt=1) ≈ 1000
     end
 
+    @testset "Limiting step size" begin
+        @test !isfinite(central_fdm(5, 1)(abs, 0.001; max_step=0))
+        @test central_fdm(5, 1)(abs, 0.001) ≈ 1.0
+    end
+
     @testset "Printing FDMethods" begin
         @test sprint(show, central_fdm(2, 1)) == """
             FDMethod:

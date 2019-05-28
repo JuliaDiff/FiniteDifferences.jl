@@ -90,7 +90,7 @@ for D in (:Forward, :Backward, :Central, :Nonstandard)
             coefs::C
             history::History
         end
-        (d::$D)(f, x; kwargs...) = fdm(d, f, x; kwargs...)
+        (d::$D)(f, x=0.0; kwargs...) = fdm(d, f, x; kwargs...)
     end
 end
 
@@ -216,6 +216,7 @@ function fdm(
     bound=_estimate_bound(f(x), condition),
     eps=(Base.eps(float(bound)) + TINY),
     adapt=m.history.adapt,
+    max_step=0.1,
 ) where M<:FDMethod
     if M <: Nonstandard && adapt > 0
         throw(ArgumentError("can't adaptively compute bounds over Nonstandard grids"))
@@ -239,7 +240,7 @@ function fdm(
     # Set the step size by minimising an upper bound on the error of the estimate.
     C₁ = eps * sum(abs, coefs)
     C₂ = bound * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factorial(p)
-    ĥ = (q / (p - q) * C₁ / C₂) ^ (1 / p)
+    ĥ = min((q / (p - q) * C₁ / C₂)^(1 / p), max_step)
 
     # Estimate the accuracy of the method.
     accuracy = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
