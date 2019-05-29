@@ -25,14 +25,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "pages/api.html#FDM.FDMReport",
-    "page": "API",
-    "title": "FDM.FDMReport",
-    "category": "type",
-    "text": "FDMReport\n\nDetails of a finite difference method to estimate a derivative. Instances of FDMReport Base.show nicely.\n\nFields\n\np::Int: Order of the method.\nq::Int: Order of the derivative that is estimated.\ngrid::Vector{<:Real}: Relative spacing of samples of f that are used by the method.\ncoefs::Vector{<:Real}: Weights of the samples of f.\nε::Real: Absolute roundoff error of the function evaluations.\nM::Real: Assumed upper bound of f and all its derivatives at x.\nĥ::Real: Step size.\nerr::Real: Estimated absolute accuracy.\n\n\n\n\n\n"
-},
-
-{
     "location": "pages/api.html#FDM.assert_approx_equal-NTuple{5,Any}",
     "page": "API",
     "title": "FDM.assert_approx_equal",
@@ -41,35 +33,35 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "pages/api.html#FDM.backward_fdm-Tuple{Int64,Vararg{Any,N} where N}",
+    "location": "pages/api.html#FDM.backward_fdm",
     "page": "API",
     "title": "FDM.backward_fdm",
-    "category": "method",
-    "text": "backward_fdm(p::Int, ...)\n\nConstruct a backward finite difference method of order p. See fdm for further details.\n\nArguments\n\np::Int: Order of the method.\n\nFurther takes, in the following order, the arguments q, ε, M, and report from fdm.\n\n\n\n\n\n"
+    "category": "function",
+    "text": "FDM.Backward(p, q; kwargs...)\nbackward_fdm(p, q; kwargs...)\n\nConstruct a backward finite difference method of order p to compute the qth derivative. See FDMethod for more details.\n\n\n\n\n\n"
 },
 
 {
-    "location": "pages/api.html#FDM.central_fdm-Tuple{Int64,Vararg{Any,N} where N}",
+    "location": "pages/api.html#FDM.central_fdm",
     "page": "API",
     "title": "FDM.central_fdm",
-    "category": "method",
-    "text": "central_fdm(p::Int, ...)\n\nConstruct a central finite difference method of order p. See fdm for further details.\n\nArguments\n\np::Int: Order of the method.\n\nFurther takes, in the following order, the arguments q, ε, M, and report from fdm.\n\n\n\n\n\n"
+    "category": "function",
+    "text": "FDM.Central(p, q; kwargs...)\ncentral_fdm(p, q; kwargs...)\n\nConstruct a central finite difference method of order p to compute the qth derivative. See FDMethod for more details.\n\n\n\n\n\n"
 },
 
 {
-    "location": "pages/api.html#FDM.fdm-Union{Tuple{T}, Tuple{AbstractArray{T,1},Int64,Val{false}}} where T<:Real",
+    "location": "pages/api.html#FDM.fdm-Union{Tuple{M}, Tuple{M,Any,Any,Val{true}}} where M<:FDM.FDMethod",
     "page": "API",
     "title": "FDM.fdm",
     "category": "method",
-    "text": "function fdm(\n    grid::Vector{<:Real},\n    q::Int;\n    ε::Real=eps(),\n    M::Real=1,\n    report::Bool=false\n)\n\nConstruct a function method(f, x::Real, h::Real=ĥ) that takes in a function f, a point x in the domain of f, and optionally a step size h, and estimates the q\'th order derivative of f at x with a length(grid)\'th order finite difference method.\n\nArguments\n\ngrid::Vector{<:Real}: Relative spacing of samples of f that are used by the method.   The length of grid determines the order of the method.\nq::Int: Order of the derivative to estimate. q must be strictly less than the order   of the method.\n\nKeywords\n\nε::Real=eps(): Absolute roundoff error on the function evaluations.\nM::Real=1: Upper bound on f and all its derivatives.\n::Bool=false: Also return an instance of FDMReport containing information   about the method constructed.\n\n\n\n\n\n"
+    "text": "fdm(m::FDMethod, f, x[, Val(false)]; kwargs...) -> Real\nfdm(m::FDMethod, f, x, Val(true); kwargs...) -> Tuple{FDMethod, Real}\n\nCompute the derivative of f at x using the finite differencing method m. The optional Val argument dictates whether the method should be returned alongside the derivative value, which can be useful for examining the step size used and other such parameters.\n\nThe recognized keywords are:\n\nadapt: The number of adaptive steps to use improve the estimate of bound.\nbound: Bound on the value of the function and its derivatives at x.\ncondition: The condition number. See DEFAULT_CONDITION.\neps: The assumed roundoff error. Defaults to eps() plus TINY.\n\nwarning: Warning\nBounds can\'t be adaptively computed over nonstandard grids; passing a value for adapt greater than 0 when m::Nonstandard results in an error.\n\nnote: Note\nCalling FDMethod objects is equivalent to passing them to fdm.\n\nExamples\n\njulia> fdm(central_fdm(5, 1), sin, 1; adapt=2)\n0.5403023058681039\n\njulia> fdm(central_fdm(2, 1), exp, 0, Val(true))\n(FDMethod:\n  order of method:       2\n  order of derivative:   1\n  grid:                  [-1, 1]\n  coefficients:          [-0.5, 0.5]\n  roundoff error:        1.42e-14\n  bounds on derivatives: 1.00e+02\n  step size:             1.69e-08\n  accuracy:              1.69e-06\n, 1.0000000031817473)\n\n\n\n\n\n"
 },
 
 {
-    "location": "pages/api.html#FDM.forward_fdm-Tuple{Int64,Vararg{Any,N} where N}",
+    "location": "pages/api.html#FDM.forward_fdm",
     "page": "API",
     "title": "FDM.forward_fdm",
-    "category": "method",
-    "text": "forward_fdm(p::Int, ...)\n\nConstruct a forward finite difference method of order p. See fdm for further details.\n\nArguments\n\np::Int: Order of the method.\n\nFurther takes, in the following order, the arguments q, ε, M, and report from fdm.\n\n\n\n\n\n"
+    "category": "function",
+    "text": "FDM.Forward(p, q; kwargs...)\nforward_fdm(p, q; kwargs...)\n\nConstruct a forward finite difference method of order p to compute the qth derivative. See FDMethod for more details.\n\n\n\n\n\n"
 },
 
 {
