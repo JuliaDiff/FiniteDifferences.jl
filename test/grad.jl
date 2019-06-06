@@ -1,5 +1,19 @@
 using FDM: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
 
+# Dummy type where length(x::DummyType) ≠ length(first(to_vec(x)))
+struct DummyType{TX<:Matrix}
+    X::TX
+end
+
+function FDM.to_vec(x::DummyType)
+    x_vec, back = to_vec(x.X)
+    return x_vec, x_vec -> DummyType(back(x_vec))
+end
+
+Base.:(==)(x::DummyType, y::DummyType) = x.X == y.X
+Base.length(x::DummyType) = size(x.X, 1)
+
+
 @testset "grad" begin
 
     @testset "grad" begin
@@ -47,6 +61,7 @@ using FDM: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
         test_to_vec(UpperTriangular(randn(13, 13)))
         test_to_vec(Symmetric(randn(11, 11)))
         test_to_vec(Diagonal(randn(7)))
+        test_to_vec(DummyType(randn(2, 9)))
 
         @testset "$T" for T in (Adjoint, Transpose)
             test_to_vec(T(randn(4, 4)))
@@ -60,6 +75,8 @@ using FDM: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
             test_to_vec((randn(4), randn(4, 3, 2), 1))
             test_to_vec((5, randn(4, 3, 2), UpperTriangular(randn(4, 4)), 2.5))
             test_to_vec(((6, 5), 3, randn(3, 2, 0, 1)))
+            test_to_vec((DummyType(randn(2, 7)), DummyType(randn(3, 9))))
+            test_to_vec((DummyType(randn(3, 2)), randn(11, 8)))
         end
     end
 
