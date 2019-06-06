@@ -104,6 +104,6 @@ function to_vec(x::Tuple)
     x_vecs, x_backs = zip(map(to_vec, x)...)
     sz = cumsum([map(length, x_vecs)...])
     return vcat(x_vecs...), function(v)
-        return ntuple(n->x_backs[n](v[sz[n]-length(x[n])+1:sz[n]]), length(x))
+        return ntuple(n->x_backs[n](v[sz[n]-length(x_vecs[n])+1:sz[n]]), length(x))
     end
 end
