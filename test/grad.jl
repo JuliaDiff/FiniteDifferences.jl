@@ -58,6 +58,9 @@ Base.length(x::DummyType) = size(x.X, 1)
         test_to_vec(randn(5, 11))
         test_to_vec(randn(13, 17, 19))
         test_to_vec(randn(13, 0, 19))
+        test_to_vec([1.0, randn(2), randn(1), 2.0])
+        test_to_vec([randn(5, 4, 3), (5, 4, 3), 2.0])
+        test_to_vec(reshape([1.0, randn(5, 4, 3), randn(4, 3), 2.0], 2, 2))
         test_to_vec(UpperTriangular(randn(13, 13)))
         test_to_vec(Symmetric(randn(11, 11)))
         test_to_vec(Diagonal(randn(7)))
@@ -77,6 +80,9 @@ Base.length(x::DummyType) = size(x.X, 1)
             test_to_vec(((6, 5), 3, randn(3, 2, 0, 1)))
             test_to_vec((DummyType(randn(2, 7)), DummyType(randn(3, 9))))
             test_to_vec((DummyType(randn(3, 2)), randn(11, 8)))
+        end
+        @testset "Dictionary" begin
+            test_to_vec(Dict(:a=>5, :b=>randn(10, 11), :c=>(5, 4, 3)))
         end
     end
 

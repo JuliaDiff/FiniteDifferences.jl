@@ -82,11 +82,25 @@ Transform `x` into a `Vector`, and return a closure which inverts the transforma
 """
 to_vec(x::Real) = ([x], first)
 
-# Arrays.
+# Vectors
 to_vec(x::Vector{<:Real}) = (x, identity)
-to_vec(x::Array) = vec(x), x_vec->reshape(x_vec, size(x))
+function to_vec(x::Vector)
+    x_vecs_and_backs = map(to_vec, x)
+    x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
+    return vcat(x_vecs...), function(x_vec)
+        sz = cumsum([map(length, x_vecs)...])
+        return [backs[n](x_vec[sz[n]-length(x_vecs[n])+1:sz[n]]) for n in eachindex(x)]
+    end
+end
 
-# AbstractArrays.
+# Arrays
+to_vec(x::Array{<:Real}) = vec(x), x_vec->reshape(x_vec, size(x))
+function to_vec(x::Array)
+    x_vec, back = to_vec(reshape(x, :))
+    return x_vec, x_vec->reshape(back(x_vec), size(x))
+end
+
+# AbstractArrays
 function to_vec(x::T) where {T<:LinearAlgebra.AbstractTriangular}
     x_vec, back = to_vec(Matrix(x))
     return x_vec, x_vec->T(reshape(back(x_vec), size(x)))
@@ -99,11 +113,22 @@ function to_vec(X::T) where T<:Union{Adjoint,Transpose}
     return vec(Matrix(X)), x_vec->U(permutedims(reshape(x_vec, size(X))))
 end
 
-# Non-array data structures.
+# Non-array data structures
+
 function to_vec(x::Tuple)
     x_vecs, x_backs = zip(map(to_vec, x)...)
     sz = cumsum([map(length, x_vecs)...])
     return vcat(x_vecs...), function(v)
         return ntuple(n->x_backs[n](v[sz[n]-length(x_vecs[n])+1:sz[n]]), length(x))
+    end
+end
+
+# Convert to a vector-of-vectors to make use of existing functionality.
+function to_vec(d::Dict)
+    d_vec_vec = [val for val in values(d)]
+    d_vec, back = to_vec(d_vec_vec)
+    return d_vec, function(v)
+        v_vec_vec = back(v)
+        return Dict([(key, v_vec_vec[n]) for (n, key) in enumerate(keys(d))])
     end
 end
