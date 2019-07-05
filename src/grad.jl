@@ -36,7 +36,7 @@ jacobian(fdm, f, x::Vector{<:Real}) = jacobian(fdm, f, x, length(f(x)))
 
 function jacobian(fdm, f, x::Real, D::Int)
     x_vec, vec_to_x = to_vec(x)
-    return jacobian(fdm, f, x_vec, D)
+    return jacobian(fdm, x->f(vec_to_x(x)), x_vec, D)
 end
 
 replace_arg(k, xs::Tuple, x) = (xs[1:k-1]..., x, xs[k+1:end]...)
