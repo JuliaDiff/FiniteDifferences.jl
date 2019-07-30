@@ -1,13 +1,13 @@
-# FDM.jl: Finite Difference Methods
+# FiniteDifferences.jl: Finite Difference Methods
 
-[![Build Status](https://travis-ci.org/invenia/FDM.jl.svg?branch=master)](https://travis-ci.org/invenia/FDM.jl)
-[![Windows Build status](https://ci.appveyor.com/api/projects/status/g0gun5dxbkt631am/branch/master?svg=true)](https://ci.appveyor.com/project/invenia/fdm-jl/branch/master)
-[![codecov.io](http://codecov.io/github/invenia/FDM.jl/coverage.svg?branch=master)](http://codecov.io/github/invenia/FDM.jl?branch=master)
-[![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://invenia.github.io/FDM.jl/latest/)
+[![Build Status](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl.svg?branch=master)](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl)
+[![Windows Build status](https://ci.appveyor.com/api/projects/status/g0gun5dxbkt631am/branch/master?svg=true)](https://ci.appveyor.com/project/JuliaDiff/FiniteDifferences-jl/branch/master)
+[![codecov.io](http://codecov.io/github/JuliaDiff/FiniteDifferences.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaDiff/FiniteDifferences.jl?branch=master)
+[![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://invenia.github.io/FiniteDifferences.jl/latest/)
 
-FDM.jl estimates derivatives with finite differences.
+FiniteDifferences.jl estimates derivatives with finite differences.
 
-See also [FDM](https://github.com/wesselb/fdm).
+See also [FiniteDifferences](https://github.com/wesselb/fdm).
 
 ## Examples
 
@@ -24,11 +24,11 @@ julia> central_fdm(5, 2)(sin, 1) + sin(1)
 9.747314066999024e-12
 ```
 
-Construct a FDM on a custom grid:
+Construct a FiniteDifferences on a custom grid:
 
 ```julia
 julia> method, report = fdm([-2, 0, 5], 1, report=true)
-(FDM.method, FDMReport:
+(FiniteDifferences.method, FiniteDifferencesReport:
   order of method:       3
   order of derivative:   1
   grid:                  [-2, 0, 5]

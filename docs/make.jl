@@ -1,13 +1,13 @@
-using Documenter, FDM
+using Documenter, FiniteDifferences
 
 makedocs(
-    modules=[FDM],
+    modules=[FiniteDifferences],
     format=:html,
     pages=[
         "Home" => "index.md",
         "API" => "pages/api.md"
     ],
-    sitename="FDM.jl",
+    sitename="FiniteDifferences.jl",
     authors="Invenia Labs",
     assets=[
         "assets/invenia.css",
@@ -15,7 +15,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/invenia/FDM.jl.git",
+    repo = "github.com/JuliaDiff/FiniteDifferences.jl.git",
     julia = "1.0",
     target = "build",
     deps = nothing,

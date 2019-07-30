@@ -1,4 +1,4 @@
-using FDM: Forward, Backward, Central, Nonstandard
+using FiniteDifferences: Forward, Backward, Central, Nonstandard
 
 @testset "Methods" begin
     for f in [:forward_fdm, :backward_fdm, :central_fdm]
@@ -25,9 +25,9 @@ using FDM: Forward, Backward, Central, Nonstandard
         @test central_fdm(5, 1)(abs, 0.001) ≈ 1.0
     end
 
-    @testset "Printing FDMethods" begin
+    @testset "Printing FiniteDifferencesethods" begin
         @test sprint(show, central_fdm(2, 1)) == """
-            FDMethod:
+            FiniteDifferencesethod:
               order of method:       2
               order of derivative:   1
               grid:                  [-1, 1]
@@ -39,7 +39,7 @@ using FDM: Forward, Backward, Central, Nonstandard
         regex_array = r"\[([\d.+-e]+(, )?)+\]"
         @test occursin(Regex(join(map(x -> x.pattern,
             [
-                r"FDMethod:",
+                r"FiniteDifferencesethod:",
                 r"order of method:", r"\d+",
                 r"order of derivative:", r"\d+",
                 r"grid:", regex_array,
