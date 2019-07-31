@@ -1,3 +1,6 @@
+## Notice: this package has moved to [JuliaDiff/FiniteDifferences.jl](https://github.com/JuliaDiff/FiniteDifferences.jl)
+This repo will stick around for archival purposes, but new features, and bug-fixes will only be made to FiniteDifferences.jl
+
 # FDM.jl: Finite Difference Methods
 
 [![Build Status](https://travis-ci.org/invenia/FDM.jl.svg?branch=master)](https://travis-ci.org/invenia/FDM.jl)
