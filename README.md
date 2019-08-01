@@ -5,7 +5,7 @@
 [![codecov.io](http://codecov.io/github/JuliaDiff/FiniteDifferences.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaDiff/FiniteDifferences.jl?branch=master)
 [![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://invenia.github.io/FiniteDifferences.jl/latest/)
 
-FiniteDifferences.jl estimates derivatives with finite differences.
+FiniteDifferences.jl estimates derivatives with [finite differences](https://en.wikipedia.org/wiki/Finite_difference).
 
 See also [FiniteDifferences](https://github.com/wesselb/fdm).
 
