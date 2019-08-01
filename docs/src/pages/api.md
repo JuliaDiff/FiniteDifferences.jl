@@ -1,4 +1,4 @@
 ```@autodocs
-Modules = [FDM]
+Modules = [FiniteDifferences]
 Private = false
 ```

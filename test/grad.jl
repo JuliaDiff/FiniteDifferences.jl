@@ -1,11 +1,11 @@
-using FDM: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
+using FiniteDifferences: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
 
 # Dummy type where length(x::DummyType) ≠ length(first(to_vec(x)))
 struct DummyType{TX<:Matrix}
     X::TX
 end
 
-function FDM.to_vec(x::DummyType)
+function FiniteDifferences.to_vec(x::DummyType)
     x_vec, back = to_vec(x.X)
     return x_vec, x_vec -> DummyType(back(x_vec))
 end
