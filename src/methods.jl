@@ -145,6 +145,7 @@ end
 
 # Check the method and derivative orders for consistency
 function _check_p_q(p::Integer, q::Integer)
+    q > 0 || throw(ArgumentError("order of derivative must be strictly greater than zero"))
     q < p || throw(ArgumentError("order of the method must be strictly greater than that " *
                                  "of the derivative"))
     # Check whether the method can be computed. We require the factorial of the

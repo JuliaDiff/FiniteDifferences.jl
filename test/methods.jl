@@ -64,6 +64,7 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard
     @testset "Types" begin
         @testset "$T" for T in (Forward, Backward, Central)
             @test T(5, 1)(sin, 1; adapt=4) ≈ cos(1)
+            @test_throws ArgumentError T(1, 0)
             @test_throws ArgumentError T(3, 4)
             @test_throws ArgumentError T(40, 5)
             @test_throws ArgumentError T(5, 1)(sin, 1; adapt=200)
