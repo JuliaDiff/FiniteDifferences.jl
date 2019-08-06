@@ -145,6 +145,7 @@ end
 
 # Check the method and derivative orders for consistency
 function _check_p_q(p::Integer, q::Integer)
+    q >= 0 || throw(ArgumentError("order of derivative must be nonnegative"))
     q < p || throw(ArgumentError("order of the method must be strictly greater than that " *
                                  "of the derivative"))
     # Check whether the method can be computed. We require the factorial of the
@@ -224,6 +225,10 @@ function fdm(
     eps > 0 || throw(ArgumentError("eps must be positive, got $eps"))
     bound > 0 || throw(ArgumentError("bound must be positive, got $bound"))
     0 <= adapt < 20 - m.p || throw(ArgumentError("can't perform $adapt adaptation steps"))
+
+    # The below calculation can fail for `m.q == 0`, because then `C₂` may be zero. We
+    # therefore handle this edge case here.
+    m.q == 0 && return m, f(x)
 
     p = m.p
     q = m.q

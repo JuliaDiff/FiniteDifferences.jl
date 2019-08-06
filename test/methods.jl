@@ -2,15 +2,27 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard
 
 @testset "Methods" begin
     for f in [:forward_fdm, :backward_fdm, :central_fdm]
+        @eval @test $f(1, 0; bound=1)(sin, 1) == sin(1)
+        @eval @test $f(2, 0; bound=1)(sin, 1) == sin(1)
+        @eval @test $f(3, 0; bound=1)(sin, 1) == sin(1)
         @eval @test $f(10, 1; bound=1)(sin, 1) ≈ cos(1)
         @eval @test $f(10, 2; bound=1)(sin, 1) ≈ -sin(1)
 
+        @eval @test $f(1, 0; bound=1)(exp, 1) == exp(1)
+        @eval @test $f(2, 0; bound=1)(exp, 1) == exp(1)
+        @eval @test $f(3, 0; bound=1)(exp, 1) == exp(1)
         @eval @test $f(10, 1; bound=1)(exp, 1) ≈ exp(1)
         @eval @test $f(10, 2; bound=1)(exp, 1) ≈ exp(1)
 
+        @eval @test $f(1, 0; bound=1)(abs2, 1) == 1
+        @eval @test $f(2, 0; bound=1)(abs2, 1) == 1
+        @eval @test $f(3, 0; bound=1)(abs2, 1) == 1
         @eval @test $f(10, 1; bound=1)(abs2, 1) ≈ 2
         @eval @test $f(10, 2; bound=1)(abs2, 1) ≈ 2
 
+        @eval @test $f(1, 0; bound=1)(sqrt, 1) == 1
+        @eval @test $f(2, 0; bound=1)(sqrt, 1) == 1
+        @eval @test $f(3, 0; bound=1)(sqrt, 1) == 1
         @eval @test $f(10, 1; bound=1)(sqrt, 1) ≈ .5
         @eval @test $f(10, 2; bound=1)(sqrt, 1) ≈ -.25
     end
@@ -64,6 +76,7 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard
     @testset "Types" begin
         @testset "$T" for T in (Forward, Backward, Central)
             @test T(5, 1)(sin, 1; adapt=4) ≈ cos(1)
+            @test_throws ArgumentError T(3, 3)
             @test_throws ArgumentError T(3, 4)
             @test_throws ArgumentError T(40, 5)
             @test_throws ArgumentError T(5, 1)(sin, 1; adapt=200)
