@@ -1,5 +1,5 @@
 name = "FiniteDifferences"
-uuid = "e25cca7e-83ef-51fa-be6c-dfe2a3123128"
+uuid = "26cc04aa-876d-5657-8c51-4c34ba976000"
 version = "0.7.0"
 
 [deps]
