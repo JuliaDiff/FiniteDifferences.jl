@@ -7,7 +7,7 @@
 
 FiniteDifferences.jl estimates derivatives with [finite differences](https://en.wikipedia.org/wiki/Finite_difference).
 
-See also [FiniteDifferences](https://github.com/wesselb/fdm).
+See also the Python package [FDM](https://github.com/wesselb/fdm).
 
 ## Examples
 
@@ -52,3 +52,7 @@ f (generic function with 1 method)
 julia> central_fdm(5, 1)(ε -> f([1, 1, 1] + ε * [1, 2, 3]), 0) - 6
 -2.922107000813412e-13
 ```
+
+## FDM.jl
+
+This package was formerly called FDM.jl. We recommend users of FDM.jl [update to FiniteDifferences.jl](https://github.com/JuliaDiff/FiniteDifferences.jl/issues/37).
