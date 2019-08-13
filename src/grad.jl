@@ -39,7 +39,7 @@ jacobian(fdm, f, x::Vector{<:Real}) = jacobian(fdm, f, x, length(f(x)))
 
 Convenience function to compute `jacobian(f, x) * ẋ`.
 """
-_jvp(fdm, f, x::Vector{<:Real}, ẋ::AV{<:Real}) = jacobian(fdm, f, x) * ẋ
+_jvp(fdm, f, x::Vector{<:Real}, ẋ::AV{<:Real}) = fdm(ε -> f(x .+ ε .* ẋ), zero(eltype(x)))
 
 """
     _j′vp(fdm, f, ȳ::AbstractVector{<:Real}, x::Vector{<:Real})
