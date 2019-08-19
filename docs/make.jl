@@ -2,22 +2,14 @@ using Documenter, FiniteDifferences
 
 makedocs(
     modules=[FiniteDifferences],
-    format=:html,
-    pages=[
-        "Home" => "index.md",
-        "API" => "pages/api.md"
-    ],
-    sitename="FiniteDifferences.jl",
+    format=Documenter.HTML(prettyurls=get(ENV, "CI", nothing) == "true"),
+    pages=["Home" => "index.md", "API" => "pages/api.md"],
     authors="Invenia Labs",
-    assets=[
-        "assets/invenia.css",
-    ],
+    checkdocs=:exports,
+    linkcheck=true,
+    repo="https://github.com/JuliaDiff/FiniteDifferences.jl/blob/{commit}{path}#L{line}",
+    sitename="FiniteDifferences.jl",
+    strict=true,
 )
 
-deploydocs(
-    repo = "github.com/JuliaDiff/FiniteDifferences.jl.git",
-    julia = "1.0",
-    target = "build",
-    deps = nothing,
-    make = nothing,
-)
+deploydocs(repo="github.com/JuliaDiff/FiniteDifferences.jl.git")
