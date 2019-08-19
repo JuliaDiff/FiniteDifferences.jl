@@ -1,3 +1,5 @@
+export grad, jacobian, jvp, j′vp, to_vec
+
 """
     grad(fdm, f, x::AbstractVector)
 
@@ -51,7 +53,8 @@ _j′vp(fdm, f, ȳ::AV{<:Real}, x::Vector{<:Real}) = jacobian(fdm, f, x, length
 """
     jvp(fdm, f, x, ẋ)
 
-Compute a Jacobian-vector product with any types of arguments for which `to_vec` is defined.
+Compute a Jacobian-vector product with any types of arguments for which [`to_vec`](@ref)
+is defined.
 """
 function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
     x_vec, vec_to_x = to_vec(x)
@@ -66,7 +69,7 @@ end
 """
     j′vp(fdm, f, ȳ, x...)
 
-Compute an adjoint with any types of arguments for which `to_vec` is defined.
+Compute an adjoint with any types of arguments for which [`to_vec`](@ref) is defined.
 """
 function j′vp(fdm, f, ȳ, x)
     x_vec, vec_to_x = to_vec(x)
@@ -76,7 +79,7 @@ end
 j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)
 
 """
-    to_vec(x)
+    to_vec(x) -> Tuple{<:AbstractVector, <:Function}
 
 Transform `x` into a `Vector`, and return a closure which inverts the transformation.
 """

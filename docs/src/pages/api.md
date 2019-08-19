@@ -1,3 +1,5 @@
+## Finite Differences
+
 ```@docs
 FiniteDifferenceMethod
 fdm
@@ -7,4 +9,14 @@ forward_fdm
 assert_approx_equal
 FiniteDifferences.DEFAULT_CONDITION
 FiniteDifferences.TINY
+```
+
+## Gradients
+
+```@docs
+grad
+jacobian
+jvp
+j′vp
+to_vec
 ```
