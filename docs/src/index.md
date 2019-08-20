@@ -1,8 +1,8 @@
 # FiniteDifferences.jl: Finite Difference Methods
 
 [![Build Status](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl.svg?branch=master)](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl)
-[![codecov.io](http://codecov.io/github/JuliaDiff/FiniteDifferences.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaDiff/FiniteDifferences.jl?branch=master)
-[![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://invenia.github.io/FiniteDifferences.jl/latest/)
+[![codecov.io](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl/coverage.svg?branch=master)](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl?branch=master)
+[![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://www.juliadiff.org/FiniteDifferences.jl/latest/)
 
 FiniteDifferences.jl approximates derivatives of functions using finite difference methods.
 

@@ -1,4 +1,4 @@
-export fdm, backward_fdm, forward_fdm, central_fdm
+export FiniteDifferenceMethod, fdm, backward_fdm, forward_fdm, central_fdm
 
 """
     FiniteDifferences.DEFAULT_CONDITION

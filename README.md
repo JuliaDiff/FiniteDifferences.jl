@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl.svg?branch=master)](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/g0gun5dxbkt631am/branch/master?svg=true)](https://ci.appveyor.com/project/JuliaDiff/FiniteDifferences-jl/branch/master)
-[![codecov.io](http://codecov.io/github/JuliaDiff/FiniteDifferences.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaDiff/FiniteDifferences.jl?branch=master)
+[![codecov.io](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl/coverage.svg?branch=master)](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl?branch=master)
 [![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliadiff.github.io/FiniteDifferences.jl/latest/)
 
 FiniteDifferences.jl estimates derivatives with [finite differences](https://en.wikipedia.org/wiki/Finite_difference).
