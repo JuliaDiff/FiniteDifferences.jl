@@ -16,12 +16,14 @@ Base.length(x::DummyType) = size(x.X, 1)
 
 @testset "grad" begin
 
-    @testset "grad" begin
-        rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
-        x = randn(rng, 2)
-        xc = copy(x)
-        @test grad(fdm, x->sin(x[1]) + cos(x[2]), x) ≈ [cos(x[1]), -sin(x[2])]
-        @test xc == x
+    for T in (Float64, ComplexF64)
+        @testset "grad(::$T)" begin
+            rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
+            x = randn(rng, T, 2)
+            xc = copy(x)
+            @test grad(fdm, x->sin(x[1]) + cos(x[2]), x) ≈ [cos(x[1]), -sin(x[2])]
+            @test xc == x
+        end
     end
 
     function check_jac_and_jvp_and_j′vp(fdm, f, ȳ, x, ẋ, J_exact)
@@ -29,19 +31,21 @@ Base.length(x::DummyType) = size(x.X, 1)
         @test jacobian(fdm, f, x, length(ȳ)) ≈ J_exact
         @test jacobian(fdm, f, x) == jacobian(fdm, f, x, length(ȳ))
         @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
-        @test _j′vp(fdm, f, ȳ, x) ≈ J_exact' * ȳ
+        @test _j′vp(fdm, f, ȳ, x) ≈ transpose(J_exact) * ȳ
         @test xc == x
     end
 
-    @testset "jacobian / _jvp / _j′vp" begin
-        rng, P, Q, fdm = MersenneTwister(123456), 3, 2, central_fdm(5, 1)
-        ȳ, A, x, ẋ = randn(rng, P), randn(rng, P, Q), randn(rng, Q), randn(rng, Q)
-        Ac = copy(A)
+    for T in (Float64, ComplexF64)
+        @testset "jacobian / _jvp / _j′vp (::$T)" begin
+            rng, P, Q, fdm = MersenneTwister(123456), 3, 2, central_fdm(5, 1)
+            ȳ, A, x, ẋ = randn(rng, T, P), randn(rng, T, P, Q), randn(rng, T, Q), randn(rng, T, Q)
+            Ac = copy(A)
 
-        check_jac_and_jvp_and_j′vp(fdm, x->A * x, ȳ, x, ẋ, A)
-        @test Ac == A
-        check_jac_and_jvp_and_j′vp(fdm, x->sin.(A * x), ȳ, x, ẋ, cos.(A * x) .* A)
-        @test Ac == A
+            check_jac_and_jvp_and_j′vp(fdm, x->A * x, ȳ, x, ẋ, A)
+            @test Ac == A
+            check_jac_and_jvp_and_j′vp(fdm, x->sin.(A * x), ȳ, x, ẋ, cos.(A * x) .* A)
+            @test Ac == A
+        end
     end
 
     function test_to_vec(x)
@@ -86,27 +90,29 @@ Base.length(x::DummyType) = size(x.X, 1)
         end
     end
 
-    @testset "jvp" begin
-        rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
-        x, y = randn(rng, N), randn(rng, M)
-        ẋ, ẏ = randn(rng, N), randn(rng, M)
-        xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
-        ż_manual = _jvp(fdm, (xy)->sum(sin, xy), xy, ẋẏ)[1]
-        ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))
-        ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))
-        @test ż_manual ≈ ż_auto
-        @test ż_manual ≈ ż_multi
-    end
+    for T in (Float64, ComplexF64)
+        @testset "jvp(::$T)" begin
+            rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
+            x, y = randn(rng, T, N), randn(rng, T, M)
+            ẋ, ẏ = randn(rng, T, N), randn(rng, T, M)
+            xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
+            ż_manual = _jvp(fdm, (xy)->sum(sin, xy), xy, ẋẏ)[1]
+            ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))
+            ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))
+            @test ż_manual ≈ ż_auto
+            @test ż_manual ≈ ż_multi
+        end
 
-    @testset "j′vp" begin
-        rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
-        x, y = randn(rng, N), randn(rng, M)
-        z̄ = randn(rng, N + M)
-        xy = vcat(x, y)
-        x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)
-        x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))
-        x̄ȳ_multi = j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y)
-        @test x̄ȳ_manual ≈ vcat(x̄ȳ_auto...)
-        @test x̄ȳ_manual ≈ vcat(x̄ȳ_multi...)
+        @testset "j′vp(::$T)" begin
+            rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
+            x, y = randn(rng, T, N), randn(rng, T, M)
+            z̄ = randn(rng, T, N + M)
+            xy = vcat(x, y)
+            x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)
+            x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))
+            x̄ȳ_multi = j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y)
+            @test x̄ȳ_manual ≈ vcat(x̄ȳ_auto...)
+            @test x̄ȳ_manual ≈ vcat(x̄ȳ_multi...)
+        end
     end
 end
