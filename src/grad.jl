@@ -1,7 +1,7 @@
 export grad, jacobian, jvp, j′vp, to_vec
 
 """
-    grad(fdm, f, x::AbstractVector)
+    grad(fdm, f, x::Vector{<:Number})
 
 Approximate the gradient of `f` at `x` using `fdm`. Assumes that `f(x)` is scalar.
 """
@@ -21,8 +21,8 @@ function grad(fdm, f, x::Vector{T}) where T<:Number
 end
 
 """
-    jacobian(fdm, f, x::AbstractVector{<:Real}, D::Int)
-    jacobian(fdm, f, x::AbstractVector{<:Real})
+    jacobian(fdm, f, x::AbstractVector{<:Number}, D::Int)
+    jacobian(fdm, f, x::AbstractVector{<:Number})
 
 Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `D` vector. If
 `D` is not provided, then `f(x)` is computed once to determine the output size.
@@ -37,16 +37,16 @@ end
 jacobian(fdm, f, x::Vector{<:Number}) = jacobian(fdm, f, x, length(f(x)))
 
 """
-    _jvp(fdm, f, x::Vector{<:Real}, ẋ::AbstractVector{<:Real})
+    _jvp(fdm, f, x::Vector{<:Number}, ẋ::AbstractVector{<:Real})
 
 Convenience function to compute `jacobian(f, x) * ẋ`.
 """
 _jvp(fdm, f, x::Vector{<:Number}, ẋ::AV{<:Number}) = fdm(ε -> f(x .+ ε .* ẋ), zero(eltype(x)))
 
 """
-    _j′vp(fdm, f, ȳ::AbstractVector{<:Real}, x::Vector{<:Real})
+    _j′vp(fdm, f, ȳ::AbstractVector{<:Number}, x::Vector{<:Number})
 
-Convenience function to compute `jacobian(f, x)' * ȳ`.
+Convenience function to compute `transpose(jacobian(f, x)) * ȳ`.
 """
 _j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x, length(ȳ))) * ȳ
 
@@ -86,7 +86,7 @@ Transform `x` into a `Vector`, and return a closure which inverts the transforma
 to_vec(x::Number) = ([x], first)
 
 # Vectors
-to_vec(x::Vector{<:Real}) = (x, identity)
+to_vec(x::Vector{<:Number}) = (x, identity)
 function to_vec(x::Vector)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
@@ -97,7 +97,7 @@ function to_vec(x::Vector)
 end
 
 # Arrays
-to_vec(x::Array{<:Real}) = vec(x), x_vec->reshape(x_vec, size(x))
+to_vec(x::Array{<:Number}) = vec(x), x_vec->reshape(x_vec, size(x))
 function to_vec(x::Array)
     x_vec, back = to_vec(reshape(x, :))
     return x_vec, x_vec->reshape(back(x_vec), size(x))
