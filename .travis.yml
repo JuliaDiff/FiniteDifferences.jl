@@ -3,14 +3,18 @@ language: julia
 os:
   - linux
   - osx
+  - windows
 julia:
-  - 0.7
   - 1.0
+  - 1.1
+  - 1.2
+  - 1.3
   - nightly
 notifications:
   email: false
 matrix:
   allow_failures:
+    - julia: 1.3
     - julia: nightly
   fast_finish: true
 after_success:
