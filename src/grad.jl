@@ -111,9 +111,11 @@ end
 to_vec(x::Symmetric) = vec(Matrix(x)), x_vec->Symmetric(reshape(x_vec, size(x)))
 to_vec(X::Diagonal) = vec(Matrix(X)), x_vec->Diagonal(reshape(x_vec, size(X)...))
 
-function to_vec(X::T) where T<:Union{Adjoint,Transpose}
-    U = T.name.wrapper
-    return vec(Matrix(X)), x_vec->U(permutedims(reshape(x_vec, size(X))))
+function to_vec(X::Transpose)
+    return vec(Matrix(X)), x_vec->Transpose(permutedims(reshape(x_vec, size(X))))
+end
+function to_vec(X::Adjoint)
+    return vec(Matrix(X)), x_vec->Adjoint(conj!(permutedims(reshape(x_vec, size(X)))))
 end
 
 # Non-array data structures
