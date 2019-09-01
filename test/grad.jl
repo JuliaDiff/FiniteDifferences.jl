@@ -43,7 +43,7 @@ Base.length(x::DummyType) = size(x.X, 1)
         check_jac_and_jvp_and_j′vp(fdm, x->sin.(A * x), ȳ, x, ẋ, cos.(A * x) .* A)
         @test Ac == A
     end
-    
+
     function test_to_vec(x)
         x_vec, back = to_vec(x)
         @test x_vec isa Vector
@@ -94,7 +94,7 @@ Base.length(x::DummyType) = size(x.X, 1)
             end
         end
     end
-    
+
     @testset "jvp(::$T)" for T in (Float64, ComplexF64)
         rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
         x, y = randn(rng, T, N), randn(rng, T, M)
