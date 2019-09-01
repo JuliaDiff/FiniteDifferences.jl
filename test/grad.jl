@@ -77,8 +77,6 @@ Base.length(x::DummyType) = size(x.X, 1)
             test_to_vec(DummyType(randn(T, 2, 9)))
     
             @testset "$Op" for Op in (Adjoint, Transpose)
-                # to_vec
-                #T <: Complex && Op == Adjoint && continue
                 test_to_vec(Op(randn(T, 4, 4)))
                 test_to_vec(Op(randn(T, 6)))
                 test_to_vec(Op(randn(T, 2, 5)))
