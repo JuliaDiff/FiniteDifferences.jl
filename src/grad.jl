@@ -1,11 +1,11 @@
 export grad, jacobian, jvp, j′vp, to_vec
 
 """
-    grad(fdm, f, x::AbstractVector)
+    grad(fdm, f, x::Vector{<:Number})
 
 Approximate the gradient of `f` at `x` using `fdm`. Assumes that `f(x)` is scalar.
 """
-function grad(fdm, f, x::Vector{T}) where T<:Real
+function grad(fdm, f, x::Vector{T}) where T<:Number
     v, dx, tmp = fill(zero(T), size(x)), similar(x), similar(x)
     for n in eachindex(x)
         v[n] = one(T)
@@ -21,34 +21,34 @@ function grad(fdm, f, x::Vector{T}) where T<:Real
 end
 
 """
-    jacobian(fdm, f, x::AbstractVector{<:Real}, D::Int)
-    jacobian(fdm, f, x::AbstractVector{<:Real})
+    jacobian(fdm, f, x::Vector{<:Number}, D::Int)
+    jacobian(fdm, f, x::Vector{<:Number})
 
 Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `D` vector. If
 `D` is not provided, then `f(x)` is computed once to determine the output size.
 """
-function jacobian(fdm, f, x::Vector{T}, D::Int) where {T<:Real}
+function jacobian(fdm, f, x::Vector{T}, D::Int) where {T<:Number}
     J = Matrix{T}(undef, D, length(x))
     for d in 1:D
         J[d, :] = grad(fdm, x->f(x)[d], x)
     end
     return J
 end
-jacobian(fdm, f, x::Vector{<:Real}) = jacobian(fdm, f, x, length(f(x)))
+jacobian(fdm, f, x::Vector{<:Number}) = jacobian(fdm, f, x, length(f(x)))
 
 """
-    _jvp(fdm, f, x::Vector{<:Real}, ẋ::AbstractVector{<:Real})
+    _jvp(fdm, f, x::Vector{<:Number}, ẋ::AbstractVector{<:Number})
 
 Convenience function to compute `jacobian(f, x) * ẋ`.
 """
-_jvp(fdm, f, x::Vector{<:Real}, ẋ::AV{<:Real}) = fdm(ε -> f(x .+ ε .* ẋ), zero(eltype(x)))
+_jvp(fdm, f, x::Vector{<:Number}, ẋ::AV{<:Number}) = fdm(ε -> f(x .+ ε .* ẋ), zero(eltype(x)))
 
 """
-    _j′vp(fdm, f, ȳ::AbstractVector{<:Real}, x::Vector{<:Real})
+    _j′vp(fdm, f, ȳ::AbstractVector{<:Number}, x::Vector{<:Number})
 
-Convenience function to compute `jacobian(f, x)' * ȳ`.
+Convenience function to compute `transpose(jacobian(f, x)) * ȳ`.
 """
-_j′vp(fdm, f, ȳ::AV{<:Real}, x::Vector{<:Real}) = jacobian(fdm, f, x, length(ȳ))' * ȳ
+_j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x, length(ȳ))) * ȳ
 
 """
     jvp(fdm, f, x, ẋ)
@@ -83,10 +83,10 @@ j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)
 
 Transform `x` into a `Vector`, and return a closure which inverts the transformation.
 """
-to_vec(x::Real) = ([x], first)
+to_vec(x::Number) = ([x], first)
 
 # Vectors
-to_vec(x::Vector{<:Real}) = (x, identity)
+to_vec(x::Vector{<:Number}) = (x, identity)
 function to_vec(x::Vector)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
@@ -97,7 +97,7 @@ function to_vec(x::Vector)
 end
 
 # Arrays
-to_vec(x::Array{<:Real}) = vec(x), x_vec->reshape(x_vec, size(x))
+to_vec(x::Array{<:Number}) = vec(x), x_vec->reshape(x_vec, size(x))
 function to_vec(x::Array)
     x_vec, back = to_vec(reshape(x, :))
     return x_vec, x_vec->reshape(back(x_vec), size(x))
@@ -111,9 +111,11 @@ end
 to_vec(x::Symmetric) = vec(Matrix(x)), x_vec->Symmetric(reshape(x_vec, size(x)))
 to_vec(X::Diagonal) = vec(Matrix(X)), x_vec->Diagonal(reshape(x_vec, size(X)...))
 
-function to_vec(X::T) where T<:Union{Adjoint,Transpose}
-    U = T.name.wrapper
-    return vec(Matrix(X)), x_vec->U(permutedims(reshape(x_vec, size(X))))
+function to_vec(X::Transpose)
+    return vec(Matrix(X)), x_vec->Transpose(permutedims(reshape(x_vec, size(X))))
+end
+function to_vec(X::Adjoint)
+    return vec(Matrix(X)), x_vec->Adjoint(conj!(permutedims(reshape(x_vec, size(X)))))
 end
 
 # Non-array data structures

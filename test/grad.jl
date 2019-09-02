@@ -16,9 +16,9 @@ Base.length(x::DummyType) = size(x.X, 1)
 
 @testset "grad" begin
 
-    @testset "grad" begin
+    @testset "grad(::$T)" for T in (Float64, ComplexF64)
         rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
-        x = randn(rng, 2)
+        x = randn(rng, T, 2)
         xc = copy(x)
         @test grad(fdm, x->sin(x[1]) + cos(x[2]), x) ≈ [cos(x[1]), -sin(x[2])]
         @test xc == x
@@ -29,13 +29,13 @@ Base.length(x::DummyType) = size(x.X, 1)
         @test jacobian(fdm, f, x, length(ȳ)) ≈ J_exact
         @test jacobian(fdm, f, x) == jacobian(fdm, f, x, length(ȳ))
         @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
-        @test _j′vp(fdm, f, ȳ, x) ≈ J_exact' * ȳ
+        @test _j′vp(fdm, f, ȳ, x) ≈ transpose(J_exact) * ȳ
         @test xc == x
     end
 
-    @testset "jacobian / _jvp / _j′vp" begin
+    @testset "jacobian / _jvp / _j′vp (::$T)" for T in (Float64, ComplexF64)
         rng, P, Q, fdm = MersenneTwister(123456), 3, 2, central_fdm(5, 1)
-        ȳ, A, x, ẋ = randn(rng, P), randn(rng, P, Q), randn(rng, Q), randn(rng, Q)
+        ȳ, A, x, ẋ = randn(rng, T, P), randn(rng, T, P, Q), randn(rng, T, Q), randn(rng, T, Q)
         Ac = copy(A)
 
         check_jac_and_jvp_and_j′vp(fdm, x->A * x, ȳ, x, ẋ, A)
@@ -51,45 +51,54 @@ Base.length(x::DummyType) = size(x.X, 1)
         return nothing
     end
 
-    @testset "to_vec" begin
-        test_to_vec(1.0)
-        test_to_vec(1)
-        test_to_vec(randn(3))
-        test_to_vec(randn(5, 11))
-        test_to_vec(randn(13, 17, 19))
-        test_to_vec(randn(13, 0, 19))
-        test_to_vec([1.0, randn(2), randn(1), 2.0])
-        test_to_vec([randn(5, 4, 3), (5, 4, 3), 2.0])
-        test_to_vec(reshape([1.0, randn(5, 4, 3), randn(4, 3), 2.0], 2, 2))
-        test_to_vec(UpperTriangular(randn(13, 13)))
-        test_to_vec(Symmetric(randn(11, 11)))
-        test_to_vec(Diagonal(randn(7)))
-        test_to_vec(DummyType(randn(2, 9)))
-
-        @testset "$T" for T in (Adjoint, Transpose)
-            test_to_vec(T(randn(4, 4)))
-            test_to_vec(T(randn(6)))
-            test_to_vec(T(randn(2, 5)))
+    @testset "to_vec(::$T)" for T in (Float64, ComplexF64)
+        if T == Float64
+            test_to_vec(1.0)
+            test_to_vec(1)
+        else
+            test_to_vec(.7 + .8im)
+            test_to_vec(1 + 2im)
         end
-
+        test_to_vec(randn(T, 3))
+        test_to_vec(randn(T, 5, 11))
+        test_to_vec(randn(T, 13, 17, 19))
+        test_to_vec(randn(T, 13, 0, 19))
+        test_to_vec([1.0, randn(T, 2), randn(T, 1), 2.0])
+        test_to_vec([randn(T, 5, 4, 3), (5, 4, 3), 2.0])
+        test_to_vec(reshape([1.0, randn(T, 5, 4, 3), randn(T, 4, 3), 2.0], 2, 2))
+        test_to_vec(UpperTriangular(randn(T, 13, 13)))
+        test_to_vec(Symmetric(randn(T, 11, 11)))
+        test_to_vec(Diagonal(randn(T, 7)))
+        test_to_vec(DummyType(randn(T, 2, 9)))
+    
+        @testset "$Op" for Op in (Adjoint, Transpose)
+            test_to_vec(Op(randn(T, 4, 4)))
+            test_to_vec(Op(randn(T, 6)))
+            test_to_vec(Op(randn(T, 2, 5)))
+        end
+    
         @testset "Tuples" begin
             test_to_vec((5, 4))
-            test_to_vec((5, randn(5)))
-            test_to_vec((randn(4), randn(4, 3, 2), 1))
-            test_to_vec((5, randn(4, 3, 2), UpperTriangular(randn(4, 4)), 2.5))
-            test_to_vec(((6, 5), 3, randn(3, 2, 0, 1)))
-            test_to_vec((DummyType(randn(2, 7)), DummyType(randn(3, 9))))
-            test_to_vec((DummyType(randn(3, 2)), randn(11, 8)))
+            test_to_vec((5, randn(T, 5)))
+            test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1))
+            test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5))
+            test_to_vec(((6, 5), 3, randn(T, 3, 2, 0, 1)))
+            test_to_vec((DummyType(randn(T, 2, 7)), DummyType(randn(T, 3, 9))))
+            test_to_vec((DummyType(randn(T, 3, 2)), randn(T, 11, 8)))
         end
         @testset "Dictionary" begin
-            test_to_vec(Dict(:a=>5, :b=>randn(10, 11), :c=>(5, 4, 3)))
+            if T == Float64
+                test_to_vec(Dict(:a=>5, :b=>randn(10, 11), :c=>(5, 4, 3)))
+            else
+                test_to_vec(Dict(:a=>3 + 2im, :b=>randn(T, 10, 11), :c=>(5+im, 2-im, 1+im)))
+            end
         end
     end
 
-    @testset "jvp" begin
+    @testset "jvp(::$T)" for T in (Float64, ComplexF64)
         rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
-        x, y = randn(rng, N), randn(rng, M)
-        ẋ, ẏ = randn(rng, N), randn(rng, M)
+        x, y = randn(rng, T, N), randn(rng, T, M)
+        ẋ, ẏ = randn(rng, T, N), randn(rng, T, M)
         xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
         ż_manual = _jvp(fdm, (xy)->sum(sin, xy), xy, ẋẏ)[1]
         ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))
@@ -98,10 +107,10 @@ Base.length(x::DummyType) = size(x.X, 1)
         @test ż_manual ≈ ż_multi
     end
 
-    @testset "j′vp" begin
+    @testset "j′vp(::$T)" for T in (Float64, ComplexF64)
         rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
-        x, y = randn(rng, N), randn(rng, M)
-        z̄ = randn(rng, N + M)
+        x, y = randn(rng, T, N), randn(rng, T, M)
+        z̄ = randn(rng, T, N + M)
         xy = vcat(x, y)
         x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)
         x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))
