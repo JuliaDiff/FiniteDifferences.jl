@@ -1,7 +1,7 @@
-export fdm, backward_fdm, forward_fdm, central_fdm
+export FiniteDifferenceMethod, fdm, backward_fdm, forward_fdm, central_fdm
 
 """
-    FDM.DEFAULT_CONDITION
+    FiniteDifferences.DEFAULT_CONDITION
 
 The default [condition number](https://en.wikipedia.org/wiki/Condition_number) used when
 computing bounds. It provides amplification of the ∞-norm when passed to the function's
@@ -10,7 +10,7 @@ derivatives.
 const DEFAULT_CONDITION = 100
 
 """
-    FDM.TINY
+    FiniteDifferences.TINY
 
 A tiny number added to some quantities to ensure that division by 0 does not occur.
 """
@@ -48,10 +48,10 @@ mutable struct History
 end
 
 """
-    FDMethod
+    FiniteDifferenceMethod
 
 Abstract type for all finite differencing method types.
-Subtypes of `FDMethod` are callable with the signature
+Subtypes of `FiniteDifferenceMethod` are callable with the signature
 
 ```
 method(f, x; kwargs...)
@@ -64,10 +64,10 @@ where the keyword arguments can be any of
 * `condition`: The condition number. See [`DEFAULT_CONDITION`](@ref).
 * `eps`: The assumed roundoff error. Defaults to `eps()` plus [`TINY`](@ref).
 """
-abstract type FDMethod end
+abstract type FiniteDifferenceMethod end
 
-function Base.show(io::IO, x::FDMethod)
-    @printf io "FDMethod:\n"
+function Base.show(io::IO, x::FiniteDifferenceMethod)
+    @printf io "FiniteDifferenceMethod:\n"
     @printf io "  order of method:       %d\n" x.p
     @printf io "  order of derivative:   %d\n" x.q
     @printf io "  grid:                  %s\n" x.grid
@@ -83,7 +83,7 @@ end
 
 for D in (:Forward, :Backward, :Central, :Nonstandard)
     @eval begin
-        struct $D{G<:AbstractVector, C<:AbstractVector} <: FDMethod
+        struct $D{G<:AbstractVector, C<:AbstractVector} <: FiniteDifferenceMethod
             p::Int
             q::Int
             grid::G
@@ -116,24 +116,24 @@ for D in (:Forward, :Backward, :Central)
         end
 
         @doc """
-            FDM.$($(Meta.quot(D)))(p, q; kwargs...)
+            FiniteDifferences.$($(Meta.quot(D)))(p, q; kwargs...)
             $($(Meta.quot(fdmf)))(p, q; kwargs...)
 
         Construct a $($lcname) finite difference method of order `p` to compute the `q`th
         derivative.
-        See [`FDMethod`](@ref) for more details.
+        See [`FiniteDifferenceMethod`](@ref) for more details.
         """
         ($D, $fdmf)
     end
 end
 
 """
-    FDM.Nonstandard(grid, q; kwargs...)
+    FiniteDifferences.Nonstandard(grid, q; kwargs...)
 
 An finite differencing method which is constructed based on a user-defined grid. It is
 nonstandard in the sense that it represents neither forward, backward, nor central
 differencing.
-See [`FDMethod`](@ref) for further details.
+See [`FiniteDifferenceMethod`](@ref) for further details.
 """
 function Nonstandard(grid::AbstractVector{<:Real}, q::Integer; adapt=0, kwargs...)
     p = length(grid)
@@ -145,6 +145,7 @@ end
 
 # Check the method and derivative orders for consistency
 function _check_p_q(p::Integer, q::Integer)
+    q >= 0 || throw(ArgumentError("order of derivative must be nonnegative"))
     q < p || throw(ArgumentError("order of the method must be strictly greater than that " *
                                  "of the derivative"))
     # Check whether the method can be computed. We require the factorial of the
@@ -166,8 +167,8 @@ end
 _estimate_bound(x, cond) = cond * maximum(abs, x) + TINY
 
 """
-    fdm(m::FDMethod, f, x[, Val(false)]; kwargs...) -> Real
-    fdm(m::FDMethod, f, x, Val(true); kwargs...) -> Tuple{FDMethod, Real}
+    fdm(m::FiniteDifferenceMethod, f, x[, Val(false)]; kwargs...) -> Real
+    fdm(m::FiniteDifferenceMethod, f, x, Val(true); kwargs...) -> Tuple{FiniteDifferenceMethod, Real}
 
 Compute the derivative of `f` at `x` using the finite differencing method `m`.
 The optional `Val` argument dictates whether the method should be returned alongside the
@@ -186,7 +187,7 @@ The recognized keywords are:
     `adapt` greater than 0 when `m::Nonstandard` results in an error.
 
 !!! note
-    Calling [`FDMethod`](@ref) objects is equivalent to passing them to `fdm`.
+    Calling [`FiniteDifferenceMethod`](@ref) objects is equivalent to passing them to `fdm`.
 
 # Examples
 
@@ -195,7 +196,7 @@ julia> fdm(central_fdm(5, 1), sin, 1; adapt=2)
 0.5403023058681039
 
 julia> fdm(central_fdm(2, 1), exp, 0, Val(true))
-(FDMethod:
+(FiniteDifferenceMethod:
   order of method:       2
   order of derivative:   1
   grid:                  [-1, 1]
@@ -217,13 +218,17 @@ function fdm(
     eps=(Base.eps(float(bound)) + TINY),
     adapt=m.history.adapt,
     max_step=0.1,
-) where M<:FDMethod
+) where M<:FiniteDifferenceMethod
     if M <: Nonstandard && adapt > 0
         throw(ArgumentError("can't adaptively compute bounds over Nonstandard grids"))
     end
     eps > 0 || throw(ArgumentError("eps must be positive, got $eps"))
     bound > 0 || throw(ArgumentError("bound must be positive, got $bound"))
     0 <= adapt < 20 - m.p || throw(ArgumentError("can't perform $adapt adaptation steps"))
+
+    # The below calculation can fail for `m.q == 0`, because then `C₂` may be zero. We
+    # therefore handle this edge case here.
+    m.q == 0 && return m, f(x)
 
     p = m.p
     q = m.q
@@ -265,7 +270,7 @@ function fdm(
     return m, dfdx
 end
 
-function fdm(m::FDMethod, f, x, ::Val{false}=Val(false); kwargs...)
+function fdm(m::FiniteDifferenceMethod, f, x, ::Val{false}=Val(false); kwargs...)
     _, dfdx = fdm(m, f, x, Val(true); kwargs...)
     return dfdx
 end
