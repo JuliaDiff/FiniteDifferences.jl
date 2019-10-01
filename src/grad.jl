@@ -60,23 +60,24 @@ function jacobian(fdm, f, xs...; dim::Int=length(f(xs...)))
 end
 
 """
-    _jvp(fdm, f, x::Vector{<:Real}, ẋ::AbstractVector{<:Real})
+    _jvp(fdm, f, x::Vector{<:Number}, ẋ::AbstractVector{<:Number})
 
 Convenience function to compute `jacobian(f, x) * ẋ`.
 """
-_jvp(fdm, f, x::Vector{<:Real}, ẋ::AV{<:Real}) = jacobian(fdm, f, x) * ẋ
+_jvp(fdm, f, x::Vector{<:Number}, ẋ::AV{<:Number}) = fdm(ε -> f(x .+ ε .* ẋ), zero(eltype(x)))
 
 """
-    _j′vp(fdm, f, ȳ::AbstractVector{<:Real}, x::Vector{<:Real})
+    _j′vp(fdm, f, ȳ::AbstractVector{<:Number}, x::Vector{<:Number})
 
-Convenience function to compute `jacobian(f, x)' * ȳ`.
+Convenience function to compute `transpose(jacobian(f, x)) * ȳ`.
 """
-_j′vp(fdm, f, ȳ::AV{<:Real}, x::Vector{<:Real}) = jacobian(fdm, f, x; dim=length(ȳ))' * ȳ
+_j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x; dim=length(ȳ))) * ȳ
 
 """
     jvp(fdm, f, x, ẋ)
 
-Compute a Jacobian-vector product with any types of arguments for which `to_vec` is defined.
+Compute a Jacobian-vector product with any types of arguments for which [`to_vec`](@ref)
+is defined.
 """
 function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
     x_vec, vec_to_x = to_vec(x)
@@ -91,7 +92,7 @@ end
 """
     j′vp(fdm, f, ȳ, x...)
 
-Compute an adjoint with any types of arguments for which `to_vec` is defined.
+Compute an adjoint with any types of arguments for which [`to_vec`](@ref) is defined.
 """
 function j′vp(fdm, f, ȳ, x)
     x_vec, vec_to_x = to_vec(x)
@@ -101,14 +102,14 @@ end
 j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)
 
 """
-    to_vec(x)
+    to_vec(x) -> Tuple{<:AbstractVector, <:Function}
 
 Transform `x` into a `Vector`, and return a closure which inverts the transformation.
 """
-to_vec(x::Real) = ([x], first)
+to_vec(x::Number) = ([x], first)
 
 # Vectors
-to_vec(x::Vector{<:Real}) = (x, identity)
+to_vec(x::Vector{<:Number}) = (x, identity)
 function to_vec(x::Vector)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
@@ -119,7 +120,7 @@ function to_vec(x::Vector)
 end
 
 # Arrays
-to_vec(x::Array{<:Real}) = vec(x), x_vec->reshape(x_vec, size(x))
+to_vec(x::Array{<:Number}) = vec(x), x_vec->reshape(x_vec, size(x))
 function to_vec(x::Array)
     x_vec, back = to_vec(reshape(x, :))
     return x_vec, x_vec->reshape(back(x_vec), size(x))
@@ -133,9 +134,11 @@ end
 to_vec(x::Symmetric) = vec(Matrix(x)), x_vec->Symmetric(reshape(x_vec, size(x)))
 to_vec(X::Diagonal) = vec(Matrix(X)), x_vec->Diagonal(reshape(x_vec, size(X)...))
 
-function to_vec(X::T) where T<:Union{Adjoint,Transpose}
-    U = T.name.wrapper
-    return vec(Matrix(X)), x_vec->U(permutedims(reshape(x_vec, size(X))))
+function to_vec(X::Transpose)
+    return vec(Matrix(X)), x_vec->Transpose(permutedims(reshape(x_vec, size(X))))
+end
+function to_vec(X::Adjoint)
+    return vec(Matrix(X)), x_vec->Adjoint(conj!(permutedims(reshape(x_vec, size(X)))))
 end
 
 # Non-array data structures

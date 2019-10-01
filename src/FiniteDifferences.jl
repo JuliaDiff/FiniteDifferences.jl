@@ -1,4 +1,4 @@
-module FDM
+module FiniteDifferences
 
     using Printf, LinearAlgebra
 

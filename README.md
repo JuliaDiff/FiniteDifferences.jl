@@ -1,13 +1,12 @@
-# FDM.jl: Finite Difference Methods
+# FiniteDifferences.jl: Finite Difference Methods
 
-[![Build Status](https://travis-ci.org/invenia/FDM.jl.svg?branch=master)](https://travis-ci.org/invenia/FDM.jl)
-[![Windows Build status](https://ci.appveyor.com/api/projects/status/g0gun5dxbkt631am/branch/master?svg=true)](https://ci.appveyor.com/project/invenia/fdm-jl/branch/master)
-[![codecov.io](http://codecov.io/github/invenia/FDM.jl/coverage.svg?branch=master)](http://codecov.io/github/invenia/FDM.jl?branch=master)
-[![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://invenia.github.io/FDM.jl/latest/)
+[![Build Status](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl.svg?branch=master)](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl)
+[![codecov.io](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl/coverage.svg?branch=master)](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl?branch=master)
+[![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliadiff.github.io/FiniteDifferences.jl/latest/)
 
-FDM.jl estimates derivatives with finite differences.
+FiniteDifferences.jl estimates derivatives with [finite differences](https://en.wikipedia.org/wiki/Finite_difference).
 
-See also [FDM](https://github.com/wesselb/fdm).
+See also the Python package [FDM](https://github.com/wesselb/fdm).
 
 ## Examples
 
@@ -24,11 +23,11 @@ julia> central_fdm(5, 2)(sin, 1) + sin(1)
 9.747314066999024e-12
 ```
 
-Construct a FDM on a custom grid:
+Construct a FiniteDifferences on a custom grid:
 
 ```julia
 julia> method, report = fdm([-2, 0, 5], 1, report=true)
-(FDM.method, FDMReport:
+(FiniteDifferences.method, FiniteDifferencesReport:
   order of method:       3
   order of derivative:   1
   grid:                  [-2, 0, 5]
@@ -52,3 +51,7 @@ f (generic function with 1 method)
 julia> central_fdm(5, 1)(ε -> f([1, 1, 1] + ε * [1, 2, 3]), 0) - 6
 -2.922107000813412e-13
 ```
+
+## FDM.jl
+
+This package was formerly called FDM.jl. We recommend users of FDM.jl [update to FiniteDifferences.jl](https://github.com/JuliaDiff/FiniteDifferences.jl/issues/37).
