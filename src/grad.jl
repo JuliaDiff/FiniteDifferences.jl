@@ -29,6 +29,7 @@ function grad(fdm, f, x::AbstractArray{T}) where T
 end
 
 grad(fdm, f, x::Real) = fdm(f, x)
+grad(fdm, f, x::Tuple) = grad(fdm, (xs...)->f(xs), x...)
 
 function grad(fdm, f, xs...)
     return ntuple(length(xs)) do k
