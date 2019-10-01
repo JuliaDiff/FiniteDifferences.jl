@@ -38,7 +38,7 @@ function grad(fdm, f, xs...)
 end
 
 """
-    jacobian(fdm, f, xs::Union{Real, AbstractArray{<:Real}}[; dim::Int=length(f(x))])
+    jacobian(fdm, f, xs::Union{Real, AbstractArray{<:Real}}; dim::Int=length(f(x)))
 
 Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `D` vector. If
 `D` is not provided, then `f(x)` is computed once to determine the output size.
