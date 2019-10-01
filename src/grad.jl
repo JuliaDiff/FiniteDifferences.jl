@@ -8,7 +8,7 @@ Approximate the gradient of `f` at `xs...` using `fdm`. Assumes that `f(xs...)` 
 """
 function grad end
 
-function grad(fdm, f, x::AbstractArray{T}) where T
+function grad(fdm, f, x::AbstractArray{T}) where T <: Number
     dx = similar(x)
     tmp = similar(x)
     for k in eachindex(x)
@@ -49,7 +49,7 @@ end
 Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `D` vector. If
 `D` is not provided, then `f(x)` is computed once to determine the output size.
 """
-function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; len::Int=length(f(x))) where {T <: Real}
+function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; len::Int=length(f(x))) where {T <: Number}
     J = Matrix{float(T)}(undef, len, length(x))
     for d in 1:len
         gs = grad(fdm, x->f(x)[d], x)
