@@ -1,13 +1,5 @@
 export grad, jacobian, jvp, j′vp, to_vec
-function replace_arg(x, xs::Tuple, k::Int)
-    return ntuple(length(xs)) do p
-        if p == k
-            x
-        else
-            xs[p]
-        end
-    end
-end
+replace_arg(x, xs::Tuple, k::Int) = ntuple(p -> p == k ? x : xs[p], length(xs))
 
 """
     grad(fdm, f, xs...)
@@ -30,6 +22,19 @@ end
 
 grad(fdm, f, x::Real) = fdm(f, x)
 grad(fdm, f, x::Tuple) = grad(fdm, (xs...)->f(xs), x...)
+
+function grad(fdm, f, d::Dict{K, V}) where {K, V}
+    dd = Dict{K, V}()
+    for (k, v) in d
+        function f′(x)
+            tmp = copy(d)
+            tmp[k] = x
+            return f(tmp)
+        end
+        dd[k] = grad(fdm, f′, v)
+    end
+    return dd
+end
 
 function grad(fdm, f, xs...)
     return ntuple(length(xs)) do k
