@@ -44,14 +44,14 @@ function grad(fdm, f, xs...)
 end
 
 """
-    jacobian(fdm, f, xs::Union{Real, AbstractArray{<:Real}}; dim::Int=length(f(x)))
+    jacobian(fdm, f, xs::Union{Real, AbstractArray{<:Real}}; len::Int=length(f(x)))
 
 Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `D` vector. If
 `D` is not provided, then `f(x)` is computed once to determine the output size.
 """
-function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; dim::Int=length(f(x))) where {T <: Real}
-    J = Matrix{float(T)}(undef, dim, length(x))
-    for d in 1:dim
+function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; len::Int=length(f(x))) where {T <: Real}
+    J = Matrix{float(T)}(undef, len, length(x))
+    for d in 1:len
         gs = grad(fdm, x->f(x)[d], x)
         for k in 1:length(x)
             J[d, k] = gs[k]
@@ -60,9 +60,9 @@ function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; dim::Int=length(f(x))) 
     return J
 end
 
-function jacobian(fdm, f, xs...; dim::Int=length(f(xs...)))
+function jacobian(fdm, f, xs...; len::Int=length(f(xs...)))
     return ntuple(length(xs)) do k
-        jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; dim=dim)
+        jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; len=len)
     end
 end
 
@@ -78,7 +78,7 @@ _jvp(fdm, f, x::Vector{<:Number}, ẋ::AV{<:Number}) = fdm(ε -> f(x .+ ε .* x�
 
 Convenience function to compute `transpose(jacobian(f, x)) * ȳ`.
 """
-_j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x; dim=length(ȳ))) * ȳ
+_j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x; len=length(ȳ))) * ȳ
 
 """
     jvp(fdm, f, x, ẋ)

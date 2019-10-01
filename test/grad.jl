@@ -26,8 +26,8 @@ Base.length(x::DummyType) = size(x.X, 1)
 
     function check_jac_and_jvp_and_j′vp(fdm, f, ȳ, x, ẋ, J_exact)
         xc = copy(x)
-        @test jacobian(fdm, f, x; dim=length(ȳ)) ≈ J_exact
-        @test jacobian(fdm, f, x) == jacobian(fdm, f, x; dim=length(ȳ))
+        @test jacobian(fdm, f, x; len=length(ȳ)) ≈ J_exact
+        @test jacobian(fdm, f, x) == jacobian(fdm, f, x; len=length(ȳ))
         @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
         @test _j′vp(fdm, f, ȳ, x) ≈ transpose(J_exact) * ȳ
         @test xc == x
