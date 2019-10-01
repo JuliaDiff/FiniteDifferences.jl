@@ -26,8 +26,8 @@ Base.length(x::DummyType) = size(x.X, 1)
 
     function check_jac_and_jvp_and_j′vp(fdm, f, ȳ, x, ẋ, J_exact)
         xc = copy(x)
-        @test jacobian(fdm, f, x, length(ȳ)) ≈ J_exact
-        @test jacobian(fdm, f, x) == jacobian(fdm, f, x, length(ȳ))
+        @test jacobian(fdm, f, x; dim=length(ȳ)) ≈ J_exact
+        @test jacobian(fdm, f, x) == jacobian(fdm, f, x; dim=length(ȳ))
         @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
         @test _j′vp(fdm, f, ȳ, x) ≈ J_exact' * ȳ
         @test xc == x
@@ -42,6 +42,21 @@ Base.length(x::DummyType) = size(x.X, 1)
         @test Ac == A
         check_jac_and_jvp_and_j′vp(fdm, x->sin.(A * x), ȳ, x, ẋ, cos.(A * x) .* A)
         @test Ac == A
+    end
+
+    @testset "multi vars jacobian" begin
+        fdm = central_fdm(5, 1)
+        f1(x, y) = x * y + x
+        x, y = rand(3, 3), rand(3, 3)
+        jac_xs = jacobian(fdm, f1, x, y)
+        @test jac_xs[1] ≈ jacobian(fdm, x->f1(x, y), x)
+        @test jac_xs[2] ≈ jacobian(fdm, y->f1(x, y), y)
+
+        # mixed scalar and matrices
+        x, y = rand(3, 3), 2
+        jac_xs = jacobian(fdm, f1, x, y)
+        @test jac_xs[1] ≈ jacobian(fdm, x->f1(x, y), x)
+        @test jac_xs[2] ≈ jacobian(fdm, y->f1(x, y), y)
     end
 
     function test_to_vec(x)

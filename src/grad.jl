@@ -1,50 +1,62 @@
-"""
-    grad(fdm, f, x::AbstractVector)
+export grad, jacobian
+function replace_arg(x, xs::Tuple, k::Int)
+    return ntuple(length(xs)) do p
+        if p == k
+            x
+        else
+            xs[p]
+        end
+    end
+end
 
-Approximate the gradient of `f` at `x` using `fdm`. Assumes that `f(x)` is scalar.
 """
-function grad(fdm, f, x::Vector{T}) where T<:Real
-    v, dx, tmp = fill(zero(T), size(x)), similar(x), similar(x)
-    for n in eachindex(x)
-        v[n] = one(T)
-        dx[n] = fdm(function(ϵ)
-                tmp .= x .+ ϵ .* v
-                return f(tmp)
-            end,
-            zero(T),
-        )
-        v[n] = zero(T)
+    grad(fdm, f, xs...)
+
+Approximate the gradient of `f` at `xs...` using `fdm`. Assumes that `f(xs...)` is scalar.
+"""
+function grad end
+
+function grad(fdm, f, x::AbstractArray{T}) where T
+    dx, tmp = similar(x), similar(x)
+    for k in eachindex(x)
+        dx[k] = fdm(zero(T)) do ϵ
+            tmp .= x
+            tmp[k] += ϵ
+            return f(tmp)
+        end
     end
     return dx
 end
 
+grad(fdm, f, x::Real) = fdm(f, x)
+
+function grad(fdm, f, xs...)
+    return ntuple(length(xs)) do k
+        grad(fdm, x->f(replace_arg(x, xs, k)...), xs[k])
+    end
+end
+
 """
-    jacobian(fdm, f, x::AbstractVector{<:Real}, D::Int)
-    jacobian(fdm, f, x::AbstractVector{<:Real})
+    jacobian(fdm, f, xs::Union{Real, AbstractArray{<:Real}}[; dim::Int=length(f(x))])
 
 Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `D` vector. If
 `D` is not provided, then `f(x)` is computed once to determine the output size.
 """
-function jacobian(fdm, f, x::Vector{T}, D::Int) where {T<:Real}
-    J = Matrix{T}(undef, D, length(x))
-    for d in 1:D
-        J[d, :] = grad(fdm, x->f(x)[d], x)
+function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; dim::Int=length(f(x))) where {T <: Real}
+    J = Matrix{float(T)}(undef, dim, length(x))
+    for d in 1:dim
+        gs = grad(fdm, x->f(x)[d], x)
+        for k in 1:length(x)
+            J[d, k] = gs[k]
+        end
     end
     return J
 end
-jacobian(fdm, f, x::Vector{<:Real}) = jacobian(fdm, f, x, length(f(x)))
 
-function jacobian(fdm, f, x::Real, D::Int)
-    x_vec, vec_to_x = to_vec(x)
-    return jacobian(fdm, x->f(vec_to_x(x)), x_vec, D)
-end
-
-replace_arg(k, xs::Tuple, x) = (xs[1:k-1]..., x, xs[k+1:end]...)
-
-function jacobian(fdm, f, xs...)
-    D = length(f(xs...))
-    N = length(xs)
-    return ntuple(k->jacobian(fdm, x->f(replace_arg(k, xs, x)), xs[k], D), N)
+function jacobian(fdm, f, xs...; dim::Int=length(f(xs...)))
+    return ntuple(length(xs)) do k
+        jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; dim=dim)
+    end
 end
 
 """
@@ -59,7 +71,7 @@ _jvp(fdm, f, x::Vector{<:Real}, ẋ::AV{<:Real}) = jacobian(fdm, f, x) * ẋ
 
 Convenience function to compute `jacobian(f, x)' * ȳ`.
 """
-_j′vp(fdm, f, ȳ::AV{<:Real}, x::Vector{<:Real}) = jacobian(fdm, f, x, length(ȳ))' * ȳ
+_j′vp(fdm, f, ȳ::AV{<:Real}, x::Vector{<:Real}) = jacobian(fdm, f, x; dim=length(ȳ))' * ȳ
 
 """
     jvp(fdm, f, x, ẋ)
