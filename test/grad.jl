@@ -44,7 +44,7 @@ Base.length(x::DummyType) = size(x.X, 1)
         @test Ac == A
     end
 
-    @testset "multi vars jacobian" begin
+    @testset "multi vars jacobian/grad" begin
         fdm = central_fdm(5, 1)
         f1(x, y) = x * y + x
         x, y = rand(3, 3), rand(3, 3)
@@ -57,6 +57,17 @@ Base.length(x::DummyType) = size(x.X, 1)
         jac_xs = jacobian(fdm, f1, x, y)
         @test jac_xs[1] ≈ jacobian(fdm, x->f1(x, y), x)
         @test jac_xs[2] ≈ jacobian(fdm, y->f1(x, y), y)
+
+        f2(x, y) = sum(x * y + x)
+        x, y = rand(3, 3), rand(3, 3)
+        dxs = grad(fdm, f2, x, y)
+        @test dxs[1] ≈ grad(fdm, x->f2(x, y), x)
+        @test dxs[2] ≈ grad(fdm, y->f2(x, y), y)
+
+        x, y = rand(3, 3), 2
+        dxs = grad(fdm, f2, x, y)
+        @test dxs[1] ≈ grad(fdm, x->f2(x, y), x)
+        @test dxs[2] ≈ grad(fdm, y->f2(x, y), y)
     end
 
     function test_to_vec(x)
