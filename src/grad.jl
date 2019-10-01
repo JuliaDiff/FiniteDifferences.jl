@@ -17,7 +17,8 @@ Approximate the gradient of `f` at `xs...` using `fdm`. Assumes that `f(xs...)` 
 function grad end
 
 function grad(fdm, f, x::AbstractArray{T}) where T
-    dx, tmp = similar(x), similar(x)
+    dx = similar(x)
+    tmp = similar(x)
     for k in eachindex(x)
         dx[k] = fdm(zero(T)) do ϵ
             tmp .= x
