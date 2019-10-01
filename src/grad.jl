@@ -37,6 +37,11 @@ function grad(fdm, f, d::Dict{K, V}) where {K, V}
     return dd
 end
 
+function grad(fdm, f, x)
+    v, back = to_vec(x)
+    return back(grad(fdm, x->f(back(v)), v))
+end
+
 function grad(fdm, f, xs...)
     return ntuple(length(xs)) do k
         grad(fdm, x->f(replace_arg(x, xs, k)...), xs[k])
