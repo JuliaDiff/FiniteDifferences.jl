@@ -26,8 +26,8 @@ Base.length(x::DummyType) = size(x.X, 1)
 
     function check_jac_and_jvp_and_j′vp(fdm, f, ȳ, x, ẋ, J_exact)
         xc = copy(x)
-        @test jacobian(fdm, f, x, length(ȳ)) ≈ J_exact
-        @test jacobian(fdm, f, x) == jacobian(fdm, f, x, length(ȳ))
+        @test jacobian(fdm, f, x; len=length(ȳ)) ≈ J_exact
+        @test jacobian(fdm, f, x) == jacobian(fdm, f, x; len=length(ȳ))
         @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
         @test _j′vp(fdm, f, ȳ, x) ≈ transpose(J_exact) * ȳ
         @test xc == x
@@ -42,6 +42,62 @@ Base.length(x::DummyType) = size(x.X, 1)
         @test Ac == A
         check_jac_and_jvp_and_j′vp(fdm, x->sin.(A * x), ȳ, x, ẋ, cos.(A * x) .* A)
         @test Ac == A
+    end
+
+    @testset "multi vars jacobian/grad" begin
+        rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
+        
+        f1(x, y) = x * y + x
+        f2(x, y) = sum(x * y + x)
+        f3(x::Tuple) = sum(x[1]) + x[2]
+        f4(d::Dict) = sum(d[:x]) + d[:y]
+
+        @testset "jacobian" begin
+            @testset "check multiple matrices" begin
+                x, y = rand(rng, 3, 3), rand(rng, 3, 3)
+                jac_xs = jacobian(fdm, f1, x, y)
+                @test jac_xs[1] ≈ jacobian(fdm, x->f1(x, y), x)
+                @test jac_xs[2] ≈ jacobian(fdm, y->f1(x, y), y)
+            end
+
+            @testset "check mixed scalar and matrices" begin
+                x, y = rand(3, 3), 2
+                jac_xs = jacobian(fdm, f1, x, y)
+                @test jac_xs[1] ≈ jacobian(fdm, x->f1(x, y), x)
+                @test jac_xs[2] ≈ jacobian(fdm, y->f1(x, y), y)
+            end
+        end
+
+        @testset "grad" begin
+            @testset "check multiple matrices" begin
+                x, y = rand(rng, 3, 3), rand(rng, 3, 3)
+                dxs = grad(fdm, f2, x, y)
+                @test dxs[1] ≈ grad(fdm, x->f2(x, y), x)
+                @test dxs[2] ≈ grad(fdm, y->f2(x, y), y)
+            end
+
+            @testset "check mixed scalar & matrices" begin
+                x, y = rand(rng, 3, 3), 2
+                dxs = grad(fdm, f2, x, y)
+                @test dxs[1] ≈ grad(fdm, x->f2(x, y), x)
+                @test dxs[2] ≈ grad(fdm, y->f2(x, y), y)        
+            end
+
+            @testset "check tuple" begin
+                x, y = rand(rng, 3, 3), 2
+                dxs = grad(fdm, f3, (x, y))
+                @test dxs[1] ≈ grad(fdm, x->f3((x, y)), x)
+                @test dxs[2] ≈ grad(fdm, y->f3((x, y)), y)    
+            end
+
+            @testset "check dict" begin
+                x, y = rand(rng, 3, 3), 2
+                d = Dict(:x=>x, :y=>y)
+                dxs = grad(fdm, f4, d)
+                @test dxs[:x] ≈ grad(fdm, x->f3((x, y)), x)
+                @test dxs[:y] ≈ grad(fdm, y->f3((x, y)), y)
+            end
+        end
     end
 
     function test_to_vec(x)

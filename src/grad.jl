@@ -1,40 +1,75 @@
 export grad, jacobian, jvp, j′vp, to_vec
+replace_arg(x, xs::Tuple, k::Int) = ntuple(p -> p == k ? x : xs[p], length(xs))
 
 """
-    grad(fdm, f, x::Vector{<:Number})
+    grad(fdm, f, xs...)
 
-Approximate the gradient of `f` at `x` using `fdm`. Assumes that `f(x)` is scalar.
+Approximate the gradient of `f` at `xs...` using `fdm`. Assumes that `f(xs...)` is scalar.
 """
-function grad(fdm, f, x::Vector{T}) where T<:Number
-    v, dx, tmp = fill(zero(T), size(x)), similar(x), similar(x)
-    for n in eachindex(x)
-        v[n] = one(T)
-        dx[n] = fdm(function(ϵ)
-                tmp .= x .+ ϵ .* v
-                return f(tmp)
-            end,
-            zero(T),
-        )
-        v[n] = zero(T)
+function grad end
+
+function grad(fdm, f, x::AbstractArray{T}) where T <: Number
+    dx = similar(x)
+    tmp = similar(x)
+    for k in eachindex(x)
+        dx[k] = fdm(zero(T)) do ϵ
+            tmp .= x
+            tmp[k] += ϵ
+            return f(tmp)
+        end
     end
     return dx
 end
 
+grad(fdm, f, x::Real) = fdm(f, x)
+grad(fdm, f, x::Tuple) = grad(fdm, (xs...)->f(xs), x...)
+
+function grad(fdm, f, d::Dict{K, V}) where {K, V}
+    dd = Dict{K, V}()
+    for (k, v) in d
+        function f′(x)
+            tmp = copy(d)
+            tmp[k] = x
+            return f(tmp)
+        end
+        dd[k] = grad(fdm, f′, v)
+    end
+    return dd
+end
+
+function grad(fdm, f, x)
+    v, back = to_vec(x)
+    return back(grad(fdm, x->f(back(v)), v))
+end
+
+function grad(fdm, f, xs...)
+    return ntuple(length(xs)) do k
+        grad(fdm, x->f(replace_arg(x, xs, k)...), xs[k])
+    end
+end
+
 """
-    jacobian(fdm, f, x::Vector{<:Number}, D::Int)
-    jacobian(fdm, f, x::Vector{<:Number})
+    jacobian(fdm, f, xs::Union{Real, AbstractArray{<:Real}}; len::Int=length(f(x)))
 
 Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `D` vector. If
 `D` is not provided, then `f(x)` is computed once to determine the output size.
 """
-function jacobian(fdm, f, x::Vector{T}, D::Int) where {T<:Number}
-    J = Matrix{T}(undef, D, length(x))
-    for d in 1:D
-        J[d, :] = grad(fdm, x->f(x)[d], x)
+function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; len::Int=length(f(x))) where {T <: Number}
+    J = Matrix{float(T)}(undef, len, length(x))
+    for d in 1:len
+        gs = grad(fdm, x->f(x)[d], x)
+        for k in 1:length(x)
+            J[d, k] = gs[k]
+        end
     end
     return J
 end
-jacobian(fdm, f, x::Vector{<:Number}) = jacobian(fdm, f, x, length(f(x)))
+
+function jacobian(fdm, f, xs...; len::Int=length(f(xs...)))
+    return ntuple(length(xs)) do k
+        jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; len=len)
+    end
+end
 
 """
     _jvp(fdm, f, x::Vector{<:Number}, ẋ::AbstractVector{<:Number})
@@ -48,7 +83,7 @@ _jvp(fdm, f, x::Vector{<:Number}, ẋ::AV{<:Number}) = fdm(ε -> f(x .+ ε .* x�
 
 Convenience function to compute `transpose(jacobian(f, x)) * ȳ`.
 """
-_j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x, length(ȳ))) * ȳ
+_j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x; len=length(ȳ))) * ȳ
 
 """
     jvp(fdm, f, x, ẋ)
