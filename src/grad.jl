@@ -51,8 +51,8 @@ end
 """
     jacobian(fdm, f, xs::Union{Real, AbstractArray{<:Real}}; len::Int=length(f(x)))
 
-Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `D` vector. If
-`D` is not provided, then `f(x)` is computed once to determine the output size.
+Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `len` vector. If
+`len` is not provided, then `f(x)` is computed once to determine the output size.
 """
 function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; len::Int=length(f(x))) where {T <: Number}
     J = Matrix{float(T)}(undef, len, length(x))
