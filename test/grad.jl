@@ -20,14 +20,14 @@ Base.length(x::DummyType) = size(x.X, 1)
         rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
         x = randn(rng, T, 2)
         xc = copy(x)
-        @test grad(fdm, x->sin(x[1]) + cos(x[2]), x) ≈ [cos(x[1]), -sin(x[2])]
+        @test grad(fdm, x->sin(x[1]) + cos(x[2]), x)[1] ≈ [cos(x[1]), -sin(x[2])]
         @test xc == x
     end
 
     function check_jac_and_jvp_and_j′vp(fdm, f, ȳ, x, ẋ, J_exact)
         xc = copy(x)
-        @test jacobian(fdm, f, x; len=length(ȳ)) ≈ J_exact
-        @test jacobian(fdm, f, x) == jacobian(fdm, f, x; len=length(ȳ))
+        @test jacobian(fdm, f, x; len=length(ȳ))[1] ≈ J_exact
+        @test jacobian(fdm, f, x)[1] == jacobian(fdm, f, x; len=length(ȳ))[1]
         @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
         @test _j′vp(fdm, f, ȳ, x) ≈ transpose(J_exact) * ȳ
         @test xc == x
@@ -56,15 +56,15 @@ Base.length(x::DummyType) = size(x.X, 1)
             @testset "check multiple matrices" begin
                 x, y = rand(rng, 3, 3), rand(rng, 3, 3)
                 jac_xs = jacobian(fdm, f1, x, y)
-                @test jac_xs[1] ≈ jacobian(fdm, x->f1(x, y), x)
-                @test jac_xs[2] ≈ jacobian(fdm, y->f1(x, y), y)
+                @test jac_xs[1] ≈ jacobian(fdm, x->f1(x, y), x)[1]
+                @test jac_xs[2] ≈ jacobian(fdm, y->f1(x, y), y)[1]
             end
 
             @testset "check mixed scalar and matrices" begin
                 x, y = rand(3, 3), 2
                 jac_xs = jacobian(fdm, f1, x, y)
-                @test jac_xs[1] ≈ jacobian(fdm, x->f1(x, y), x)
-                @test jac_xs[2] ≈ jacobian(fdm, y->f1(x, y), y)
+                @test jac_xs[1] ≈ jacobian(fdm, x->f1(x, y), x)[1]
+                @test jac_xs[2] ≈ jacobian(fdm, y->f1(x, y), y)[1]
             end
         end
 
@@ -72,30 +72,30 @@ Base.length(x::DummyType) = size(x.X, 1)
             @testset "check multiple matrices" begin
                 x, y = rand(rng, 3, 3), rand(rng, 3, 3)
                 dxs = grad(fdm, f2, x, y)
-                @test dxs[1] ≈ grad(fdm, x->f2(x, y), x)
-                @test dxs[2] ≈ grad(fdm, y->f2(x, y), y)
+                @test dxs[1] ≈ grad(fdm, x->f2(x, y), x)[1]
+                @test dxs[2] ≈ grad(fdm, y->f2(x, y), y)[1]
             end
 
             @testset "check mixed scalar & matrices" begin
                 x, y = rand(rng, 3, 3), 2
                 dxs = grad(fdm, f2, x, y)
-                @test dxs[1] ≈ grad(fdm, x->f2(x, y), x)
-                @test dxs[2] ≈ grad(fdm, y->f2(x, y), y)        
+                @test dxs[1] ≈ grad(fdm, x->f2(x, y), x)[1]
+                @test dxs[2] ≈ grad(fdm, y->f2(x, y), y)[1]
             end
 
             @testset "check tuple" begin
                 x, y = rand(rng, 3, 3), 2
-                dxs = grad(fdm, f3, (x, y))
-                @test dxs[1] ≈ grad(fdm, x->f3((x, y)), x)
-                @test dxs[2] ≈ grad(fdm, y->f3((x, y)), y)    
+                dxs = grad(fdm, f3, (x, y))[1]
+                @test dxs[1] ≈ grad(fdm, x->f3((x, y)), x)[1]
+                @test dxs[2] ≈ grad(fdm, y->f3((x, y)), y)[1]   
             end
 
             @testset "check dict" begin
                 x, y = rand(rng, 3, 3), 2
                 d = Dict(:x=>x, :y=>y)
-                dxs = grad(fdm, f4, d)
-                @test dxs[:x] ≈ grad(fdm, x->f3((x, y)), x)
-                @test dxs[:y] ≈ grad(fdm, y->f3((x, y)), y)
+                dxs = grad(fdm, f4, d)[1]
+                @test dxs[:x] ≈ grad(fdm, x->f3((x, y)), x)[1]
+                @test dxs[:y] ≈ grad(fdm, y->f3((x, y)), y)[1]
             end
         end
     end
