@@ -18,11 +18,11 @@ function grad(fdm, f, x::AbstractArray{T}) where T <: Number
             return f(tmp)
         end
     end
-    return dx
+    return (dx, )
 end
 
-grad(fdm, f, x::Real) = fdm(f, x)
-grad(fdm, f, x::Tuple) = grad(fdm, (xs...)->f(xs), x...)
+grad(fdm, f, x::Real) = (fdm(f, x), )
+grad(fdm, f, x::Tuple) = (grad(fdm, (xs...)->f(xs), x...), )
 
 function grad(fdm, f, d::Dict{K, V}) where {K, V}
     dd = Dict{K, V}()
@@ -32,19 +32,19 @@ function grad(fdm, f, d::Dict{K, V}) where {K, V}
             tmp[k] = x
             return f(tmp)
         end
-        dd[k] = grad(fdm, f′, v)
+        dd[k] = grad(fdm, f′, v)[1]
     end
-    return dd
+    return (dd, )
 end
 
 function grad(fdm, f, x)
     v, back = to_vec(x)
-    return back(grad(fdm, x->f(back(v)), v))
+    return (back(grad(fdm, x->f(back(v)), v)), )
 end
 
 function grad(fdm, f, xs...)
     return ntuple(length(xs)) do k
-        grad(fdm, x->f(replace_arg(x, xs, k)...), xs[k])
+        grad(fdm, x->f(replace_arg(x, xs, k)...), xs[k])[1]
     end
 end
 
@@ -57,17 +57,17 @@ Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `len
 function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; len::Int=length(f(x))) where {T <: Number}
     J = Matrix{float(T)}(undef, len, length(x))
     for d in 1:len
-        gs = grad(fdm, x->f(x)[d], x)
+        gs = grad(fdm, x->f(x)[d], x)[1]
         for k in 1:length(x)
             J[d, k] = gs[k]
         end
     end
-    return J
+    return (J, )
 end
 
 function jacobian(fdm, f, xs...; len::Int=length(f(xs...)))
     return ntuple(length(xs)) do k
-        jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; len=len)
+        jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; len=len)[1]
     end
 end
 
@@ -83,7 +83,7 @@ _jvp(fdm, f, x::Vector{<:Number}, ẋ::AV{<:Number}) = fdm(ε -> f(x .+ ε .* x�
 
 Convenience function to compute `transpose(jacobian(f, x)) * ȳ`.
 """
-_j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x; len=length(ȳ))) * ȳ
+_j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x; len=length(ȳ))[1]) * ȳ
 
 """
     jvp(fdm, f, x, ẋ)
@@ -98,7 +98,7 @@ function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
 end
 function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
     x, ẋ = collect(zip(xẋs...))
-    return jvp(fdm, xs->f(xs...), (x, ẋ))
+    return jvp(fdm, xs->f(xs...)[1], (x, ẋ))
 end
 
 """
@@ -109,9 +109,9 @@ Compute an adjoint with any types of arguments for which [`to_vec`](@ref) is def
 function j′vp(fdm, f, ȳ, x)
     x_vec, vec_to_x = to_vec(x)
     ȳ_vec, _ = to_vec(ȳ)
-    return vec_to_x(_j′vp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], ȳ_vec, x_vec))
+    return (vec_to_x(_j′vp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], ȳ_vec, x_vec)), )
 end
-j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)
+j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]
 
 """
     to_vec(x) -> Tuple{<:AbstractVector, <:Function}
