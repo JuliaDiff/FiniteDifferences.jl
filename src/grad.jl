@@ -94,7 +94,7 @@ is defined.
 function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
     x_vec, vec_to_x = to_vec(x)
     _, vec_to_y = to_vec(f(x))
-    return (vec_to_y(_jvp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1])), )
+    return vec_to_y(_jvp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1]))
 end
 function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
     x, ẋ = collect(zip(xẋs...))

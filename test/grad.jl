@@ -157,8 +157,8 @@ Base.length(x::DummyType) = size(x.X, 1)
         ẋ, ẏ = randn(rng, T, N), randn(rng, T, M)
         xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
         ż_manual = _jvp(fdm, (xy)->sum(sin, xy), xy, ẋẏ)[1]
-        ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))[1]
-        ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))[1]
+        ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))
+        ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))
         @test ż_manual ≈ ż_auto
         @test ż_manual ≈ ż_multi
     end
