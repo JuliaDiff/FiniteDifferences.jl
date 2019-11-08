@@ -157,8 +157,8 @@ Base.length(x::DummyType) = size(x.X, 1)
         ẋ, ẏ = randn(rng, T, N), randn(rng, T, M)
         xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
         ż_manual = _jvp(fdm, (xy)->sum(sin, xy), xy, ẋẏ)[1]
-        ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))
-        ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))
+        ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))[1]
+        ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))[1]
         @test ż_manual ≈ ż_auto
         @test ż_manual ≈ ż_multi
     end
@@ -168,8 +168,8 @@ Base.length(x::DummyType) = size(x.X, 1)
         x, y = randn(rng, T, N), randn(rng, T, M)
         z̄ = randn(rng, T, N + M)
         xy = vcat(x, y)
-        x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)
-        x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))
+        x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)[1]
+        x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))[1]
         x̄ȳ_multi = j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y)
         @test x̄ȳ_manual ≈ vcat(x̄ȳ_auto...)
         @test x̄ȳ_manual ≈ vcat(x̄ȳ_multi...)

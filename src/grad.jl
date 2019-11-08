@@ -94,11 +94,11 @@ is defined.
 function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
     x_vec, vec_to_x = to_vec(x)
     _, vec_to_y = to_vec(f(x))
-    return vec_to_y(_jvp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1]))
+    return (vec_to_y(_jvp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1])), )
 end
 function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
     x, ẋ = collect(zip(xẋs...))
-    return jvp(fdm, xs->f(xs...), (x, ẋ))
+    return jvp(fdm, xs->f(xs...)[1], (x, ẋ))
 end
 
 """
@@ -109,9 +109,9 @@ Compute an adjoint with any types of arguments for which [`to_vec`](@ref) is def
 function j′vp(fdm, f, ȳ, x)
     x_vec, vec_to_x = to_vec(x)
     ȳ_vec, _ = to_vec(ȳ)
-    return vec_to_x(_j′vp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], ȳ_vec, x_vec))
+    return (vec_to_x(_j′vp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], ȳ_vec, x_vec)), )
 end
-j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)
+j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]
 
 """
     to_vec(x) -> Tuple{<:AbstractVector, <:Function}
