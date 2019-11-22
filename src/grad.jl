@@ -79,11 +79,15 @@ Convenience function to compute `jacobian(f, x) * ẋ`.
 _jvp(fdm, f, x::Vector{<:Number}, ẋ::AV{<:Number}) = fdm(ε -> f(x .+ ε .* ẋ), zero(eltype(x)))
 
 """
-    _j′vp(fdm, f, ȳ::AbstractVector{<:Number}, x::Vector{<:Number})
+    _j′vp(jacobian, ȳ, x)
 
 Convenience function to compute `transpose(jacobian(f, x)) * ȳ`.
 """
-_j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x; len=length(ȳ))[1]) * ȳ
+function _j′vp(jac, ȳ, x)
+    Δ, vec_to_y = to_vec(ȳ)
+    _, vec_to_x = to_vec(x)
+    vec_to_x(transpose(jac) * Δ)
+end
 
 """
     jvp(fdm, f, x, ẋ)
@@ -106,12 +110,10 @@ end
 
 Compute an adjoint with any types of arguments for which [`to_vec`](@ref) is defined.
 """
-function j′vp(fdm, f, ȳ, x)
-    x_vec, vec_to_x = to_vec(x)
-    ȳ_vec, _ = to_vec(ȳ)
-    return (vec_to_x(_j′vp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], ȳ_vec, x_vec)), )
+function j′vp(fdm, f, ȳ, xs...; len::Int=length(f(xs...)))
+    Js = jacobian(fdm, f, xs...; len=len)
+    Tuple(_j′vp(J, ȳ, x) for (J, x) in zip(Js, xs))
 end
-j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]
 
 """
     to_vec(x) -> Tuple{<:AbstractVector, <:Function}
