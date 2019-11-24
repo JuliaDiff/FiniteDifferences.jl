@@ -112,7 +112,7 @@ Compute an adjoint with any types of arguments for which [`to_vec`](@ref) is def
 """
 function j′vp(fdm, f, ȳ, xs...; len::Int=length(f(xs...)))
     Js = jacobian(fdm, f, xs...; len=len)
-    Tuple(_j′vp(J, ȳ, x) for (J, x) in zip(Js, xs))
+    return Tuple(_j′vp(J, ȳ, x) for (J, x) in zip(Js, xs))
 end
 
 """
