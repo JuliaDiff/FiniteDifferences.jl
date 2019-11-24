@@ -86,7 +86,7 @@ Convenience function to compute `transpose(jacobian(f, x)) * ȳ`.
 function _j′vp(jac, ȳ, x)
     Δ, vec_to_y = to_vec(ȳ)
     _, vec_to_x = to_vec(x)
-    vec_to_x(transpose(jac) * Δ)
+    return vec_to_x(transpose(jac) * Δ)
 end
 
 """
