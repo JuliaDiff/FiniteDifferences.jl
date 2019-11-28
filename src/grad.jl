@@ -86,7 +86,7 @@ Convenience function to compute `transpose(jacobian(f, x)) * ȳ`.
 function _j′vp(jac, ȳ, x)
     Δ, vec_to_y = to_vec(ȳ)
     _, vec_to_x = to_vec(x)
-    vec_to_x(transpose(jac) * Δ)
+    return vec_to_x(transpose(jac) * Δ)
 end
 
 """
@@ -112,7 +112,7 @@ Compute an adjoint with any types of arguments for which [`to_vec`](@ref) is def
 """
 function j′vp(fdm, f, ȳ, xs...; len::Int=length(f(xs...)))
     Js = jacobian(fdm, f, xs...; len=len)
-    Tuple(_j′vp(J, ȳ, x) for (J, x) in zip(Js, xs))
+    return Tuple(_j′vp(J, ȳ, x) for (J, x) in zip(Js, xs))
 end
 
 """
