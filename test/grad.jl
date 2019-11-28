@@ -28,8 +28,6 @@ Base.length(x::DummyType) = size(x.X, 1)
         xc = copy(x)
         @test jacobian(fdm, f, x; len=length(ȳ))[1] ≈ J_exact
         @test jacobian(fdm, f, x)[1] == jacobian(fdm, f, x; len=length(ȳ))[1]
-        @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
-        @test _j′vp(fdm, f, ȳ, x) ≈ transpose(J_exact) * ȳ
         @test xc == x
     end
 
