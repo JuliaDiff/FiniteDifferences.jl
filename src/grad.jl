@@ -71,6 +71,11 @@ function jacobian(fdm, f, x; len::Int=length(f(x)))
     return jacobian(fdm, x->f(vec_to_x(vec_x)), vec_x; len=len)
 end
 
+# tuple should return tuple
+function jacobian(fdm, f, x::Tuple; len::Int=length(f(x)))
+    (jacobian(fdm, (xs...)->f(tuple(xs...)), x...; len=len), )
+end
+
 function jacobian(fdm, f, xs...; len::Int=length(f(xs...)))
     return ntuple(length(xs)) do k
         jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; len=len)[1]
@@ -93,6 +98,12 @@ function _j′vp(jac, ȳ, x)
     Δ, vec_to_y = to_vec(ȳ)
     _, vec_to_x = to_vec(x)
     return vec_to_x(transpose(jac) * Δ)
+end
+
+function _j′vp(jac::Tuple, ȳ, x::Tuple)
+    ntuple(length(x)) do k
+        _j′vp(jac[k], ȳ, x[k])
+    end
 end
 
 """
