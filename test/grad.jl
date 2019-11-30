@@ -167,7 +167,7 @@ Base.length(x::DummyType) = size(x.X, 1)
         z̄ = randn(rng, T, N + M)
         xy = vcat(x, y)
         x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)[1]
-        x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))
+        x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))[1]
         x̄ȳ_multi = j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y)
         @test x̄ȳ_manual ≈ vcat(x̄ȳ_auto...)
         @test x̄ȳ_manual ≈ vcat(x̄ȳ_multi...)

@@ -68,7 +68,7 @@ end
 # if not number or array
 function jacobian(fdm, f, x; len::Int=length(f(x)))
     vec_x, vec_to_x = to_vec(x)
-    return vec_to_x(jacobian(fdm, x->f(vec_to_x(vec_x)), vec_x; len=len)[1])
+    return jacobian(fdm, x->f(vec_to_x(vec_x)), vec_x; len=len)
 end
 
 function jacobian(fdm, f, xs...; len::Int=length(f(xs...)))
