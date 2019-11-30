@@ -65,6 +65,12 @@ function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; len::Int=length(f(x))) 
     return (J, )
 end
 
+# if not number or array
+function jacobian(fdm, f, x; len::Int=length(f(x)))
+    vec_x, vec_to_x = to_vec(x)
+    return vec_to_x(jacobian(fdm, x->f(vec_to_x(vec_x)), vec_x; len=len)[1])
+end
+
 function jacobian(fdm, f, xs...; len::Int=length(f(xs...)))
     return ntuple(length(xs)) do k
         jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; len=len)[1]

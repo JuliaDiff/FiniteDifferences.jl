@@ -1,3 +1,4 @@
+using FiniteDifferences, Test, Random, LinearAlgebra
 using FiniteDifferences: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
 
 # Dummy type where length(x::DummyType) ≠ length(first(to_vec(x)))
