@@ -73,7 +73,7 @@ end
 
 # tuple should return tuple
 function jacobian(fdm, f, x::Tuple; len::Int=length(f(x)))
-    (jacobian(fdm, (xs...)->f(tuple(xs...)), x...; len=len), )
+    return (jacobian(fdm, (xs...)->f(tuple(xs...)), x...; len=len), )
 end
 
 function jacobian(fdm, f, xs...; len::Int=length(f(xs...)))
