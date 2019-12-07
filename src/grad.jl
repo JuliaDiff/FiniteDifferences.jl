@@ -68,7 +68,7 @@ end
 # if not number or array
 function jacobian(fdm, f, x; len::Int=length(f(x)))
     vec_x, vec_to_x = to_vec(x)
-    return jacobian(fdm, x->f(vec_to_x(vec_x)), vec_x; len=len)
+    return jacobian(fdm, x->f(vec_to_x(x)), vec_x; len=len)
 end
 
 # tuple should return tuple
