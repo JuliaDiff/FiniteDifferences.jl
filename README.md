@@ -11,6 +11,18 @@ FiniteDifferences.jl estimates derivatives with [finite differences](https://en.
 
 See also the Python package [FDM](https://github.com/wesselb/fdm).
 
+#### FiniteDiff.jl vs FiniteDifferences.jl
+[FiniteDiff.jl](https://github.com/JuliaDiff/FiniteDiff.jl) and [FiniteDifferences.jl](https://github.com/JuliaDiff/FiniteDifferences.jl)
+are similar libraries: both calculate approximate derivatives numerically.
+You should definately use one or the other, rather than the legacy [Calculus.jl](https://github.com/JuliaMath/Calculus.jl) finite differencing, or reimplementing it yourself.
+At some point in the future they might merge, or one might depend on the other.
+Right now here are the differences:
+
+ - FiniteDifferences.jl supports basically any type, where as FiniteDiff.jl supports only array-ish types
+ - FiniteDifferences.jl supports higher order approximation
+ - FiniteDiff.jl is carefully optimized to minimize allocations
+ - FiniteDiff.jl supports coloring vectors for efficient calculation of sparse Jacobians
+
 ## Examples
 
 Compute the first derivative of `sin` with a 5th order central method:
