@@ -118,39 +118,76 @@ j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]
 
 Transform `x` into a `Vector`, and return a closure which inverts the transformation.
 """
-to_vec(x::Number) = ([x], first)
+function to_vec(x::Number)
+    function Number_from_vec(x_vec)
+        return first(x_vec)
+    end
+    return [x], Number_from_vec
+end
 
 # Vectors
 to_vec(x::Vector{<:Number}) = (x, identity)
 function to_vec(x::Vector)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
-    return vcat(x_vecs...), function(x_vec)
+    function Vector_from_vec(x_vec)
         sz = cumsum([map(length, x_vecs)...])
         return [backs[n](x_vec[sz[n]-length(x_vecs[n])+1:sz[n]]) for n in eachindex(x)]
     end
+    return vcat(x_vecs...), Vector_from_vec
 end
 
 # Arrays
-to_vec(x::Array{<:Number}) = vec(x), x_vec->reshape(x_vec, size(x))
+function to_vec(x::Array{<:Number})
+    function Array_from_vec(x_vec)
+        return reshape(x_vec, size(x))
+    end
+    return vec(x), Array_from_vec
+end
+
 function to_vec(x::Array)
     x_vec, back = to_vec(reshape(x, :))
-    return x_vec, x_vec->reshape(back(x_vec), size(x))
+    function Array_from_vec(x_vec)
+        return reshape(back(x_vec), size(x))
+    end
+    return x_vec, Array_from_vec
 end
 
 # AbstractArrays
 function to_vec(x::T) where {T<:LinearAlgebra.AbstractTriangular}
     x_vec, back = to_vec(Matrix(x))
-    return x_vec, x_vec->T(reshape(back(x_vec), size(x)))
+    function AbstractTriangular_from_vec(x_vec)
+        return T(reshape(back(x_vec), size(x)))
+    end
+    return x_vec, AbstractTriangular_from_vec
 end
-to_vec(x::Symmetric) = vec(Matrix(x)), x_vec->Symmetric(reshape(x_vec, size(x)))
-to_vec(X::Diagonal) = vec(Matrix(X)), x_vec->Diagonal(reshape(x_vec, size(X)...))
+
+function to_vec(x::Symmetric)
+    function Symmetric_from_vec(x_vec)
+        return Symmetric(reshape(x_vec, size(x)))
+    end
+    return vec(Matrix(x)), Symmetric_from_vec
+end
+
+function to_vec(X::Diagonal)
+    function Diagonal_from_vec(x_vec)
+        return Diagonal(reshape(x_vec, size(X)...))
+    end
+    return vec(Matrix(X)), Diagonal_from_vec
+end
 
 function to_vec(X::Transpose)
-    return vec(Matrix(X)), x_vec->Transpose(permutedims(reshape(x_vec, size(X))))
+    function Transpose_from_vec(x_vec)
+        return Transpose(permutedims(reshape(x_vec, size(X))))
+    end
+    return vec(Matrix(X)), Transpose_from_vec
 end
+
 function to_vec(X::Adjoint)
-    return vec(Matrix(X)), x_vec->Adjoint(conj!(permutedims(reshape(x_vec, size(X)))))
+    function Adjoint_from_vec(x_vec)
+        return Adjoint(conj!(permutedims(reshape(x_vec, size(X)))))
+    end
+    return vec(Matrix(X)), Adjoint_from_vec
 end
 
 # Non-array data structures
@@ -158,17 +195,19 @@ end
 function to_vec(x::Tuple)
     x_vecs, x_backs = zip(map(to_vec, x)...)
     sz = cumsum([map(length, x_vecs)...])
-    return vcat(x_vecs...), function(v)
+    function Tuple_from_vec(v)
         return ntuple(n->x_backs[n](v[sz[n]-length(x_vecs[n])+1:sz[n]]), length(x))
     end
+    return vcat(x_vecs...), Tuple_from_vec
 end
 
 # Convert to a vector-of-vectors to make use of existing functionality.
 function to_vec(d::Dict)
     d_vec_vec = [val for val in values(d)]
     d_vec, back = to_vec(d_vec_vec)
-    return d_vec, function(v)
+    function Dict_from_vec(v)
         v_vec_vec = back(v)
         return Dict([(key, v_vec_vec[n]) for (n, key) in enumerate(keys(d))])
     end
+    return d_vec, Dict_from_vec
 end
