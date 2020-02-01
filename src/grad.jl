@@ -41,7 +41,7 @@ function grad(fdm, f, d::Dict{K, V}) where {K, V}
         ∇d[k] = grad(fdm, f′, v)[1]
         d[k] = dk
     end
-    return (dd, )
+    return (∇d, )
 end
 
 function grad(fdm, f, x)
