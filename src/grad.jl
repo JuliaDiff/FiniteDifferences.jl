@@ -31,14 +31,15 @@ grad(fdm, f, x::Real) = (fdm(f, x), )
 grad(fdm, f, x::Tuple) = (grad(fdm, (xs...)->f(xs), x...), )
 
 function grad(fdm, f, d::Dict{K, V}) where {K, V}
-    dd = Dict{K, V}()
+    ∇d = Dict{K, V}()
     for (k, v) in d
+        dk = d[k]
         function f′(x)
-            tmp = copy(d)
-            tmp[k] = x
-            return f(tmp)
+            d[k] = x
+            return f(d)
         end
-        dd[k] = grad(fdm, f′, v)[1]
+        ∇d[k] = grad(fdm, f′, v)[1]
+        d[k] = dk
     end
     return (dd, )
 end
