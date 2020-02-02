@@ -26,6 +26,31 @@ function central_grid(p::Int)
     end
 end
 
+
+# Check the method and derivative orders for consistency
+function _check_p_q(p::Integer, q::Integer)
+    q >= 0 || throw(ArgumentError("order of derivative must be nonnegative"))
+    q < p || throw(ArgumentError("order of the method must be strictly greater than that " *
+                                 "of the derivative"))
+    # Check whether the method can be computed. We require the factorial of the
+    # method order to be computable with regular `Int`s, but `factorial` will overflow
+    # after 20, so 20 is the largest we can allow.
+    p > 20 && throw(ArgumentError("order of the method is too large to be computed"))
+    return
+end
+
+# Compute coefficients for the method
+function _coefs(grid::AbstractVector{<:Real}, p::Integer, q::Integer)
+    C = [g^i for i in 0:(p - 1), g in grid]
+    x = zeros(Int, p)
+    x[q + 1] = factorial(q)
+    return C \ x
+end
+
+# Estimate the bound on the function value and its derivatives at a point
+_estimate_bound(x, cond) = cond * maximum(abs, x) + TINY
+
+
 """
     History
 
@@ -97,9 +122,11 @@ end
 # The below does not apply to Nonstandard, as it has its own constructor
 for D in (:Forward, :Backward, :Central)
     lcname = lowercase(String(D))
-    gridf = Symbol(lcname, "_grid")
-    fdmf = Symbol(lcname, "_fdm")
+    gridf = Symbol(lcname, :_grid)
+    fdmf = Symbol(lcname, :_fdm)
+    precomputes = Symbol(lcname, :_precomputed)
 
+    num_precomputed = 8
     @eval begin
         # Compatibility layer over the "old" API
         function $fdmf(p::Integer, q::Integer; adapt=1, kwargs...)
@@ -107,10 +134,22 @@ for D in (:Forward, :Backward, :Central)
             return $D(p, q; adapt=adapt, kwargs...)
         end
 
+        # precompute a bunch of grids and coefs for the q=1 case
+        const $precomputes = ntuple($num_precomputed) do p
+            p == 1 && return nothing  # no grid define for p==1
+            grid = $gridf(p)
+            coefs = _coefs(grid, p, 1)
+            (grid, coefs)
+        end
+
         function $D(p::Integer, q::Integer; adapt=1, kwargs...)
             _check_p_q(p, q)
-            grid = $gridf(p)
-            coefs = _coefs(grid, p, q)
+            if p <= $num_precomputed && q == 1
+                grid, coefs = $precomputes[p]
+            else
+                grid = $gridf(p)
+                coefs = _coefs(grid, p, q)
+            end
             hist = History(; adapt=adapt, kwargs...)
             return $D{typeof(grid), typeof(coefs)}(Int(p), Int(q), grid, coefs, hist)
         end
@@ -142,29 +181,6 @@ function Nonstandard(grid::AbstractVector{<:Real}, q::Integer; adapt=0, kwargs..
     hist = History(; adapt=adapt, kwargs...)
     return Nonstandard{typeof(grid), typeof(coefs)}(Int(p), Int(q), grid, coefs, hist)
 end
-
-# Check the method and derivative orders for consistency
-function _check_p_q(p::Integer, q::Integer)
-    q >= 0 || throw(ArgumentError("order of derivative must be nonnegative"))
-    q < p || throw(ArgumentError("order of the method must be strictly greater than that " *
-                                 "of the derivative"))
-    # Check whether the method can be computed. We require the factorial of the
-    # method order to be computable with regular `Int`s, but `factorial` will overflow
-    # after 20, so 20 is the largest we can allow.
-    p > 20 && throw(ArgumentError("order of the method is too large to be computed"))
-    return
-end
-
-# Compute coefficients for the method
-function _coefs(grid::AbstractVector{<:Real}, p::Integer, q::Integer)
-    C = [g^i for i in 0:(p - 1), g in grid]
-    x = zeros(Int, p)
-    x[q + 1] = factorial(q)
-    return C \ x
-end
-
-# Estimate the bound on the function value and its derivatives at a point
-_estimate_bound(x, cond) = cond * maximum(abs, x) + TINY
 
 """
     fdm(m::FiniteDifferenceMethod, f, x[, Val(false)]; kwargs...) -> Real
