@@ -17,7 +17,7 @@ function _grad(fdm, f, x::AbstractArray{T}) where T <: Number
             x[k] = xk +  ϵ
             ret = f(x)
             x[k] = xk  # Can't do `x[k] -= ϵ` as floating-point math is not associative
-            return ret
+            return ret::T
         end
     end
     return (dx, )
