@@ -138,14 +138,15 @@ for D in (:Forward, :Backward, :Central)
         const $precomputes = ntuple($num_precomputed) do p
             p == 1 && return nothing  # no grid define for p==1
             grid = $gridf(p)
-            coefs = _coefs(grid, p, 1)
-            (grid, coefs)
+            all_coefs = ntuple(q->_coefs(grid, p, q), p - 1)
+            (grid, all_coefs)
         end
 
         function $D(p::Integer, q::Integer; adapt=1, kwargs...)
             _check_p_q(p, q)
-            if p <= $num_precomputed && q == 1
-                grid, coefs = $precomputes[p]
+            if p <= $num_precomputed
+                grid, all_coefs = $precomputes[p]
+                coefs = all_coefs[q]
             else
                 grid = $gridf(p)
                 coefs = _coefs(grid, p, q)
@@ -197,6 +198,7 @@ The recognized keywords are:
 * `bound`: Bound on the value of the function and its derivatives at `x`.
 * `condition`: The condition number. See [`DEFAULT_CONDITION`](@ref).
 * `eps`: The assumed roundoff error. Defaults to `eps()` plus [`TINY`](@ref).
+* `track_history`: wether to update the history of the method `m` with e.g. accuracy stats.
 
 !!! warning
     Bounds can't be adaptively computed over nonstandard grids; passing a value for
@@ -227,14 +229,15 @@ julia> fdm(central_fdm(2, 1), exp, 0, Val(true))
 function fdm(
     m::M,
     f,
-    x,
+    x::T,
     ::Val{true};
     condition=DEFAULT_CONDITION,
-    bound=_estimate_bound(f(x), condition),
-    eps=(Base.eps(float(bound)) + TINY),
+    bound::T=_estimate_bound(f(x)::T, condition)::T,
+    eps::T=(Base.eps(float(bound)) + TINY)::T,
     adapt=m.history.adapt,
     max_step=0.1,
-) where M<:FiniteDifferenceMethod
+    track_history=true  # will be set to false if `Val{false}()` used
+)::Tuple{M, T} where {M<:FiniteDifferenceMethod, T}
     if M <: Nonstandard && adapt > 0
         throw(ArgumentError("can't adaptively compute bounds over Nonstandard grids"))
     end
@@ -253,7 +256,7 @@ function fdm(
 
     # Adaptively compute the bound on the function and derivative values, if applicable.
     if adapt > 0
-        newm = (M.name.wrapper)(p + 1, p)
+        newm = adapted_FDM(m)
         dfdx = fdm(
             newm,
             f,
@@ -272,24 +275,33 @@ function fdm(
     C₂ = bound * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factorial(p)
     ĥ = min((q / (p - q) * C₁ / C₂)^(1 / p), max_step)
 
-    # Estimate the accuracy of the method.
-    accuracy = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
-
     # Estimate the value of the derivative.
-    dfdx = sum(i->coefs[i] * f(x + ĥ * grid[i]), eachindex(grid)) / ĥ^q
+    dfdx_s = sum(eachindex(grid)) do i
+        (@inbounds coefs[i] * f(x + ĥ * grid[i]))::T
+    end
+    dfdx = dfdx_s / ĥ^q
 
-    m.history.eps = eps
-    m.history.bound = bound
-    m.history.step = ĥ
-    m.history.accuracy = accuracy
-
+    if track_history
+        # Estimate the accuracy of the method.
+        accuracy = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
+        m.history.eps = eps
+        m.history.bound = bound
+        m.history.step = ĥ
+        m.history.accuracy = accuracy
+    end
     return m, dfdx
 end
 
 function fdm(m::FiniteDifferenceMethod, f, x, ::Val{false}=Val(false); kwargs...)
-    _, dfdx = fdm(m, f, x, Val(true); kwargs...)
+    _, dfdx = fdm(m, f, x, Val{true}(); track_history=false, kwargs...)
     return dfdx
 end
+
+_adapted_FDM(m::M) where M = (M.name.wrapper)(m.p + 1, m.p)
+adapted_FDM(m::M) where M = _adapted_FDM(m)
+# Deal with type-instability in Central:
+adapted_FDM(m::Central{Vector{Int}}) where M = _adapted_FDM(m)::Central{UnitRange{Int}}
+adapted_FDM(m::Central{UnitRange{Int}}) where M = _adapted_FDM(m)::Central{Vector{Int}}
 
 
 ## Deprecations
