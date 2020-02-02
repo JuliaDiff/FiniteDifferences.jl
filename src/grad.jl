@@ -8,33 +8,40 @@ Approximate the gradient of `f` at `xs...` using `fdm`. Assumes that `f(xs...)` 
 """
 function grad end
 
-function grad(fdm, f, x::AbstractArray{T}) where T <: Number
+function _grad(fdm, f, x::AbstractArray{T}) where T <: Number
+    # x must be mutable, we will mutate it and then mutate it back.
     dx = similar(x)
-    tmp = similar(x)
     for k in eachindex(x)
         dx[k] = fdm(zero(T)) do ϵ
-            tmp .= x
-            tmp[k] += ϵ
-            return f(tmp)
+            xk = x[k]
+            x[k] = xk +  ϵ
+            ret = f(x)
+            x[k] = xk  # Can't do `x[k] -= ϵ` as floating-point math is not associative
+            return ret
         end
     end
     return (dx, )
 end
 
+grad(fdm, f, x::Array{<:Number}) = _grad(fdm, f, x)
+# Fallback for when we don't know `x` will be mutable:
+grad(fdm, f, x::AbstractArray{<:Number}) = _grad(fdm, f, similar(x).=x)
+
 grad(fdm, f, x::Real) = (fdm(f, x), )
 grad(fdm, f, x::Tuple) = (grad(fdm, (xs...)->f(xs), x...), )
 
 function grad(fdm, f, d::Dict{K, V}) where {K, V}
-    dd = Dict{K, V}()
+    ∇d = Dict{K, V}()
     for (k, v) in d
+        dk = d[k]
         function f′(x)
-            tmp = copy(d)
-            tmp[k] = x
-            return f(tmp)
+            d[k] = x
+            return f(d)
         end
-        dd[k] = grad(fdm, f′, v)[1]
+        ∇d[k] = grad(fdm, f′, v)[1]
+        d[k] = dk
     end
-    return (dd, )
+    return (∇d, )
 end
 
 function grad(fdm, f, x)
