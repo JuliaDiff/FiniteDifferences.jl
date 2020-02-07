@@ -181,7 +181,7 @@ The recognized keywords are:
 * `bound`: Bound on the value of the function and its derivatives at `x`.
 * `condition`: The condition number. See [`DEFAULT_CONDITION`](@ref).
 * `eps`: The assumed roundoff error. Defaults to `eps()` plus [`TINY`](@ref).
-* `track_history`: wether to update the history of the method `m` with e.g. accuracy stats.
+* `track_history`: whether to update the history of the method `m` with e.g. accuracy stats.
 
 !!! warning
     Bounds can't be adaptively computed over nonstandard grids; passing a value for
