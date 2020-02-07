@@ -212,11 +212,11 @@ julia> fdm(central_fdm(2, 1), exp, 0, Val(true))
 function fdm(
     m::M,
     f,
-    x::T,
+    x,
     ::Val{true};
     condition=DEFAULT_CONDITION,
-    bound::T=_estimate_bound(f(x)::T, condition)::T,
-    eps::T=(Base.eps(float(bound)) + TINY)::T,
+    bound=_estimate_bound(f(x), condition),
+    eps::T=(Base.eps(float(bound)) + TINY),
     adapt=m.history.adapt,
     max_step=0.1,
     track_history=true  # will be set to false if `Val{false}()` used
