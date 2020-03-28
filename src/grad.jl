@@ -39,7 +39,7 @@ end
 
 function grad(fdm, f, x)
     v, back = to_vec(x)
-    return (back(grad(fdm, x->f(back(v)), v)), )
+    return (back(grad(fdm, x->f(back(x)), v)), )
 end
 
 function grad(fdm, f, xs...)
