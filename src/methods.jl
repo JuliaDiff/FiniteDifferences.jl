@@ -134,7 +134,7 @@ for D in (:Forward, :Backward, :Central)
             return $D(p, q; adapt=adapt, kwargs...)
         end
 
-        # precompute a bunch of grids and coefs for the q=1 case
+        # precompute a bunch of grids and coefs
         const $precomputes = ntuple($num_precomputed) do p
             p == 1 && return nothing  # no grid define for p==1
             grid = $gridf(p)
