@@ -1,3 +1,16 @@
+# Dummy type where length(x::DummyType) ≠ length(first(to_vec(x)))
+struct DummyType{TX<:Matrix}
+    X::TX
+end
+
+function FiniteDifferences.to_vec(x::DummyType)
+    x_vec, back = to_vec(x.X)
+    return x_vec, x_vec -> DummyType(back(x_vec))
+end
+
+Base.:(==)(x::DummyType, y::DummyType) = x.X == y.X
+Base.length(x::DummyType) = size(x.X, 1)
+
 function test_to_vec(x)
     x_vec, back = to_vec(x)
     @test x_vec isa Vector

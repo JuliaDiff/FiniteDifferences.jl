@@ -1,7 +1,5 @@
 export grad, jacobian, jvp, j′vp, to_vec
 
-replace_arg(x, xs::Tuple, k::Int) = ntuple(p -> p == k ? x : xs[p], length(xs))
-
 """
     jacobian(fdm, f, x...)
 
@@ -11,36 +9,15 @@ version of `x`, and `y_vec` the flattened version of `f(x...)`. Flattening perfo
 `to_vec`.
 """
 function jacobian(fdm, f, x::Vector{<:Number})
-
-    # Construct a transformation of f that outputs Vector{<:Number}.
-    f_vec = first ∘ to_vec ∘ f
-
-    # Compute the first element so that we know what the output type is.
-    ẏ = fdm(zero(eltype(x))) do ε
-        x1 = x[1]
-        x[1] = x1 + ε
-        ret = f_vec(x)
-        x[1] = x1
-        return ret
-    end
-
-    # Allocate for the sensitivities.
-    @assert ẏ isa Vector{<:Number}
-    ẏs = Vector{typeof(ẏ)}(undef, length(x))
-    ẏs[1] = ẏ
-
-    # Iterate over the remainder of the input elements.
-    for n in 2:length(x)
-        ẏs[n] = fdm(zero(eltype(x))) do ε
+    ẏs = map(eachindex(x)) do n
+        return fdm(zero(eltype(x))) do ε
             xn = x[n]
             x[n] = xn + ε
-            ret = f_vec(x)
+            ret = (first ∘ to_vec ∘ f)(x)
             x[n] = xn
             return ret
         end
     end
-
-    # Spit out a 1-Tuple containing a Matrix{<:Number}.
     return (hcat(ẏs...), )
 end
 
@@ -55,26 +32,7 @@ function jacobian(fdm, f, xs...)
     end
 end
 
-
-"""
-    grad(fdm, f, xs...)
-
-Approximate the gradient of `f` at `xs...` using `fdm`. Requires that `f(xs...)` is scalar.
-"""
-function grad(fdm, f, x)
-    x_vec, from_vec = to_vec(x)
-    J = first(jacobian(fdm, f ∘ from_vec, x_vec))
-    @assert size(J, 1) == 1
-    return (from_vec(vec(J)), )
-end
-
-function grad(fdm, f, xs...)
-    return ntuple(length(xs)) do k
-        grad(fdm, x->f(replace_arg(x, xs, k)...), xs[k])[1]
-    end
-end
-
-
+replace_arg(x, xs::Tuple, k::Int) = ntuple(p -> p == k ? x : xs[p], length(xs))
 
 """
     _jvp(fdm, f, x::Vector{<:Number}, ẋ::AbstractVector{<:Number})
@@ -101,24 +59,26 @@ function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
     return jvp(fdm, xs->f(xs...)[1], (x, ẋ))
 end
 
-
-"""
-    j′vp(fdm, f, ȳ::AbstractVector{<:Number}, x::Vector{<:Number})
-
-Convenience function to compute `transpose(jacobian(f, x)) * ȳ`.
-"""
-function _j′vp(fdm, f, ȳ::Vector{<:Number}, x::Vector{<:Number})
-    return transpose(jacobian(fdm, f, x)[1]) * ȳ
-end
-
 """
     j′vp(fdm, f, ȳ, x...)
 
 Compute an adjoint with any types of arguments for which [`to_vec`](@ref) is defined.
 """
+function _j′vp(fdm, f, ȳ::Vector{<:Number}, x::Vector{<:Number})
+    return transpose(jacobian(fdm, f, x)[1]) * ȳ
+end
+
 function j′vp(fdm, f, ȳ, x)
     x_vec, vec_to_x = to_vec(x)
     ȳ_vec, _ = to_vec(ȳ)
     return (vec_to_x(_j′vp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], ȳ_vec, x_vec)), )
 end
+
 j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]
+
+"""
+    grad(fdm, f, xs...)
+
+Compute the gradient of `f` for any `xs` for which [`to_vec`](@ref) is defined.
+"""
+grad(fdm, f, xs...) = j′vp(fdm, f, 1, xs...)
