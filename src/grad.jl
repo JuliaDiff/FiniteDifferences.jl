@@ -2,6 +2,68 @@ export grad, jacobian, jvp, j′vp, to_vec
 replace_arg(x, xs::Tuple, k::Int) = ntuple(p -> p == k ? x : xs[p], length(xs))
 
 """
+    _jvp(fdm, f, x::Vector{<:Number}, ẋ::AbstractVector{<:Number})
+
+Convenience function to compute `jacobian(f, x) * ẋ`.
+"""
+_jvp(fdm, f, x::Vector{<:Number}, ẋ::AV{<:Number}) = fdm(ε -> f(x .+ ε .* ẋ), zero(eltype(x)))
+
+"""
+    jvp(fdm, f, x, ẋ)
+
+Compute a Jacobian-vector product with any types of arguments for which [`to_vec`](@ref)
+is defined.
+"""
+function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
+    x_vec, vec_to_x = to_vec(x)
+    _, vec_to_y = to_vec(f(x))
+    return vec_to_y(_jvp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1]))
+end
+function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
+    x, ẋ = collect(zip(xẋs...))
+    return jvp(fdm, xs->f(xs...)[1], (x, ẋ))
+end
+
+"""
+    jacobian(fdm, f, xs::Union{Real, AbstractArray{<:Real}})
+
+Approximate the Jacobian of `f` at `x` using `fdm`.
+"""
+function jacobian(fdm, f, x::Union{T, AbstractArray{T}}) where {T <: Number}
+
+    # Allocate for the perturbation.
+    ẋ = zero(x)
+
+    # Compute the first element so that we know what the output type is.
+    ẋ[1] = one(float(T))
+    ẏ = jvp(fdm, f, (x, ẋ))
+    ẋ[1] = zero(float(T))
+
+    # Allocate for the sensitivities.
+    @show typeof(ẏ)
+    @assert ẏ isa Array{<:Number}
+    ẏs = Vector{typeof(ẏ)}(undef, length(x))
+    ẏs[1] = ẏ
+
+    # Iterate over the remainder of the input elements.
+    for n in 2:length(x)
+        ẋ[n] = one(float(T))
+        ẏs[n] = jvp(fdm, f, (x, ẋ))
+        ẋ[n] = zero(float(T))
+    end
+
+    return (hcat(ẏs...), )
+end
+
+function jacobian(fdm, f, xs...)
+    return ntuple(length(xs)) do k
+        jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k])[1]
+    end
+end
+
+
+
+"""
     grad(fdm, f, xs...)
 
 Approximate the gradient of `f` at `xs...` using `fdm`. Assumes that `f(xs...)` is scalar.
@@ -55,58 +117,14 @@ function grad(fdm, f, xs...)
     end
 end
 
-"""
-    jacobian(fdm, f, xs::Union{Real, AbstractArray{<:Real}}; len::Int=length(f(x)))
-
-Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `len` vector. If
-`len` is not provided, then `f(x)` is computed once to determine the output size.
-"""
-function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; len::Int=length(f(x))) where {T <: Number}
-    J = Matrix{float(T)}(undef, len, length(x))
-    for d in 1:len
-        gs = grad(fdm, x->f(x)[d], x)[1]
-        for k in 1:length(x)
-            J[d, k] = gs[k]
-        end
-    end
-    return (J, )
-end
-
-function jacobian(fdm, f, xs...; len::Int=length(f(xs...)))
-    return ntuple(length(xs)) do k
-        jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; len=len)[1]
-    end
-end
-
-"""
-    _jvp(fdm, f, x::Vector{<:Number}, ẋ::AbstractVector{<:Number})
-
-Convenience function to compute `jacobian(f, x) * ẋ`.
-"""
-_jvp(fdm, f, x::Vector{<:Number}, ẋ::AV{<:Number}) = fdm(ε -> f(x .+ ε .* ẋ), zero(eltype(x)))
 
 """
     _j′vp(fdm, f, ȳ::AbstractVector{<:Number}, x::Vector{<:Number})
 
 Convenience function to compute `transpose(jacobian(f, x)) * ȳ`.
 """
-_j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x; len=length(ȳ))[1]) * ȳ
+_j′vp(fdm, f, ȳ::AV{<:Number}, x::Vector{<:Number}) = transpose(jacobian(fdm, f, x)[1]) * ȳ
 
-"""
-    jvp(fdm, f, x, ẋ)
-
-Compute a Jacobian-vector product with any types of arguments for which [`to_vec`](@ref)
-is defined.
-"""
-function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
-    x_vec, vec_to_x = to_vec(x)
-    _, vec_to_y = to_vec(f(x))
-    return vec_to_y(_jvp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1]))
-end
-function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
-    x, ẋ = collect(zip(xẋs...))
-    return jvp(fdm, xs->f(xs...)[1], (x, ẋ))
-end
 
 """
     j′vp(fdm, f, ȳ, x...)

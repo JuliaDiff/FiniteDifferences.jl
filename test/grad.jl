@@ -24,12 +24,24 @@ Base.length(x::DummyType) = size(x.X, 1)
         @test xc == x
     end
 
-    function check_jac_and_jvp_and_j′vp(fdm, f, ȳ, x, ẋ, J_exact)
+    function check_jac_and_jvp_and_j′vp(fdm, f, ȳ::Array, x::Array, ẋ::Array, J_exact)
         xc = copy(x)
-        @test jacobian(fdm, f, x; len=length(ȳ))[1] ≈ J_exact
-        @test jacobian(fdm, f, x)[1] == jacobian(fdm, f, x; len=length(ȳ))[1]
+
+        # Validate inputs.
+        @assert length(x) == length(ẋ)
+        @assert length(ȳ) == length(f(x))
+
+        # Check that the jacobian is as expected.
+        J_fdm = jacobian(fdm, f, x)[1]
+        @test size(J_fdm) == (length(ȳ), length(x))
+        @test J_fdm ≈ J_exact
+        @test J_fdm == jacobian(fdm, f, x)[1]
+
+        # Check that the estimated jvp and j′vp are consistent with their definitions. 
         @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
         @test _j′vp(fdm, f, ȳ, x) ≈ transpose(J_exact) * ȳ
+
+        # Check that no mutation occured that wasn't reverted.
         @test xc == x
     end
 
