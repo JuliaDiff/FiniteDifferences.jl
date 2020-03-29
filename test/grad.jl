@@ -101,21 +101,21 @@ Base.length(x::DummyType) = size(x.X, 1)
             end
 
             @testset "check mixed scalar & matrices" begin
-                x, y = rand(rng, 3, 3), 2
+                x, y = rand(rng, 3, 3), 2.0
                 dxs = grad(fdm, f2, x, y)
                 @test dxs[1] ≈ grad(fdm, x->f2(x, y), x)[1]
                 @test dxs[2] ≈ grad(fdm, y->f2(x, y), y)[1]
             end
 
             @testset "check tuple" begin
-                x, y = rand(rng, 3, 3), 2
+                x, y = rand(rng, 3, 3), 2.0
                 dxs = grad(fdm, f3, (x, y))[1]
                 @test dxs[1] ≈ grad(fdm, x->f3((x, y)), x)[1]
                 @test dxs[2] ≈ grad(fdm, y->f3((x, y)), y)[1]   
             end
 
             @testset "check dict" begin
-                x, y = rand(rng, 3, 3), 2
+                x, y = rand(rng, 3, 3), 2.0
                 d = Dict(:x=>x, :y=>y)
                 dxs = grad(fdm, f4, d)[1]
                 @test dxs[:x] ≈ grad(fdm, x->f3((x, y)), x)[1]

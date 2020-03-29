@@ -59,60 +59,13 @@ end
 """
     grad(fdm, f, xs...)
 
-Approximate the gradient of `f` at `xs...` using `fdm`. Assumes that `f(xs...)` is scalar.
+Approximate the gradient of `f` at `xs...` using `fdm`. Requires that `f(xs...)` is scalar.
 """
-function grad end
-
-function _grad(fdm, f, x::AbstractArray{T}) where T <: Number
-    # x must be mutable, we will mutate it and then mutate it back.
-    dx = similar(x)
-    for k in eachindex(x)
-        dx[k] = fdm(zero(T)) do ϵ
-            xk = x[k]
-            x[k] = xk + ϵ
-            ret = f(x)
-            x[k] = xk  # Can't do `x[k] -= ϵ` as floating-point math is not associative
-            return ret
-        end
-    end
-    return (dx, )
-end
-
-# function jacobian(fdm, f, x)
-#     x_vec, from_vec = to_vec(x)
-#     return jacobian(fdm, f ∘ from_vec, x_vec)
-# end
-
-# function jacobian(fdm, f, xs...)
-#     return ntuple(length(xs)) do k
-#         jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k])[1]
-#     end
-# end
-
-grad(fdm, f, x::Array{<:Number}) = _grad(fdm, f, x)
-# Fallback for when we don't know `x` will be mutable:
-grad(fdm, f, x::AbstractArray{<:Number}) = _grad(fdm, f, similar(x).=x)
-
-grad(fdm, f, x::Real) = (fdm(f, x), )
-grad(fdm, f, x::Tuple) = (grad(fdm, (xs...)->f(xs), x...), )
-
-function grad(fdm, f, d::Dict{K, V}) where {K, V}
-    ∇d = Dict{K, V}()
-    for (k, v) in d
-        dk = d[k]
-        function f′(x)
-            d[k] = x
-            return f(d)
-        end
-        ∇d[k] = grad(fdm, f′, v)[1]
-        d[k] = dk
-    end
-    return (∇d, )
-end
-
 function grad(fdm, f, x)
-    v, back = to_vec(x)
-    return (back(grad(fdm, x->f(back(v)), v)), )
+    x_vec, from_vec = to_vec(x)
+    J = first(jacobian(fdm, f ∘ from_vec, x_vec))
+    @assert size(J, 1) == 1
+    return (from_vec(vec(J)), )
 end
 
 function grad(fdm, f, xs...)
