@@ -1,4 +1,4 @@
-export grad, jacobian, jvp, j′vp, to_vec
+export grad, jacobian, jvp, j′vp
 
 """
     jacobian(fdm, f, x...)
@@ -71,7 +71,7 @@ end
 function j′vp(fdm, f, ȳ, x)
     x_vec, vec_to_x = to_vec(x)
     ȳ_vec, _ = to_vec(ȳ)
-    return (vec_to_x(_j′vp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], ȳ_vec, x_vec)), )
+    return (vec_to_x(_j′vp(fdm, first ∘ to_vec ∘ f ∘ vec_to_x, ȳ_vec, x_vec)), )
 end
 
 j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]

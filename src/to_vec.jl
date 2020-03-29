@@ -1,3 +1,5 @@
+export to_vec
+
 """
     to_vec(x)
 

@@ -1,4 +1,4 @@
-using FiniteDifferences: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
+using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
 
 @testset "grad" begin
 
