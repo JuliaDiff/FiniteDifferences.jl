@@ -48,16 +48,18 @@ function grad(fdm, f, xs...)
     end
 end
 
+_length_of_output(f, xs...) = length(to_vec(f(xs...))[1])
+
 """
     jacobian(fdm, f, xs::Union{Real, AbstractArray{<:Real}}; len::Int=length(f(x)))
 
 Approximate the Jacobian of `f` at `x` using `fdm`. `f(x)` must be a length `len` vector. If
 `len` is not provided, then `f(x)` is computed once to determine the output size.
 """
-function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; len::Int=length(f(x))) where {T <: Number}
+function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; len::Int=_length_of_output(f, x)) where {T <: Number}
     J = Matrix{float(T)}(undef, len, length(x))
     for d in 1:len
-        gs = grad(fdm, x->f(x)[d], x)[1]
+        gs = grad(fdm, x->to_vec(f(x))[1][d], x)[1]
         for k in 1:length(x)
             J[d, k] = gs[k]
         end
@@ -66,17 +68,17 @@ function jacobian(fdm, f, x::Union{T, AbstractArray{T}}; len::Int=length(f(x))) 
 end
 
 # if not number or array
-function jacobian(fdm, f, x; len::Int=length(f(x)))
+function jacobian(fdm, f, x; len::Int=_length_of_output(f, x))
     vec_x, vec_to_x = to_vec(x)
     return jacobian(fdm, x->f(vec_to_x(x)), vec_x; len=len)
 end
 
 # tuple should return tuple
-function jacobian(fdm, f, x::Tuple; len::Int=length(f(x)))
+function jacobian(fdm, f, x::Tuple; len::Int=_length_of_output(f, x))
     return (jacobian(fdm, (xs...)->f(tuple(xs...)), x...; len=len), )
 end
 
-function jacobian(fdm, f, xs...; len::Int=length(f(xs...)))
+function jacobian(fdm, f, xs...; len::Int=_length_of_output(f, xs...))
     return ntuple(length(xs)) do k
         jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; len=len)[1]
     end
@@ -127,7 +129,7 @@ end
 
 Compute an adjoint with any types of arguments for which [`to_vec`](@ref) is defined.
 """
-function j′vp(fdm, f, ȳ, xs...; len::Int=length(f(xs...)))
+function j′vp(fdm, f, ȳ, xs...; len::Int=_length_of_output(f, xs...))
     Js = jacobian(fdm, f, xs...; len=len)
     return Tuple(_j′vp(J, ȳ, x) for (J, x) in zip(Js, xs))
 end
