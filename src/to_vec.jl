@@ -92,7 +92,8 @@ function to_vec(d::Dict)
     d_vec, back = to_vec(d_vec_vec)
     function Dict_from_vec(v)
         v_vec_vec = back(v)
-        return Dict([(key, v_vec_vec[n]) for (n, key) in enumerate(keys(d))])
+        return Dict(key => v_vec_vec[n] for (n, key) in enumerate(keys(d)))
+        # return Dict([(key, v_vec_vec[n]) for (n, key) in enumerate(keys(d))])
     end
     return d_vec, Dict_from_vec
 end
