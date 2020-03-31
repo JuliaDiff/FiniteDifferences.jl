@@ -6,7 +6,7 @@ export grad, jacobian, jvp, j′vp
 Approximate the Jacobian of `f` at `x` using `fdm`. Results will be returned as a
 `Matrix{<:Number}` of `size(length(y_vec), length(x_vec))` where `x_vec` is the flattened
 version of `x`, and `y_vec` the flattened version of `f(x...)`. Flattening performed by
-`to_vec`.
+[`to_vec`](@ref).
 """
 function jacobian(fdm, f, x::Vector{<:Number})
     ẏs = map(eachindex(x)) do n
