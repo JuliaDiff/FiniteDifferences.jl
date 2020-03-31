@@ -8,7 +8,7 @@ version of `x`, and `y_vec` the flattened version of `f(x...)`. Flattening perfo
 """
 function jacobian(fdm, f, x::Vector{<:Number}; len=nothing)
     len !== nothing && Base.depwarn(
-        "`len` keyword argument to `jacobian` is nolonger required " *
+        "`len` keyword argument to `jacobian` is no longer required " *
         "and will not be permitted in the future.",
          :jacobian
     )
