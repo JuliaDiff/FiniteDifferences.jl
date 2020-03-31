@@ -14,7 +14,7 @@ function jacobian(fdm, f, x::Vector{<:Number})
             xn = x[n]
             x[n] = xn + ε
             ret = first(to_vec(f(x))
-            x[n] = xn
+            x[n] = xn  # undo addition of  `ε` to input
             return ret
         end
     end
