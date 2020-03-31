@@ -11,7 +11,7 @@ function jacobian(fdm, f, x::Vector{<:Number})
         return fdm(zero(eltype(x))) do ε
             xn = x[n]
             x[n] = xn + ε
-            ret = first(to_vec(f(x))
+            ret = first(to_vec(f(x)))
             x[n] = xn  # undo addition of  `ε` to input
             return ret
         end
@@ -60,12 +60,8 @@ end
 """
     j′vp(fdm, f, ȳ, x...)
 
-Compute an adjoint with any types of arguments for which [`to_vec`](@ref) is defined.
+Compute an adjoint with any types of arguments `x` for which [`to_vec`](@ref) is defined.
 """
-function _j′vp(fdm, f, ȳ::Vector{<:Number}, x::Vector{<:Number})
-    return transpose(jacobian(fdm, f, x)[1]) * ȳ
-end
-
 function j′vp(fdm, f, ȳ, x)
     x_vec, vec_to_x = to_vec(x)
     ȳ_vec, _ = to_vec(ȳ)
@@ -73,6 +69,10 @@ function j′vp(fdm, f, ȳ, x)
 end
 
 j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]
+
+function _j′vp(fdm, f, ȳ::Vector{<:Number}, x::Vector{<:Number})
+    return transpose(first(jacobian(fdm, f, x))) * ȳ
+end
 
 """
     grad(fdm, f, xs...)
