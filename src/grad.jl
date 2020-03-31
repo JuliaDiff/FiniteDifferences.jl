@@ -13,7 +13,7 @@ function jacobian(fdm, f, x::Vector{<:Number})
         return fdm(zero(eltype(x))) do ε
             xn = x[n]
             x[n] = xn + ε
-            ret = (first ∘ to_vec ∘ f)(x)
+            ret = first(to_vec(f(x))
             x[n] = xn
             return ret
         end
