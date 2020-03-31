@@ -7,7 +7,11 @@ version of `x`, and `y_vec` the flattened version of `f(x...)`. Flattening perfo
 [`to_vec`](@ref).
 """
 function jacobian(fdm, f, x::Vector{<:Number}; len=nothing)
-    len !== nothing && Base.depwarn("len parameter to jacobian is deprecated", :jacobian)
+    len !== nothing && Base.depwarn(
+        "`len` keyword argument to `jacobian` is nolonger required " *
+        "and will not be permitted in the future.",
+         :jacobian
+    )
     ẏs = map(eachindex(x)) do n
         return fdm(zero(eltype(x))) do ε
             xn = x[n]
