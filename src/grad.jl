@@ -6,7 +6,8 @@ Approximate the Jacobian of `f` at `x` using `fdm`. Results will be returned as 
 version of `x`, and `y_vec` the flattened version of `f(x...)`. Flattening performed by
 [`to_vec`](@ref).
 """
-function jacobian(fdm, f, x::Vector{<:Number})
+function jacobian(fdm, f, x::Vector{<:Number}; len=nothing)
+    len !== nothing && Base.depwarn("len parameter to jacobian is deprecated", :jacobian)
     ẏs = map(eachindex(x)) do n
         return fdm(zero(eltype(x))) do ε
             xn = x[n]
@@ -19,14 +20,14 @@ function jacobian(fdm, f, x::Vector{<:Number})
     return (hcat(ẏs...), )
 end
 
-function jacobian(fdm, f, x)
+function jacobian(fdm, f, x; len=nothing)
     x_vec, from_vec = to_vec(x)
-    return jacobian(fdm, f ∘ from_vec, x_vec)
+    return jacobian(fdm, f ∘ from_vec, x_vec; len=len)
 end
 
-function jacobian(fdm, f, xs...)
+function jacobian(fdm, f, xs...; len=nothing)
     return ntuple(length(xs)) do k
-        jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k])[1]
+        jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; len=len)[1]
     end
 end
 
