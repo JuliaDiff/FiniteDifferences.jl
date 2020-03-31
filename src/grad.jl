@@ -13,7 +13,7 @@ function jacobian(fdm, f, x::Vector{<:Number}; len=nothing)
             xn = x[n]
             x[n] = xn + ε
             ret = first(to_vec(f(x)))
-            x[n] = xn  # undo addition of  `ε` to input
+            x[n] = xn  # Can't do `x[k] -= ϵ` as floating-point math is not associative
             return ret
         end
     end
