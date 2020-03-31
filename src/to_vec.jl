@@ -85,7 +85,7 @@ function to_vec(x::Tuple)
     function Tuple_from_vec(v)
         return ntuple(n->x_backs[n](v[sz[n]-length(x_vecs[n])+1:sz[n]]), length(x))
     end
-    return vcat(x_vecs...), Tuple_from_vec
+    return reduce(vcat, x_vecs), Tuple_from_vec
 end
 
 # Convert to a vector-of-vectors to make use of existing functionality.
