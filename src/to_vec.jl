@@ -16,8 +16,8 @@ function to_vec(x::Vector)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
     function Vector_from_vec(x_vec)
-        sz = cumsum([map(length, x_vecs)...])
-        return [backs[n](x_vec[sz[n]-length(x_vecs[n])+1:sz[n]]) for n in eachindex(x)]
+        sz = cumsum(map(length, x_vecs))
+        return [backs[n](x_vec[sz[n] - length(x_vecs[n]) + 1:sz[n]]) for n in eachindex(x)]
     end
     return vcat(x_vecs...), Vector_from_vec
 end
