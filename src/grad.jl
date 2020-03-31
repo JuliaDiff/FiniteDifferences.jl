@@ -1,5 +1,3 @@
-export grad, jacobian, jvp, j′vp
-
 """
     jacobian(fdm, f, x...)
 
