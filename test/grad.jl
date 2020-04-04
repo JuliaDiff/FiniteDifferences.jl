@@ -1,20 +1,18 @@
-using FiniteDifferences: grad, jacobian, _jvp, _j′vp, jvp, j′vp, to_vec
-
-# Dummy type where length(x::DummyType) ≠ length(first(to_vec(x)))
-struct DummyType{TX<:Matrix}
-    X::TX
-end
-
-function FiniteDifferences.to_vec(x::DummyType)
-    x_vec, back = to_vec(x.X)
-    return x_vec, x_vec -> DummyType(back(x_vec))
-end
-
-Base.:(==)(x::DummyType, y::DummyType) = x.X == y.X
-Base.length(x::DummyType) = size(x.X, 1)
-
+using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
 
 @testset "grad" begin
+
+    @testset "jvp(::$T)" for T in (Float64, ComplexF64)
+        rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
+        x, y = randn(rng, T, N), randn(rng, T, M)
+        ẋ, ẏ = randn(rng, T, N), randn(rng, T, M)
+        xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
+        ż_manual = _jvp(fdm, (xy)->sum(sin, xy), xy, ẋẏ)[1]
+        ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))
+        ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))
+        @test ż_manual ≈ ż_auto
+        @test ż_manual ≈ ż_multi
+    end
 
     @testset "grad(::$T)" for T in (Float64, ComplexF64)
         rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
@@ -24,12 +22,24 @@ Base.length(x::DummyType) = size(x.X, 1)
         @test xc == x
     end
 
-    function check_jac_and_jvp_and_j′vp(fdm, f, ȳ, x, ẋ, J_exact)
+    function check_jac_and_jvp_and_j′vp(fdm, f, ȳ::Array, x::Array, ẋ::Array, J_exact)
         xc = copy(x)
-        @test jacobian(fdm, f, x; len=length(ȳ))[1] ≈ J_exact
-        @test jacobian(fdm, f, x)[1] == jacobian(fdm, f, x; len=length(ȳ))[1]
+
+        # Validate inputs.
+        @assert length(x) == length(ẋ)
+        @assert length(ȳ) == length(f(x))
+
+        # Check that the jacobian is as expected.
+        J_fdm = jacobian(fdm, f, x)[1]
+        @test size(J_fdm) == (length(ȳ), length(x))
+        @test J_fdm ≈ J_exact
+        @test J_fdm == jacobian(fdm, f, x)[1]
+
+        # Check that the estimated jvp and j′vp are consistent with their definitions. 
         @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
         @test _j′vp(fdm, f, ȳ, x) ≈ transpose(J_exact) * ȳ
+
+        # Check that no mutation occured that wasn't reverted.
         @test xc == x
     end
 
@@ -61,7 +71,7 @@ Base.length(x::DummyType) = size(x.X, 1)
             end
 
             @testset "check mixed scalar and matrices" begin
-                x, y = rand(3, 3), 2
+                x, y = rand(3, 3), 2.0
                 jac_xs = jacobian(fdm, f1, x, y)
                 @test jac_xs[1] ≈ jacobian(fdm, x->f1(x, y), x)[1]
                 @test jac_xs[2] ≈ jacobian(fdm, y->f1(x, y), y)[1]
@@ -77,90 +87,27 @@ Base.length(x::DummyType) = size(x.X, 1)
             end
 
             @testset "check mixed scalar & matrices" begin
-                x, y = rand(rng, 3, 3), 2
+                x, y = rand(rng, 3, 3), 2.0
                 dxs = grad(fdm, f2, x, y)
                 @test dxs[1] ≈ grad(fdm, x->f2(x, y), x)[1]
                 @test dxs[2] ≈ grad(fdm, y->f2(x, y), y)[1]
             end
 
             @testset "check tuple" begin
-                x, y = rand(rng, 3, 3), 2
+                x, y = rand(rng, 3, 3), 2.0
                 dxs = grad(fdm, f3, (x, y))[1]
                 @test dxs[1] ≈ grad(fdm, x->f3((x, y)), x)[1]
                 @test dxs[2] ≈ grad(fdm, y->f3((x, y)), y)[1]   
             end
 
             @testset "check dict" begin
-                x, y = rand(rng, 3, 3), 2
+                x, y = rand(rng, 3, 3), 2.0
                 d = Dict(:x=>x, :y=>y)
                 dxs = grad(fdm, f4, d)[1]
                 @test dxs[:x] ≈ grad(fdm, x->f3((x, y)), x)[1]
                 @test dxs[:y] ≈ grad(fdm, y->f3((x, y)), y)[1]
             end
         end
-    end
-
-    function test_to_vec(x)
-        x_vec, back = to_vec(x)
-        @test x_vec isa Vector
-        @test x == back(x_vec)
-        return nothing
-    end
-
-    @testset "to_vec(::$T)" for T in (Float64, ComplexF64)
-        if T == Float64
-            test_to_vec(1.0)
-            test_to_vec(1)
-        else
-            test_to_vec(.7 + .8im)
-            test_to_vec(1 + 2im)
-        end
-        test_to_vec(randn(T, 3))
-        test_to_vec(randn(T, 5, 11))
-        test_to_vec(randn(T, 13, 17, 19))
-        test_to_vec(randn(T, 13, 0, 19))
-        test_to_vec([1.0, randn(T, 2), randn(T, 1), 2.0])
-        test_to_vec([randn(T, 5, 4, 3), (5, 4, 3), 2.0])
-        test_to_vec(reshape([1.0, randn(T, 5, 4, 3), randn(T, 4, 3), 2.0], 2, 2))
-        test_to_vec(UpperTriangular(randn(T, 13, 13)))
-        test_to_vec(Symmetric(randn(T, 11, 11)))
-        test_to_vec(Diagonal(randn(T, 7)))
-        test_to_vec(DummyType(randn(T, 2, 9)))
-    
-        @testset "$Op" for Op in (Adjoint, Transpose)
-            test_to_vec(Op(randn(T, 4, 4)))
-            test_to_vec(Op(randn(T, 6)))
-            test_to_vec(Op(randn(T, 2, 5)))
-        end
-    
-        @testset "Tuples" begin
-            test_to_vec((5, 4))
-            test_to_vec((5, randn(T, 5)))
-            test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1))
-            test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5))
-            test_to_vec(((6, 5), 3, randn(T, 3, 2, 0, 1)))
-            test_to_vec((DummyType(randn(T, 2, 7)), DummyType(randn(T, 3, 9))))
-            test_to_vec((DummyType(randn(T, 3, 2)), randn(T, 11, 8)))
-        end
-        @testset "Dictionary" begin
-            if T == Float64
-                test_to_vec(Dict(:a=>5, :b=>randn(10, 11), :c=>(5, 4, 3)))
-            else
-                test_to_vec(Dict(:a=>3 + 2im, :b=>randn(T, 10, 11), :c=>(5+im, 2-im, 1+im)))
-            end
-        end
-    end
-
-    @testset "jvp(::$T)" for T in (Float64, ComplexF64)
-        rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
-        x, y = randn(rng, T, N), randn(rng, T, M)
-        ẋ, ẏ = randn(rng, T, N), randn(rng, T, M)
-        xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
-        ż_manual = _jvp(fdm, (xy)->sum(sin, xy), xy, ẋẏ)[1]
-        ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))
-        ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))
-        @test ż_manual ≈ ż_auto
-        @test ż_manual ≈ ż_multi
     end
 
     @testset "j′vp(::$T)" for T in (Float64, ComplexF64)
