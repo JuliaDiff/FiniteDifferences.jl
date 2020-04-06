@@ -157,7 +157,7 @@ end
 
 # Compute coefficients for the method
 function _coefs(grid::AbstractVector{<:Real}, p::Integer, q::Integer)
-    # For high precision on the \ we use Rational, and to prevent overfloats we use Int128
+    # For high precision on the \ we use Rational, and to prevent overflows we use Int128
     # At the end we go to Float64 for fast floating point math (rather than rational math)
     C = [Rational{Int128}(g^i) for i in 0:(p - 1), g in grid]
     x = zeros(Rational{Int128}, p)
