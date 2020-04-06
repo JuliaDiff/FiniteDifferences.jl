@@ -37,6 +37,17 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard
         @test central_fdm(5, 1)(abs, 0.001) ≈ 1.0
     end
 
+    @testset "Accuracy at high orders, with high adapt" begin
+        # Regression test against issues with precision during computation of _coeffs
+        # see https://github.com/JuliaDiff/FiniteDifferences.jl/issues/64
+
+        @test fdm(central_fdm(9, 5), exp, 1.0, adapt=4) ≈ exp(1) atol=1e-7
+
+        poly(x) = 4x^3 + 3x^2 + 2x + 1
+        @test fdm(central_fdm(9, 3), poly, 1.0, adapt=4) ≈ 24 atol=1e-11
+    end
+
+
     @testset "Printing FiniteDifferenceMethods" begin
         @test sprint(show, central_fdm(2, 1)) == """
             FiniteDifferenceMethod:

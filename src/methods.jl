@@ -157,10 +157,12 @@ end
 
 # Compute coefficients for the method
 function _coefs(grid::AbstractVector{<:Real}, p::Integer, q::Integer)
-    C = [g^i for i in 0:(p - 1), g in grid]
-    x = zeros(Int, p)
+    # For high precision on the \ we use Rational, and to prevent overflows we use Int128
+    # At the end we go to Float64 for fast floating point math (rather than rational math)
+    C = [Rational{Int128}(g^i) for i in 0:(p - 1), g in grid]
+    x = zeros(Rational{Int128}, p)
     x[q + 1] = factorial(q)
-    return C \ x
+    return Float64.(C \ x)
 end
 
 # Estimate the bound on the function value and its derivatives at a point
