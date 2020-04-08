@@ -52,6 +52,9 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
         @test Ac == A
         check_jac_and_jvp_and_j′vp(fdm, x->sin.(A * x), ȳ, x, ẋ, cos.(A * x) .* A)
         @test Ac == A
+
+        # Prevent regression against 67.
+        @test first(jacobian(fdm, identity, x)) ≈ one(Matrix{T}(undef, length(x), length(x)))
     end
 
     @testset "multi vars jacobian/grad" begin
