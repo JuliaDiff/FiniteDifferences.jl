@@ -11,15 +11,16 @@ end
 Base.:(==)(x::DummyType, y::DummyType) = x.X == y.X
 Base.length(x::DummyType) = size(x.X, 1)
 
-function test_to_vec(x)
+function test_to_vec(x::T) where {T}
     x_vec, back = to_vec(x)
     @test x_vec isa Vector
     @test x == back(x_vec)
+    @test back(x_vec) isa T
     return nothing
 end
 
 @testset "to_vec" begin
-    @testset "$T" for T in (Float64, ComplexF64)
+    @testset "$T" for T in (Float32, ComplexF32, Float64, ComplexF64)
         if T == Float64
             test_to_vec(1.0)
             test_to_vec(1)
@@ -38,6 +39,8 @@ end
         test_to_vec(Symmetric(randn(T, 11, 11)))
         test_to_vec(Diagonal(randn(T, 7)))
         test_to_vec(DummyType(randn(T, 2, 9)))
+        test_to_vec(SVector{2, T}(1.0, 2.0))
+        test_to_vec(SMatrix{2, 2, T}(1.0, 2.0, 3.0, 4.0))
 
         @testset "$Op" for Op in (Adjoint, Transpose)
             test_to_vec(Op(randn(T, 4, 4)))

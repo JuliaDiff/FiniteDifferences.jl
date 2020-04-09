@@ -1,4 +1,4 @@
-using FiniteDifferences, Test, Random, Printf, LinearAlgebra
+using FiniteDifferences, Test, Random, Printf, LinearAlgebra, StaticArrays
 
 @testset "FiniteDifferences" begin
     include("methods.jl")
