@@ -11,6 +11,16 @@ end
 Base.:(==)(x::DummyType, y::DummyType) = x.X == y.X
 Base.length(x::DummyType) = size(x.X, 1)
 
+# A dummy FillVector. This is a type for which the fallback implementation of
+# `to_vec` should fail loudly.
+struct FillVector <: AbstractVector{Float64}
+    x::Float64
+    len::Int
+end
+
+Base.size(x::FillVector) = (x.len,)
+Base.getindex(x::FillVector, n::Int) = x.x
+
 function test_to_vec(x::T) where {T}
     x_vec, back = to_vec(x)
     @test x_vec isa Vector
@@ -64,5 +74,11 @@ end
                 test_to_vec(Dict(:a=>3 + 2im, :b=>randn(T, 10, 11), :c=>(5+im, 2-im, 1+im)))
             end
         end
+    end
+
+    @testset "FillVector" begin
+        x = FillVector(5.0, 10)
+        x_vec, from_vec = to_vec(x)
+        @test_throws MethodError from_vec(randn(10))
     end
 end
