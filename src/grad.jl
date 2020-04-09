@@ -47,10 +47,10 @@ function _jvp(fdm, f, x::Vector{<:Number}, ẋ::Vector{<:Number})
 end
 
 """
-    jvp(fdm, f, x, ẋ)
+    jvp(fdm, f, xẋs::Tuple{Any, Any}...)
 
 Compute a Jacobian-vector product with any types of arguments for which [`to_vec`](@ref)
-is defined.
+is defined. Each 2-`Tuple` in `xẋs` contains the value `x` and its tangent `ẋ`.
 """
 function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
     x_vec, vec_to_x = to_vec(x)
