@@ -4,9 +4,9 @@
 Transform `x` into a `Vector`, and return the vector, and a closure which inverts the
 transformation.
 """
-function to_vec(x::T) where {T<:Number}
+function to_vec(x::Number)
     function Number_from_vec(x_vec)
-        return T(first(x_vec))
+        return oftype(x, first(x_vec))
     end
     return [x], Number_from_vec
 end
@@ -14,24 +14,24 @@ end
 # (Abstract)Vectors
 to_vec(x::Vector{<:Number}) = (x, identity)
 
-function to_vec(x::T) where {T<:AbstractVector}
+function to_vec(x::AbstractVector)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
     function Vector_from_vec(x_vec)
         sz = cumsum(map(length, x_vecs))
         x_Vec = [backs[n](x_vec[sz[n] - length(x_vecs[n]) + 1:sz[n]]) for n in eachindex(x)]
-        return T(x_Vec)
+        return oftype(x, x_Vec)
     end
     return vcat(x_vecs...), Vector_from_vec
 end
 
 # (Abstract)Arrays
-function to_vec(x::T) where {T<:AbstractArray}
+function to_vec(x::AbstractArray)
 
     x_vec, from_vec = to_vec(vec(x))
 
     function Array_from_vec(x_vec)
-        return T(reshape(from_vec(x_vec), size(x)))
+        return oftype(x, reshape(from_vec(x_vec), size(x)))
     end
 
     return x_vec, Array_from_vec
