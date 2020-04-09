@@ -11,7 +11,7 @@ function to_vec(x::Number)
     return [x], Number_from_vec
 end
 
-# (Abstract)Vectors
+# Base case -- if x is already a Vector{<:Number} there's no conversion necessary.
 to_vec(x::Vector{<:Number}) = (x, identity)
 
 function to_vec(x::AbstractVector)
@@ -25,7 +25,6 @@ function to_vec(x::AbstractVector)
     return vcat(x_vecs...), Vector_from_vec
 end
 
-# (Abstract)Arrays
 function to_vec(x::AbstractArray)
 
     x_vec, from_vec = to_vec(vec(x))
