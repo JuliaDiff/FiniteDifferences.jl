@@ -16,7 +16,7 @@ function jacobian(fdm, f, x::Vector{<:Number}; len=nothing)
         return fdm(zero(eltype(x))) do ε
             xn = x[n]
             x[n] = xn + ε
-            ret = first(to_vec(f(x)))
+            ret = copy(first(to_vec(f(x))))  # copy required incase `f(x)` returns something that aliases `x`
             x[n] = xn  # Can't do `x[n] -= ϵ` as floating-point math is not associative
             return ret
         end

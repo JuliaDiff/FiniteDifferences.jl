@@ -6,40 +6,38 @@ transformation.
 """
 function to_vec(x::Number)
     function Number_from_vec(x_vec)
-        return first(x_vec)
+        return oftype(x, first(x_vec))
     end
     return [x], Number_from_vec
 end
 
-# Vectors
+# Base case -- if x is already a Vector{<:Number} there's no conversion necessary.
 to_vec(x::Vector{<:Number}) = (x, identity)
-function to_vec(x::Vector)
+
+function to_vec(x::AbstractVector)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
     function Vector_from_vec(x_vec)
         sz = cumsum(map(length, x_vecs))
-        return [backs[n](x_vec[sz[n] - length(x_vecs[n]) + 1:sz[n]]) for n in eachindex(x)]
+        x_Vec = [backs[n](x_vec[sz[n] - length(x_vecs[n]) + 1:sz[n]]) for n in eachindex(x)]
+        return oftype(x, x_Vec)
     end
     return vcat(x_vecs...), Vector_from_vec
 end
 
-# Arrays
-function to_vec(x::Array{<:Number})
-    function Array_from_vec(x_vec)
-        return reshape(x_vec, size(x))
-    end
-    return vec(x), Array_from_vec
-end
+function to_vec(x::AbstractArray)
 
-function to_vec(x::Array)
-    x_vec, back = to_vec(reshape(x, :))
+    x_vec, from_vec = to_vec(vec(x))
+
     function Array_from_vec(x_vec)
-        return reshape(back(x_vec), size(x))
+        return oftype(x, reshape(from_vec(x_vec), size(x)))
     end
+
     return x_vec, Array_from_vec
 end
 
-# AbstractArrays
+# Some specific subtypes of AbstractArray.
+
 function to_vec(x::T) where {T<:LinearAlgebra.AbstractTriangular}
     x_vec, back = to_vec(Matrix(x))
     function AbstractTriangular_from_vec(x_vec)
@@ -63,17 +61,25 @@ function to_vec(X::Diagonal)
 end
 
 function to_vec(X::Transpose)
+
+    x_vec, x_from_vec = to_vec(X.parent)
+
     function Transpose_from_vec(x_vec)
-        return Transpose(permutedims(reshape(x_vec, size(X))))
+        return Transpose(x_from_vec(x_vec))
     end
-    return vec(Matrix(X)), Transpose_from_vec
+
+    return x_vec, Transpose_from_vec
 end
 
 function to_vec(X::Adjoint)
+
+    x_vec, x_from_vec = to_vec(X.parent)
+
     function Adjoint_from_vec(x_vec)
-        return Adjoint(conj!(permutedims(reshape(x_vec, size(X)))))
+        return Adjoint(x_from_vec(x_vec))
     end
-    return vec(Matrix(X)), Adjoint_from_vec
+
+    return x_vec, Adjoint_from_vec
 end
 
 # Non-array data structures
