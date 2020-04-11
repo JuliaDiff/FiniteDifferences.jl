@@ -6,7 +6,7 @@ transformation.
 """
 function to_vec(x::Number)
     function Number_from_vec(x_vec)
-        return oftype(x, first(x_vec))
+        return first(x_vec)
     end
     return [x], Number_from_vec
 end
