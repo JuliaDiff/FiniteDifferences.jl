@@ -55,6 +55,9 @@ end
             test_to_vec(Op(randn(T, 4, 4)))
             test_to_vec(Op(randn(T, 6)))
             test_to_vec(Op(randn(T, 2, 5)))
+
+            A = randn(T, 3, 3)
+            @test reshape(first(to_vec(Op(A))), 3, 3) == Op(A)
         end
 
         @testset "Tuples" begin

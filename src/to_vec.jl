@@ -61,25 +61,17 @@ function to_vec(X::Diagonal)
 end
 
 function to_vec(X::Transpose)
-
-    x_vec, x_from_vec = to_vec(X.parent)
-
     function Transpose_from_vec(x_vec)
-        return Transpose(x_from_vec(x_vec))
+        return Transpose(permutedims(reshape(x_vec, size(X))))
     end
-
-    return x_vec, Transpose_from_vec
+    return vec(Matrix(X)), Transpose_from_vec
 end
 
 function to_vec(X::Adjoint)
-
-    x_vec, x_from_vec = to_vec(X.parent)
-
     function Adjoint_from_vec(x_vec)
-        return Adjoint(x_from_vec(x_vec))
+        return Adjoint(conj!(permutedims(reshape(x_vec, size(X)))))
     end
-
-    return x_vec, Adjoint_from_vec
+    return vec(Matrix(X)), Adjoint_from_vec
 end
 
 # Non-array data structures
