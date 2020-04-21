@@ -93,7 +93,7 @@ end
 
         # Addition.
         dx, dy = FiniteDifferences.jacobian(fdm, +, x, y)
-        @test dz ≈ [1 0; 0 1]
+        @test dx ≈ [1 0; 0 1]
         @test dy ≈ [1 0; 0 1]
 
         # Negation.
@@ -104,5 +104,10 @@ end
         dx, dy = FiniteDifferences.jacobian(fdm, *, x, y)
         @test dx ≈ [real(y) -imag(y); imag(y) real(y)]
         @test dy ≈ [real(x) -imag(x); imag(x) real(x)]
+
+        # Magnitude
+        dx = FiniteDifferences.grad(fdm, abs2, x)
+        @test real(dx) ≈ 2 * real(x)
+        @test imag(dx) ≈ 2 * imag(x)
     end
 end
