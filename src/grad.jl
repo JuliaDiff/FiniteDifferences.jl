@@ -2,11 +2,11 @@
     jacobian(fdm, f, x...)
 
 Approximate the Jacobian of `f` at `x` using `fdm`. Results will be returned as a
-`Matrix{<:Number}` of `size(length(y_vec), length(x_vec))` where `x_vec` is the flattened
+`Matrix{<:Real}` of `size(length(y_vec), length(x_vec))` where `x_vec` is the flattened
 version of `x`, and `y_vec` the flattened version of `f(x...)`. Flattening performed by
 [`to_vec`](@ref).
 """
-function jacobian(fdm, f, x::Vector{<:Number}; len=nothing)
+function jacobian(fdm, f, x::Vector{<:Real}; len=nothing)
     len !== nothing && Base.depwarn(
         "`len` keyword argument to `jacobian` is no longer required " *
         "and will not be permitted in the future.",
@@ -38,11 +38,11 @@ end
 replace_arg(x, xs::Tuple, k::Int) = ntuple(p -> p == k ? x : xs[p], length(xs))
 
 """
-    _jvp(fdm, f, x::Vector{<:Number}, ẋ::AbstractVector{<:Number})
+    _jvp(fdm, f, x::Vector{<:Real}, ẋ::AbstractVector{<:Real})
 
 Convenience function to compute `jacobian(f, x) * ẋ`.
 """
-function _jvp(fdm, f, x::Vector{<:Number}, ẋ::Vector{<:Number})
+function _jvp(fdm, f, x::Vector{<:Real}, ẋ::Vector{<:Real})
     return fdm(ε -> f(x .+ ε .* ẋ), zero(eltype(x)))
 end
 
@@ -75,7 +75,7 @@ end
 
 j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]
 
-function _j′vp(fdm, f, ȳ::Vector{<:Number}, x::Vector{<:Number})
+function _j′vp(fdm, f, ȳ::Vector{<:Real}, x::Vector{<:Real})
     return transpose(first(jacobian(fdm, f, x))) * ȳ
 end
 
