@@ -83,31 +83,4 @@ end
         x_vec, from_vec = to_vec(x)
         @test_throws MethodError from_vec(randn(10))
     end
-
-    # Actually test that the correct thing happens via to_vec.
-    @testset "Complex correctness - $T" for T in [ComplexF32, ComplexF64]
-        rng = MersenneTwister(123456)
-        x = randn(rng, T)
-        y = randn(rng, T)
-        fdm = FiniteDifferences.Central(5, 1)
-
-        # Addition.
-        dx, dy = FiniteDifferences.jacobian(fdm, +, x, y)
-        @test dx ≈ [1 0; 0 1]
-        @test dy ≈ [1 0; 0 1]
-
-        # Negation.
-        dx, = FiniteDifferences.jacobian(fdm, -, x)
-        @test dx ≈ [-1 0; 0 -1]
-
-        # Multiplication.
-        dx, dy = FiniteDifferences.jacobian(fdm, *, x, y)
-        @test dx ≈ [real(y) -imag(y); imag(y) real(y)]
-        @test dy ≈ [real(x) -imag(x); imag(x) real(x)]
-
-        # Magnitude
-        dx = FiniteDifferences.grad(fdm, abs2, x)
-        @test real(dx) ≈ 2 * real(x)
-        @test imag(dx) ≈ 2 * imag(x)
-    end
 end
