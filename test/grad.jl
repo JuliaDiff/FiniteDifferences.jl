@@ -22,33 +22,6 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
         @test xc == x
     end
 
-    # Actually test that the correct thing happens via to_vec.
-    @testset "Complex correctness - $T" for T in (ComplexF64,)
-        rng = MersenneTwister(123456)
-        x = randn(rng, T)
-        y = randn(rng, T)
-        fdm = FiniteDifferences.Central(5, 1)
-
-        # Addition.
-        dx, dy = FiniteDifferences.jacobian(fdm, +, x, y)
-        @test dx ≈ [1 0; 0 1]
-        @test dy ≈ [1 0; 0 1]
-
-        # Negation.
-        dx, = FiniteDifferences.jacobian(fdm, -, x)
-        @test dx ≈ [-1 0; 0 -1]
-
-        # Multiplication.
-        dx, dy = FiniteDifferences.jacobian(fdm, *, x, y)
-        @test dx ≈ [real(y) -imag(y); imag(y) real(y)]
-        @test dy ≈ [real(x) -imag(x); imag(x) real(x)]
-
-        # Magnitude
-        dx, = FiniteDifferences.grad(fdm, abs2, x)
-        @test real(dx) ≈ 2 * real(x)
-        @test imag(dx) ≈ 2 * imag(x)
-    end
-
     function check_jac_and_jvp_and_j′vp(fdm, f, ȳ::Array, x::Array, ẋ::Array, J_exact)
         xc = copy(x)
 
@@ -154,5 +127,54 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
         x̄ȳ_multi = j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y)
         @test x̄ȳ_manual ≈ vcat(x̄ȳ_auto...)
         @test x̄ȳ_manual ≈ vcat(x̄ȳ_multi...)
+    end
+
+    # Tests for complex numbers, to prevent regressions against
+    # https://github.com/JuliaDiff/FiniteDifferences.jl/pull/76 and
+    # https://github.com/JuliaDiff/FiniteDifferences.jl/issues/75
+    @testset "Complex correctness - $T" for T in (ComplexF64,)
+        rng = MersenneTwister(123456)
+        x = randn(rng, T)
+        y = randn(rng, T)
+        fdm = FiniteDifferences.Central(5, 1)
+
+        # Addition.
+        dx, dy = FiniteDifferences.jacobian(fdm, +, x, y)
+        @test dx ≈ [1 0; 0 1]
+        @test dy ≈ [1 0; 0 1]
+
+        # Negation.
+        dx, = FiniteDifferences.jacobian(fdm, -, x)
+        @test dx ≈ [-1 0; 0 -1]
+
+        # Multiplication.
+        dx, dy = FiniteDifferences.jacobian(fdm, *, x, y)
+        @test dx ≈ [real(y) -imag(y); imag(y) real(y)]
+        @test dy ≈ [real(x) -imag(x); imag(x) real(x)]
+
+        # Magnitude
+        dx, = FiniteDifferences.grad(fdm, abs2, x)
+        @test real(dx) ≈ 2 * real(x)
+        @test imag(dx) ≈ 2 * imag(x)
+
+        # Concatenate tangents / cotangents.
+        ẋ = randn(rng, T)
+        ẏ = randn(rng, T)
+        ẋẏ = vcat(first(to_vec(ẋ)), first(to_vec(ẏ)))
+        z̄ = randn(rng, T)
+        z̄_vec = first(to_vec(z̄))
+
+        # Check jvp against jacobian result.
+        f(x, y) = 5 * sin(x) * cos(y)
+        Jx, Jy = FiniteDifferences.jacobian(fdm, f, x, y)
+        ż = jvp(fdm, f, (x, ẋ), (y, ẏ))
+        ż_vec = [real(ż), imag(ż)]
+        ż_manual = hcat(Jx, Jy) * ẋẏ
+        @test ż_vec ≈ ż_manual
+
+        # Check j′vp against jacobian result.
+        x̄, ȳ = j′vp(fdm, f, z̄, x, y)
+        @test [real(x̄), imag(x̄)] ≈ Jx'z̄_vec
+        @test [real(ȳ), imag(ȳ)] ≈ Jy'z̄_vec
     end
 end
