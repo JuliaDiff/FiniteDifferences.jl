@@ -4,22 +4,15 @@
 Transform `x` into a `Vector`, and return the vector, and a closure which inverts the
 transformation.
 """
-function to_vec(x::Real)
-    function Real_from_vec(x_vec)
+function to_vec(x::Number)
+    function Number_from_vec(x_vec)
         return first(x_vec)
     end
-    return [x], Real_from_vec
+    return [x], Number_from_vec
 end
 
-function to_vec(z::Complex)
-    function Complex_from_vec(z_vec)
-        return Complex(z_vec[1], z_vec[2])
-    end
-    return [real(z), imag(z)], Complex_from_vec
-end
-
-# Base case -- if x is already a Vector{<:Real} there's no conversion necessary.
-to_vec(x::Vector{<:Real}) = (x, identity)
+# Base case -- if x is already a Vector{<:Number} there's no conversion necessary.
+to_vec(x::Vector{<:Number}) = (x, identity)
 
 function to_vec(x::AbstractVector)
     x_vecs_and_backs = map(to_vec, x)
