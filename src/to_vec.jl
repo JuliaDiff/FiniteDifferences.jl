@@ -53,19 +53,12 @@ function to_vec(x::T) where {T<:LinearAlgebra.AbstractTriangular}
     return x_vec, AbstractTriangular_from_vec
 end
 
-function to_vec(x::Symmetric)
-    function Symmetric_from_vec(x_vec)
-        return Symmetric(reshape(x_vec, size(x)), Symbol(x.uplo))
-    end
-    return vec(Matrix(x)), Symmetric_from_vec
-end
-
-function to_vec(x::Hermitian)
+function to_vec(x::T) where {T<:LinearAlgebra.HermOrSym}
     x_vec, back = to_vec(Matrix(x))
-    function Hermitian_from_vec(x_vec)
-        return Hermitian(back(x_vec), Symbol(x.uplo))
+    function HermOrSym_from_vec(x_vec)
+        return T(back(x_vec), x.uplo)
     end
-    return x_vec, Hermitian_from_vec
+    return x_vec, HermOrSym_from_vec
 end
 
 function to_vec(X::Diagonal)
