@@ -45,11 +45,20 @@ end
         test_to_vec([randn(T, 5, 4, 3), (5, 4, 3), 2.0])
         test_to_vec(reshape([1.0, randn(T, 5, 4, 3), randn(T, 4, 3), 2.0], 2, 2))
         test_to_vec(UpperTriangular(randn(T, 13, 13)))
-        test_to_vec(Symmetric(randn(T, 11, 11)))
         test_to_vec(Diagonal(randn(T, 7)))
         test_to_vec(DummyType(randn(T, 2, 9)))
         test_to_vec(SVector{2, T}(1.0, 2.0))
         test_to_vec(SMatrix{2, 2, T}(1.0, 2.0, 3.0, 4.0))
+
+        @testset "$Op" for Op in (Symmetric, Hermitian)
+            test_to_vec(Op(randn(T, 11, 11)))
+            @testset "$uplo" for uplo in (:L, :U)
+                A = Op(randn(T, 11, 11), uplo)
+                test_to_vec(A)
+                x_vec, back = to_vec(A)
+                @test back(x_vec).uplo == A.uplo
+            end
+        end
 
         @testset "$Op" for Op in (Adjoint, Transpose)
             test_to_vec(Op(randn(T, 4, 4)))
