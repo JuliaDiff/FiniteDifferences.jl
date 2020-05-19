@@ -55,7 +55,7 @@ end
 
 function to_vec(x::Symmetric)
     function Symmetric_from_vec(x_vec)
-        return Symmetric(reshape(x_vec, size(x)))
+        return Symmetric(reshape(x_vec, size(x)), Symbol(x.uplo))
     end
     return vec(Matrix(x)), Symmetric_from_vec
 end
