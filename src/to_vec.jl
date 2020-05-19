@@ -60,6 +60,14 @@ function to_vec(x::Symmetric)
     return vec(Matrix(x)), Symmetric_from_vec
 end
 
+function to_vec(x::Hermitian)
+    x_vec, back = to_vec(Matrix(x))
+    function Hermitian_from_vec(x_vec)
+        return Hermitian(back(x_vec), Symbol(x.uplo))
+    end
+    return x_vec, Hermitian_from_vec
+end
+
 function to_vec(X::Diagonal)
     function Diagonal_from_vec(x_vec)
         return Diagonal(reshape(x_vec, size(X)...))
