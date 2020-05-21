@@ -62,24 +62,27 @@ function to_vec(x::T) where {T<:LinearAlgebra.HermOrSym}
 end
 
 function to_vec(X::Diagonal)
+    x_vec, back = to_vec(Matrix(X))
     function Diagonal_from_vec(x_vec)
-        return Diagonal(reshape(x_vec, size(X)...))
+        return Diagonal(back(x_vec))
     end
-    return vec(Matrix(X)), Diagonal_from_vec
+    return x_vec, Diagonal_from_vec
 end
 
 function to_vec(X::Transpose)
+    x_vec, back = to_vec(Matrix(X))
     function Transpose_from_vec(x_vec)
-        return Transpose(permutedims(reshape(x_vec, size(X))))
+        return Transpose(permutedims(back(x_vec)))
     end
-    return vec(Matrix(X)), Transpose_from_vec
+    return x_vec, Transpose_from_vec
 end
 
 function to_vec(X::Adjoint)
+    x_vec, back = to_vec(Matrix(X))
     function Adjoint_from_vec(x_vec)
-        return Adjoint(conj!(permutedims(reshape(x_vec, size(X)))))
+        return Adjoint(conj!(permutedims(back(x_vec))))
     end
-    return vec(Matrix(X)), Adjoint_from_vec
+    return x_vec, Adjoint_from_vec
 end
 
 # Non-array data structures
