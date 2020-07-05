@@ -41,6 +41,16 @@ end
         (randn(), cos),
         (randn(), Foo(5.0, 4, randn(5, 2))),
         (randn(), Foo(randn(), 1, Foo(randn(), 1, 1))),
+
+        # LinearAlgebra types (also just structs).
+        (randn(), UpperTriangular(randn(2, 2))),
+        (randn(), Diagonal(randn(4))),
+        (randn(), SVector{2, Float64}(1.0, 2.0)),
+        (randn(), SMatrix{2, 2, ComplexF64}(1.0, 2.0, 3.0, 4.0)),
+        (randn(), Symmetric(randn(2, 2))),
+        (randn(), Hermitian(randn(ComplexF64, 1, 1))),
+        (randn(), Adjoint(randn(ComplexF64, 3, 3))),
+        (randn(), Transpose(randn(3))),
     ]
         test_difference(ε, x, rand_tangent(x))
     end
