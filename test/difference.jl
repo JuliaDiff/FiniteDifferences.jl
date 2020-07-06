@@ -54,4 +54,7 @@ end
     ]
         test_difference(ε, x, rand_tangent(x))
     end
+
+    # Ensure struct fallback errors for non-struct types.
+    @test_throws ArgumentError invoke(difference, Tuple{Float64, T, T} where {T}, 5.0, 5.0, 5.0)
 end

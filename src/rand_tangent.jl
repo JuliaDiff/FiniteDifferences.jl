@@ -8,7 +8,6 @@ rand_tangent(x) = rand_tangent(Random.GLOBAL_RNG, x)
 rand_tangent(rng::AbstractRNG, x::Symbol) = DoesNotExist()
 rand_tangent(rng::AbstractRNG, x::AbstractChar) = DoesNotExist()
 rand_tangent(rng::AbstractRNG, x::AbstractString) = DoesNotExist()
-rand_tangent(rng::AbstractRNG, ::Nothing) = DoesNotExist()
 
 rand_tangent(rng::AbstractRNG, x::Integer) = DoesNotExist()
 
