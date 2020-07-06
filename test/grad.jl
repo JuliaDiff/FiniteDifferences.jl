@@ -14,6 +14,26 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
             @test ż_manual ≈ ż_auto
             @test ż_manual ≈ ż_multi
         end
+        @testset "vector output" begin
+            x, y = randn(rng, T, N), randn(rng, T, N)
+            ẋ, ẏ = randn(rng, T, N), randn(rng, T, N)
+            ż_manual = @. cos(x) * ẋ + cos(y) * ẏ
+            ż_auto = jvp(fdm, x->sin.(x[1]) .+ sin.(x[2]), ((x, y), (ẋ, ẏ)))
+            ż_multi = jvp(fdm, (x, y)->sin.(x) .+ sin.(y), (x, ẋ), (y, ẏ))
+            @test ż_manual ≈ ż_auto
+            @test ż_manual ≈ ż_multi
+        end
+        @testset "tuple output" begin
+            x, y = randn(rng, T, N), randn(rng, T, N)
+            ẋ, ẏ = randn(rng, T, N), randn(rng, T, N)
+            ż_manual = (cos.(x) .* ẋ, cos.(y) .* ẏ)
+            ż_auto = jvp(fdm, x->(sin.(x[1]), sin.(x[2])), ((x, y), (ẋ, ẏ)))
+            ż_multi = jvp(fdm, (x, y)->(sin.(x), sin.(y)), (x, ẋ), (y, ẏ))
+            @test ż_auto isa Tuple
+            @test ż_multi isa Tuple
+            @test collect(ż_manual) ≈ collect(ż_auto)
+            @test collect(ż_manual) ≈ collect(ż_multi)
+        end
     end
 
     @testset "grad(::$T)" for T in (Float64,)
