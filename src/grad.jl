@@ -76,6 +76,7 @@ end
 j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]
 
 function _j′vp(fdm, f, ȳ::Vector{<:Real}, x::Vector{<:Real})
+    isempty(x) && return eltype(ȳ)[] # if x is empty, then so is the jacobian and x̄
     return transpose(first(jacobian(fdm, f, x))) * ȳ
 end
 
