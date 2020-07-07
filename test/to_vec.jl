@@ -83,6 +83,12 @@ end
                 test_to_vec(Dict(:a=>3 + 2im, :b=>randn(T, 10, 11), :c=>(5+im, 2-im, 1+im)))
             end
         end
+
+        @testset "Generator(identity, x)" begin
+            test_to_vec((x for x in randn(T, 3)))
+            test_to_vec((x for x in randn(T, 3, 4)))
+            test_to_vec((x for x in randn(T, 3, 4, 5)))
+        end
     end
 
     @testset "FillVector" begin
