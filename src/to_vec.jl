@@ -107,3 +107,13 @@ function to_vec(d::Dict)
     end
     return d_vec, Dict_from_vec
 end
+
+# Enable basic conversion of generators
+# just identity for now to avoid doing the wrong thing for closures
+function to_vec(g::Base.Generator{<:Any,typeof(identity)})
+    g_vec, back = to_vec(collect(g))
+    function Generator_from_vec(v)
+        return Base.Generator(identity, back(v))
+    end
+    return g_vec, Generator_from_vec
+end
