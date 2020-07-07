@@ -59,7 +59,7 @@ function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
 end
 function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
     x, ẋ = collect(zip(xẋs...))
-    return jvp(fdm, xs->f(xs...)[1], (x, ẋ))
+    return jvp(fdm, xs->f(xs...), (x, ẋ))
 end
 
 """
