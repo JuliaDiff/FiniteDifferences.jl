@@ -1,7 +1,7 @@
 @testset "generate_tangent" begin
     rng = MersenneTwister(123456)
 
-    foreach([
+    @testset "Primal: $(typeof(x)), Tangent: $T_tangent" for (x, T_tangent) in [
 
         # Things without sensible tangents.
         ("hi", DoesNotExist),

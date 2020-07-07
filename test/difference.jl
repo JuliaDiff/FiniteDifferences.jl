@@ -6,7 +6,7 @@ end
 
 @testset "difference" begin
 
-    @testset "$(typeof(x))" for (ε, x) in [
+    @testset "Primal: $(typeof(x))" for (ε, x) in [
 
         # Test things that don't have tangents.
         (randn(), :a),
