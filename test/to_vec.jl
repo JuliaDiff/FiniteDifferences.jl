@@ -87,7 +87,7 @@ end
         @testset "Generator(identity, x)" begin
             for dims in ((3,), (3, 4), (3, 4, 5))
                 xarray = randn(T, dims...)
-                x = (xi for xi in xarray)
+                x = Base.Generator(identity, xarray)
                 x_vec, back = to_vec(x)
                 @test x_vec isa Vector
                 @test all(s -> s isa Real, x_vec)
