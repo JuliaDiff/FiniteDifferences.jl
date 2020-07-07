@@ -1,10 +1,3 @@
-# Test struct for `rand_tangent`.
-struct Foo
-   a::Float64
-   b::Int
-   c::Any
-end
-
 @testset "generate_tangent" begin
     rng = MersenneTwister(123456)
 
