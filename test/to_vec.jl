@@ -85,9 +85,15 @@ end
         end
 
         @testset "Generator(identity, x)" begin
-            test_to_vec((x for x in randn(T, 3)))
-            test_to_vec((x for x in randn(T, 3, 4)))
-            test_to_vec((x for x in randn(T, 3, 4, 5)))
+            for dims in ((3,), (3, 4), (3, 4, 5))
+                xarray = randn(T, dims...)
+                x = (xi for xi in xarray)
+                x_vec, back = to_vec(x)
+                @test x_vec isa Vector
+                @test all(s -> s isa Real, x_vec)
+                @test back(x_vec) isa Base.Generator{typeof(xarray),typeof(identity)}
+                @test collect(back(x_vec)) == xarray
+            end
         end
     end
 
