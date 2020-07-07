@@ -4,14 +4,36 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
 
     @testset "jvp(::$T)" for T in (Float64,)
         rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
-        x, y = randn(rng, T, N), randn(rng, T, M)
-        ẋ, ẏ = randn(rng, T, N), randn(rng, T, M)
-        xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
-        ż_manual = _jvp(fdm, (xy)->sum(sin, xy), xy, ẋẏ)[1]
-        ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))
-        ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))
-        @test ż_manual ≈ ż_auto
-        @test ż_manual ≈ ż_multi
+        @testset "scalar output" begin
+            x, y = randn(rng, T, N), randn(rng, T, M)
+            ẋ, ẏ = randn(rng, T, N), randn(rng, T, M)
+            xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
+            ż_manual = _jvp(fdm, (xy)->sum(sin, xy), xy, ẋẏ)[1]
+            ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))
+            ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))
+            @test ż_manual ≈ ż_auto
+            @test ż_manual ≈ ż_multi
+        end
+        @testset "vector output" begin
+            x, y = randn(rng, T, N), randn(rng, T, N)
+            ẋ, ẏ = randn(rng, T, N), randn(rng, T, N)
+            ż_manual = @. cos(x) * ẋ + cos(y) * ẏ
+            ż_auto = jvp(fdm, x->sin.(x[1]) .+ sin.(x[2]), ((x, y), (ẋ, ẏ)))
+            ż_multi = jvp(fdm, (x, y)->sin.(x) .+ sin.(y), (x, ẋ), (y, ẏ))
+            @test ż_manual ≈ ż_auto
+            @test ż_manual ≈ ż_multi
+        end
+        @testset "tuple output" begin
+            x, y = randn(rng, T, N), randn(rng, T, N)
+            ẋ, ẏ = randn(rng, T, N), randn(rng, T, N)
+            ż_manual = (cos.(x) .* ẋ, cos.(y) .* ẏ)
+            ż_auto = jvp(fdm, x->(sin.(x[1]), sin.(x[2])), ((x, y), (ẋ, ẏ)))
+            ż_multi = jvp(fdm, (x, y)->(sin.(x), sin.(y)), (x, ẋ), (y, ẏ))
+            @test ż_auto isa Tuple
+            @test ż_multi isa Tuple
+            @test collect(ż_manual) ≈ collect(ż_auto)
+            @test collect(ż_manual) ≈ collect(ż_multi)
+        end
     end
 
     @testset "grad(::$T)" for T in (Float64,)
@@ -118,15 +140,17 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
     end
 
     @testset "j′vp(::$T)" for T in (Float64,)
-        rng, N, M, fdm = MersenneTwister(123456), 2, 3, central_fdm(5, 1)
-        x, y = randn(rng, T, N), randn(rng, T, M)
-        z̄ = randn(rng, T, N + M)
-        xy = vcat(x, y)
-        x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)[1]
-        x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))[1]
-        x̄ȳ_multi = j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y)
-        @test x̄ȳ_manual ≈ vcat(x̄ȳ_auto...)
-        @test x̄ȳ_manual ≈ vcat(x̄ȳ_multi...)
+        rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
+        @testset "x with length $N, y with length $M" for (N, M) in ((2, 3), (0, 0), (0, 3))
+            x, y = randn(rng, T, N), randn(rng, T, M)
+            z̄ = randn(rng, T, N + M)
+            xy = vcat(x, y)
+            x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)[1]
+            x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))[1]
+            x̄ȳ_multi = j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y)
+            @test x̄ȳ_manual ≈ vcat(x̄ȳ_auto...)
+            @test x̄ȳ_manual ≈ vcat(x̄ȳ_multi...)
+        end
     end
 
     # Tests for complex numbers, to prevent regressions against
