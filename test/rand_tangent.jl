@@ -67,7 +67,7 @@
             Transpose(randn(3)),
             Composite{Transpose{Float64, Vector{Float64}}},
         ),
-    ]) do (x, T_tangent)
+    ]
         @test rand_tangent(rng, x) isa T_tangent
         @test rand_tangent(x) isa T_tangent
         @test x + rand_tangent(rng, x) isa typeof(x)
