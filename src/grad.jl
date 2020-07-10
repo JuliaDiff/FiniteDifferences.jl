@@ -59,7 +59,7 @@ function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
 end
 function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
     x, ẋ = collect(zip(xẋs...))
-    return jvp(fdm, xs->f(xs...)[1], (x, ẋ))
+    return jvp(fdm, xs->f(xs...), (x, ẋ))
 end
 
 """
@@ -76,6 +76,7 @@ end
 j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]
 
 function _j′vp(fdm, f, ȳ::Vector{<:Real}, x::Vector{<:Real})
+    isempty(x) && return eltype(ȳ)[] # if x is empty, then so is the jacobian and x̄
     return transpose(first(jacobian(fdm, f, x))) * ȳ
 end
 
