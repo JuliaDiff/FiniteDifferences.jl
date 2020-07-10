@@ -1,6 +1,8 @@
 function test_difference(ε::Real, x, dx)
     y = x + ε * dx
     dx_diff = difference(ε, y, x)
+    # TODO: `@test isapprox(dx, dx_diff)` once `isapprox` is defined appropriately
+    # see https://github.com/JuliaDiff/ChainRulesCore.jl/issues/184
     @test typeof(dx) == typeof(dx_diff)
 end
 
