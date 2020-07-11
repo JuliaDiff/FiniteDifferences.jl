@@ -1,3 +1,5 @@
+using FiniteDifferences: rand_tangent
+
 @testset "generate_tangent" begin
     rng = MersenneTwister(123456)
 

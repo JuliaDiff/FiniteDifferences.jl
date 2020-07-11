@@ -1,3 +1,5 @@
+using FiniteDifferences: rand_tangent, difference
+
 function test_difference(ε::Real, x, dx)
     y = x + ε * dx
     dx_diff = difference(ε, y, x)
