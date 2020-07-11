@@ -5,7 +5,7 @@ module FiniteDifferences
     using Printf
     using Random
 
-    export to_vec, grad, jacobian, jvp, j′vp, difference, rand_tangent
+    export to_vec, grad, jacobian, jvp, j′vp
 
     include("rand_tangent.jl")
     include("difference.jl")
