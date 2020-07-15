@@ -187,6 +187,8 @@ The recognized keywords are:
 * `adapt`: The number of adaptive steps to use improve the estimate of `bound`.
 * `bound`: Bound on the value of the function and its derivatives at `x`.
 * `condition`: The condition number. See [`DEFAULT_CONDITION`](@ref).
+* `factor`: Estimate of the relative error on the function evaluations a multiple of the
+    machine epsilon. Defaults to `1`.
 * `eps`: The assumed roundoff error. Defaults to `eps()` plus [`TINY`](@ref).
 
 !!! warning
@@ -222,6 +224,7 @@ function fdm(
     ::Val{true};
     condition=DEFAULT_CONDITION,
     bound=_estimate_bound(f(x), condition),
+    factor=1,
     eps=add_tiny(Base.eps(bound)),
     adapt=m.history.adapt,
     max_step=convert(T, 0.1),
@@ -259,7 +262,7 @@ function fdm(
     end
 
     # Set the step size by minimising an upper bound on the error of the estimate.
-    C₁ = eps * sum(abs, coefs)
+    C₁ = eps * sum(abs, coefs) * factor
     C₂ = bound * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factorial(p)
     ĥ = min((q / (p - q) * C₁ / C₂)^(1 / p), max_step)
 
@@ -267,7 +270,7 @@ function fdm(
     accuracy = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
 
     # Estimate the value of the derivative.
-    dfdx = sum(i -> coefs[i] * f(x + ĥ * grid[i]), eachindex(grid)) / ĥ^q
+    dfdx = sum(i -> coefs[i] * f(T.(x + ĥ * grid[i])), eachindex(grid)) / ĥ^q
 
     m.history.eps = eps
     m.history.bound = bound
