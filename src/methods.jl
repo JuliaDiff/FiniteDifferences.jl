@@ -222,9 +222,9 @@ function fdm(
     ::Val{true};
     condition=DEFAULT_CONDITION,
     bound=_estimate_bound(f(x), condition),
-    eps=add_tiny(Base.eps(T(bound))),
+    eps=add_tiny(Base.eps(bound)),
     adapt=m.history.adapt,
-    max_step=T(0.1),
+    max_step=convert(T, 0.1),
 ) where {T<:AbstractFloat, M<:FiniteDifferenceMethod}
     if M <: Nonstandard && adapt > 0
         throw(ArgumentError("can't adaptively compute bounds over Nonstandard grids"))
@@ -259,24 +259,22 @@ function fdm(
     end
 
     # Set the step size by minimising an upper bound on the error of the estimate.
-    C₁ = convert(T, eps * sum(abs, coefs))
-    C₂ = convert(
-        T, bound * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factorial(p),
-    )
-    ĥ = min((T(q / (p - q)) * C₁ / C₂)^(T(1 / p)), max_step)
+    C₁ = eps * sum(abs, coefs)
+    C₂ = bound * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factorial(p)
+    ĥ = min((q / (p - q) * C₁ / C₂)^(1 / p), max_step)
 
     # Estimate the accuracy of the method.
     accuracy = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
 
     # Estimate the value of the derivative.
-    dfdx = sum(i->convert(T, coefs[i]) * f(convert(T, x + ĥ * grid[i])), eachindex(grid)) / ĥ^q
+    dfdx = sum(i -> coefs[i] * f(x + ĥ * grid[i]), eachindex(grid)) / ĥ^q
 
     m.history.eps = eps
     m.history.bound = bound
     m.history.step = ĥ
     m.history.accuracy = accuracy
 
-    return m, dfdx
+    return m, T.(dfdx)
 end
 
 # Handle inputs that aren't `AbstractFloat`s -- assume what you wanted was a `Float64`. This

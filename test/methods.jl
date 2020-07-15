@@ -4,7 +4,6 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard
 
     # The different approaches to approximating the gradient to try.
     methods = [forward_fdm, backward_fdm, central_fdm]
-    methods = [forward_fdm]
 
     # The different floating-point types to try.
     types = [Float32, Float64]
@@ -15,7 +14,7 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard
         (f=sin, d1=cos(1), d2=-sin(1)),
         (f=exp, d1=exp(1), d2=exp(1)),
         (f=abs2, d1=2, d2=2),
-        (f=sqrt, d1=0.5, d2=-0.25),
+        (f=x -> sqrt(x + 1), d1=0.5 / sqrt(2), d2=-0.25 / 2^(3/2)),
     ]
 
     # Test all combinations of the above settings. i.e. differentiate all functions using
