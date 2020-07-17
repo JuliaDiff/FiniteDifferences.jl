@@ -98,6 +98,15 @@ function to_vec(x::Tuple)
     return reduce(vcat, x_vecs), Tuple_from_vec
 end
 
+function to_vec(x::NamedTuple)
+    x_vec, back = to_vec(values(x))
+    function NamedTuple_from_vec(v)
+        v_vec_vec = back(v)
+        return typeof(x)(v_vec_vec)
+    end
+    return x_vec, NamedTuple_from_vec
+end
+
 # Convert to a vector-of-vectors to make use of existing functionality.
 function to_vec(d::Dict)
     d_vec, back = to_vec(collect(values(d)))
