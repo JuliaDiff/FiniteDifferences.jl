@@ -76,6 +76,13 @@ end
             test_to_vec((DummyType(randn(T, 2, 7)), DummyType(randn(T, 3, 9))))
             test_to_vec((DummyType(randn(T, 3, 2)), randn(T, 11, 8)))
         end
+        @testset "NamedTuple" begin
+            if T == Float64
+                test_to_vec((a=5, b=randn(10, 11), c=(5, 4, 3)))
+            else
+                test_to_vec((a=3 + 2im, b=randn(T, 10, 11), c=(5+im, 2-im, 1+im)))
+            end
+        end
         @testset "Dictionary" begin
             if T == Float64
                 test_to_vec(Dict(:a=>5, :b=>randn(10, 11), :c=>(5, 4, 3)))
