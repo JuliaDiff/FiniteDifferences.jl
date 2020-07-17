@@ -5,8 +5,12 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard
     # The different approaches to approximating the gradient to try.
     methods = [forward_fdm, backward_fdm, central_fdm]
 
-    # The different floating-point types to try.
-    types = [Float32, Float64]
+    # The different floating point types to try and the associated required relative
+    # tolerance.
+    types = [
+        (T=Float32, rtol=1f-3),
+        (T=Float64, rtol=1e-7)
+    ]
 
     # The different functions to evaluate (.f), their first derivative at 1 (.d1),
     # and second derivative at 1 (.d2).
@@ -17,22 +21,27 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard
         (f=x -> sqrt(x + 1), d1=0.5 / sqrt(2), d2=-0.25 / 2^(3/2)),
     ]
 
-    # Test all combinations of the above settings. i.e. differentiate all functions using
+    # Test all combinations of the above settings, i.e. differentiate all functions using
     # all methods and data types.
-    @testset "foo=$(foo.f), method=$m, type=$T" for foo in foos, m in methods, T in types
+    @testset "foo=$(foo.f), method=$m, type=$(t.T)" for foo in foos, m in methods, t in types
+        T, rtol = t.T, t.rtol
 
         @testset "method-order=$order" for order in [1, 2, 3]
-            @test m(order, 0; bound=1)(foo.f, T(1)) isa T
-            @test m(order, 0; bound=1)(foo.f, T(1)) == T(foo.f(1))
+            @test m(order, 0; adapt=2)(foo.f, T(1)) isa T
+            @test m(order, 0; adapt=2)(foo.f, T(1)) == T(foo.f(1))
         end
 
-        @test m(10, 1; bound=1)(foo.f, T(1)) isa T
-        @test m(10, 1; bound=1)(foo.f, T(1)) ≈ T(foo.d1)
+        @test m(10, 1)(foo.f, T(1), factor=20) isa T
+        @test m(10, 1)(foo.f, T(1), factor=20) ≈ T(foo.d1) rtol=rtol
 
-        @test m(10, 2; bound=1)(foo.f, T(1)) isa T
+        @test m(10, 2; bound=1)(foo.f, T(1); factor=20) isa T
         if T == Float64
-            @test m(10, 2; bound=1)(foo.f, T(1)) ≈ T(foo.d2)
+            @test m(10, 2; bound=1)(foo.f, T(1); factor=20) ≈ T(foo.d2)
         end
+# # =======
+#         @test m(10, 2)(foo.f, T(1), factor=20) isa T
+#         @test m(10, 2)(foo.f, T(1), factor=20) ≈ T(foo.d2) rtol=rtol
+# # >>>>>>> 83fafda0167e1b951c87708eb2a9ce5742aa2d11
     end
 
     @testset "Adaptation improves estimate" begin
