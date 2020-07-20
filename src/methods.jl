@@ -187,9 +187,7 @@ The recognized keywords are:
 * `adapt`: The number of adaptive steps to use improve the estimate of `bound`.
 * `bound`: Bound on the value of the function and its derivatives at `x`.
 * `condition`: The condition number. See [`DEFAULT_CONDITION`](@ref).
-* `factor`: Estimate of the relative error on the function evaluations a multiple of the
-    machine epsilon. Defaults to `1`.
-* `eps`: The assumed roundoff error. Defaults to `eps()` plus [`TINY`](@ref).
+* `eps`: The assumed roundoff error. Defaults to `add_tiny(eps())`.
 
 !!! warning
     Bounds can't be adaptively computed over nonstandard grids; passing a value for
@@ -224,7 +222,6 @@ function fdm(
     ::Val{true};
     condition=DEFAULT_CONDITION,
     bound=_estimate_bound(f(x), condition),
-    factor=1,
     eps=add_tiny(Base.eps(bound)),
     adapt=m.history.adapt,
     max_step=convert(T, 0.1),
@@ -262,7 +259,7 @@ function fdm(
     end
 
     # Set the step size by minimising an upper bound on the error of the estimate.
-    C₁ = eps * sum(abs, coefs) * factor
+    C₁ = eps * sum(abs, coefs)
     C₂ = bound * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factorial(p)
     ĥ = min((q / (p - q) * C₁ / C₂)^(1 / p), max_step)
 
@@ -277,7 +274,7 @@ function fdm(
     m.history.step = ĥ
     m.history.accuracy = accuracy
 
-    return m, T.(dfdx)
+    return m, dfdx
 end
 
 # Handle inputs that aren't `AbstractFloat`s -- assume what you wanted was a `Float64`. This
