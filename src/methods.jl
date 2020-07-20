@@ -267,7 +267,6 @@ function fdm(
     accuracy = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
 
     # Estimate the value of the derivative.
-    # @show typeof(coefs), typeof(ĥ^q)
     dfdx = sum(i -> convert(T, coefs[i]) * f(T(x + ĥ * grid[i])), eachindex(grid)) / ĥ^q
 
     m.history.eps = eps
