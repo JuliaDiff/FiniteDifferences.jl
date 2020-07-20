@@ -261,13 +261,14 @@ function fdm(
     # Set the step size by minimising an upper bound on the error of the estimate.
     C₁ = eps * sum(abs, coefs)
     C₂ = bound * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factorial(p)
-    ĥ = min((q / (p - q) * C₁ / C₂)^(1 / p), max_step)
+    ĥ = convert(T, min((q / (p - q) * C₁ / C₂)^(1 / p), max_step))
 
     # Estimate the accuracy of the method.
     accuracy = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
 
     # Estimate the value of the derivative.
-    dfdx = sum(i -> coefs[i] * f(T.(x + ĥ * grid[i])), eachindex(grid)) / ĥ^q
+    # @show typeof(coefs), typeof(ĥ^q)
+    dfdx = sum(i -> convert(T, coefs[i]) * f(T(x + ĥ * grid[i])), eachindex(grid)) / ĥ^q
 
     m.history.eps = eps
     m.history.bound = bound
