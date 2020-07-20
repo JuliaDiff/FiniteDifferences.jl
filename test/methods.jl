@@ -1,30 +1,39 @@
 using FiniteDifferences: Forward, Backward, Central, Nonstandard
 
 @testset "Methods" begin
-    for f in [:forward_fdm, :backward_fdm, :central_fdm]
-        @eval @test $f(1, 0; bound=1)(sin, 1) == sin(1)
-        @eval @test $f(2, 0; bound=1)(sin, 1) == sin(1)
-        @eval @test $f(3, 0; bound=1)(sin, 1) == sin(1)
-        @eval @test $f(10, 1; bound=1)(sin, 1) ≈ cos(1)
-        @eval @test $f(10, 2; bound=1)(sin, 1) ≈ -sin(1)
 
-        @eval @test $f(1, 0; bound=1)(exp, 1) == exp(1)
-        @eval @test $f(2, 0; bound=1)(exp, 1) == exp(1)
-        @eval @test $f(3, 0; bound=1)(exp, 1) == exp(1)
-        @eval @test $f(10, 1; bound=1)(exp, 1) ≈ exp(1)
-        @eval @test $f(10, 2; bound=1)(exp, 1) ≈ exp(1)
+    # The different approaches to approximating the gradient to try.
+    methods = [forward_fdm, backward_fdm, central_fdm]
 
-        @eval @test $f(1, 0; bound=1)(abs2, 1) == 1
-        @eval @test $f(2, 0; bound=1)(abs2, 1) == 1
-        @eval @test $f(3, 0; bound=1)(abs2, 1) == 1
-        @eval @test $f(10, 1; bound=1)(abs2, 1) ≈ 2
-        @eval @test $f(10, 2; bound=1)(abs2, 1) ≈ 2
+    # The different floating point types to try and the associated required relative
+    # tolerance.
+    types = [Float32, Float64]
 
-        @eval @test $f(1, 0; bound=1)(sqrt, 1) == 1
-        @eval @test $f(2, 0; bound=1)(sqrt, 1) == 1
-        @eval @test $f(3, 0; bound=1)(sqrt, 1) == 1
-        @eval @test $f(10, 1; bound=1)(sqrt, 1) ≈ .5
-        @eval @test $f(10, 2; bound=1)(sqrt, 1) ≈ -.25
+    # The different functions to evaluate (.f), their first derivative at 1 (.d1),
+    # and second derivative at 1 (.d2).
+    foos = [
+        (f=sin, d1=cos(1), d2=-sin(1)),
+        (f=exp, d1=exp(1), d2=exp(1)),
+        (f=abs2, d1=2, d2=2),
+        (f=x -> sqrt(x + 1), d1=0.5 / sqrt(2), d2=-0.25 / 2^(3/2)),
+    ]
+
+    # Test all combinations of the above settings, i.e. differentiate all functions using
+    # all methods and data types.
+    @testset "foo=$(foo.f), method=$m, type=$(T)" for foo in foos, m in methods, T in types
+
+        @testset "method-order=$order" for order in [1, 2, 3]
+            @test m(order, 0; adapt=2)(foo.f, T(1)) isa T
+            @test m(order, 0; adapt=2)(foo.f, T(1)) == T(foo.f(1))
+        end
+
+        @test m(10, 1)(foo.f, T(1)) isa T
+        @test m(10, 1)(foo.f, T(1)) ≈ T(foo.d1)
+
+        @test m(10, 2; bound=1)(foo.f, T(1)) isa T
+        if T == Float64
+            @test m(10, 2; bound=1)(foo.f, T(1)) ≈ T(foo.d2)
+        end
     end
 
     @testset "Adaptation improves estimate" begin

@@ -8,7 +8,6 @@ central_fdm
 forward_fdm
 assert_approx_equal
 FiniteDifferences.DEFAULT_CONDITION
-FiniteDifferences.TINY
 ```
 
 ## Gradients

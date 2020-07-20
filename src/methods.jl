@@ -10,11 +10,11 @@ derivatives.
 const DEFAULT_CONDITION = 100
 
 """
-    FiniteDifferences.TINY
+    add_tiny(x::Real)
 
-A tiny number added to some quantities to ensure that division by 0 does not occur.
+Add a tiny number, 10^{-20}, to `x` while preserving its type.
 """
-const TINY = 1e-20
+add_tiny(x::T) where {T<:Real} = x + convert(T, 1e-20)
 
 forward_grid(p::Int) = 0:(p - 1)
 backward_grid(p::Int) = (1 - p):0
@@ -62,7 +62,7 @@ where the keyword arguments can be any of
 * `adapt`: The number of adaptive steps to use improve the estimate of `bound`.
 * `bound`: Bound on the value of the function and its derivatives at `x`.
 * `condition`: The condition number. See [`DEFAULT_CONDITION`](@ref).
-* `eps`: The assumed roundoff error. Defaults to `eps()` plus [`TINY`](@ref).
+* `eps`: The assumed roundoff error. Defaults to `add_tiny(eps())`.
 """
 abstract type FiniteDifferenceMethod end
 
@@ -171,7 +171,7 @@ end
 
 
 # Estimate the bound on the function value and its derivatives at a point
-_estimate_bound(x, cond) = cond * maximum(abs, x) + TINY
+_estimate_bound(x, cond) = add_tiny(cond * maximum(abs, x))
 
 """
     fdm(m::FiniteDifferenceMethod, f, x[, Val(false)]; kwargs...) -> Real
@@ -187,7 +187,7 @@ The recognized keywords are:
 * `adapt`: The number of adaptive steps to use improve the estimate of `bound`.
 * `bound`: Bound on the value of the function and its derivatives at `x`.
 * `condition`: The condition number. See [`DEFAULT_CONDITION`](@ref).
-* `eps`: The assumed roundoff error. Defaults to `eps()` plus [`TINY`](@ref).
+* `eps`: The assumed roundoff error. Defaults to `add_tiny(eps())`.
 
 !!! warning
     Bounds can't be adaptively computed over nonstandard grids; passing a value for
@@ -218,14 +218,14 @@ julia> fdm(central_fdm(2, 1), exp, 0, Val(true))
 function fdm(
     m::M,
     f,
-    x,
+    x::T,
     ::Val{true};
     condition=DEFAULT_CONDITION,
     bound=_estimate_bound(f(x), condition),
-    eps=(Base.eps(float(bound)) + TINY),
+    eps=add_tiny(Base.eps(bound)),
     adapt=m.history.adapt,
-    max_step=0.1,
-) where M<:FiniteDifferenceMethod
+    max_step=convert(T, 0.1),
+) where {T<:AbstractFloat, M<:FiniteDifferenceMethod}
     if M <: Nonstandard && adapt > 0
         throw(ArgumentError("can't adaptively compute bounds over Nonstandard grids"))
     end
@@ -261,13 +261,13 @@ function fdm(
     # Set the step size by minimising an upper bound on the error of the estimate.
     C₁ = eps * sum(abs, coefs)
     C₂ = bound * sum(n->abs(coefs[n] * grid[n]^p), eachindex(coefs)) / factorial(p)
-    ĥ = min((q / (p - q) * C₁ / C₂)^(1 / p), max_step)
+    ĥ = convert(T, min((q / (p - q) * C₁ / C₂)^(1 / p), max_step))
 
     # Estimate the accuracy of the method.
     accuracy = ĥ^(-q) * C₁ + ĥ^(p - q) * C₂
 
     # Estimate the value of the derivative.
-    dfdx = sum(i->coefs[i] * f(x + ĥ * grid[i]), eachindex(grid)) / ĥ^q
+    dfdx = sum(i -> convert(T, coefs[i]) * f(T(x + ĥ * grid[i])), eachindex(grid)) / ĥ^q
 
     m.history.eps = eps
     m.history.bound = bound
@@ -277,7 +277,13 @@ function fdm(
     return m, dfdx
 end
 
-function fdm(m::FiniteDifferenceMethod, f, x, ::Val{false}=Val(false); kwargs...)
+# Handle inputs that aren't `AbstractFloat`s -- assume what you wanted was a `Float64`. This
+# most common way that this method gets invoked is when `x` is an `Integer`.
+function fdm(m::FiniteDifferenceMethod, f, x::Real, val; kwargs...)
+    return fdm(m, f, Float64(x), val; kwargs...)
+end
+
+function fdm(m::FiniteDifferenceMethod, f, x::Real, ::Val{false}=Val(false); kwargs...)
     _, dfdx = fdm(m, f, x, Val(true); kwargs...)
     return dfdx
 end
