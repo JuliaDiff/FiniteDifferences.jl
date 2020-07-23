@@ -46,6 +46,11 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard, add_tiny
         end
     end
 
+    # Integration test to ensure that Integer-output functions can be tested.
+    @testset "Integer Output" begin
+        @test isapprox(central_fdm(5, 1)(x -> 5, 0), 0; rtol=1e-12, atol=1e-12)
+    end
+
     @testset "Adaptation improves estimate" begin
         @test forward_fdm(5, 1)(log, 0.001; adapt=0) ≈ 969.2571703
         @test forward_fdm(5, 1)(log, 0.001; adapt=1) ≈ 1000
