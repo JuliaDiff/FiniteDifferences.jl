@@ -12,9 +12,11 @@ const DEFAULT_CONDITION = 100
 """
     add_tiny(x::Real)
 
-Add a tiny number, 10^{-20}, to `x` while preserving its type.
+Add a tiny number, 10^{-20}, to `x`, preserving the type. If `x` is an `Integer`, it is
+promoted to a `Float64`.
 """
 add_tiny(x::T) where {T<:Real} = x + convert(T, 1e-20)
+add_tiny(x::Integer) = add_tiny(float(x))
 
 forward_grid(p::Int) = 0:(p - 1)
 backward_grid(p::Int) = (1 - p):0
