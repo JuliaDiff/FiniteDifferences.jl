@@ -1,6 +1,16 @@
-using FiniteDifferences: Forward, Backward, Central, Nonstandard
+using FiniteDifferences: Forward, Backward, Central, Nonstandard, add_tiny
 
 @testset "Methods" begin
+
+    @testset "add_tiny" begin
+        @test add_tiny(convert(Float64, 5)) isa Float64
+        @test add_tiny(convert(Float32, 5)) isa Float32
+        @test add_tiny(convert(Float16, 5)) isa Float16
+
+        @test add_tiny(convert(Int, 5)) isa Float64
+        @test add_tiny(convert(UInt, 5)) isa Float64
+        @test add_tiny(convert(Bool, 1)) isa Float64
+    end
 
     # The different approaches to approximating the gradient to try.
     methods = [forward_fdm, backward_fdm, central_fdm]
@@ -34,6 +44,11 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard
         if T == Float64
             @test m(10, 2; bound=1)(foo.f, T(1)) ≈ T(foo.d2)
         end
+    end
+
+    # Integration test to ensure that Integer-output functions can be tested.
+    @testset "Integer Output" begin
+        @test isapprox(central_fdm(5, 1)(x -> 5, 0), 0; rtol=1e-12, atol=1e-12)
     end
 
     @testset "Adaptation improves estimate" begin
