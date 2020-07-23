@@ -13,7 +13,7 @@ const DEFAULT_CONDITION = 100
     add_tiny(x::Real)
 
 Add a tiny number, 10^{-20}, to `x`, preserving the type. If `x` is an `Integer`, it is
-promoted to a `Float64`.
+promoted to a suitable floating point type.
 """
 add_tiny(x::T) where {T<:Real} = x + convert(T, 1e-20)
 add_tiny(x::Integer) = add_tiny(float(x))
