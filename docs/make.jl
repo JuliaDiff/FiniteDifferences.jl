@@ -6,7 +6,6 @@ makedocs(
     pages=["Home" => "index.md", "API" => "pages/api.md"],
     authors="Invenia Labs",
     checkdocs=:exports,
-    linkcheck=true,
     repo="https://github.com/JuliaDiff/FiniteDifferences.jl/blob/{commit}{path}#L{line}",
     sitename="FiniteDifferences.jl",
     strict=true,
