@@ -57,7 +57,7 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
         @test J_fdm ≈ J_exact
         @test J_fdm == jacobian(fdm, f, x)[1]
 
-        # Check that the estimated jvp and j′vp are consistent with their definitions. 
+        # Check that the estimated jvp and j′vp are consistent with their definitions.
         @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
         @test _j′vp(fdm, f, ȳ, x) ≈ transpose(J_exact) * ȳ
 
@@ -85,7 +85,7 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
 
     @testset "multi vars jacobian/grad" begin
         rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
-        
+
         f1(x, y) = x * y + x
         f2(x, y) = sum(x * y + x)
         f3(x::Tuple) = sum(x[1]) + x[2]
@@ -126,7 +126,7 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
                 x, y = rand(rng, 3, 3), 2.0
                 dxs = grad(fdm, f3, (x, y))[1]
                 @test dxs[1] ≈ grad(fdm, x->f3((x, y)), x)[1]
-                @test dxs[2] ≈ grad(fdm, y->f3((x, y)), y)[1]   
+                @test dxs[2] ≈ grad(fdm, y->f3((x, y)), y)[1]
             end
 
             @testset "check dict" begin
@@ -160,7 +160,7 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
         rng = MersenneTwister(123456)
         x = randn(rng, T)
         y = randn(rng, T)
-        fdm = FiniteDifferences.Central(5, 1)
+        fdm = FiniteDifferences.central_fdm(5, 1)
 
         # Addition.
         dx, dy = FiniteDifferences.jacobian(fdm, +, x, y)
