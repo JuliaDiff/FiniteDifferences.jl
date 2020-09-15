@@ -33,7 +33,7 @@ using FiniteDifferences: add_tiny
     @testset "foo=$(foo.f), method=$m, type=$(T)" for foo in foos, m in methods, T in types
         @testset "method-order=$order" for order in [1, 2, 3, 4, 5]
             @test m(order, 0, adapt=2)(foo.f, T(1)) isa T
-            @test m(order, 0, adapt=2)(foo.f, T(1)) == T(f(1))
+            @test m(order, 0, adapt=2)(foo.f, T(1)) == T(foo.f(1))
         end
 
         @test m(10, 1)(foo.f, T(1)) isa T

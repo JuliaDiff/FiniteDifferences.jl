@@ -119,7 +119,6 @@ function (m::FiniteDifferenceMethod)(
     # The automatic step size calculation fails if `m.q == 0`, so handle that edge case.
     m.q == 0 && return f(x)
     h, _ = estimate_step(m, f, x, factor=factor, max_step=max_step)
-    println(h)
     return m(f, x, h)
 end
 # Handle arguments that are not floats. Assume that converting to float is desired.
