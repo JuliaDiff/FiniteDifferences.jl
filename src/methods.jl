@@ -1,4 +1,4 @@
-export FiniteDifferenceMethod, fdm, backward_fdm, forward_fdm, central_fdm
+export FiniteDifferenceMethod, fdm, backward_fdm, forward_fdm, central_fdm, extrapolate_fdm
 
 """
     add_tiny(x::Real)
@@ -90,6 +90,9 @@ automatically determined step size.
     to force a more conservative step size.
 - `max_step=convert(T, 0.1)`: Maximum step size.
 
+# Returns
+- Estimate of the derivative.
+
 # Examples
 
 ```julia-repl
@@ -140,6 +143,9 @@ step size.
 - `x::T`: Input to estimate derivative at.
 - `h`: Step size.
 
+# Returns
+- Estimate of the derivative.
+
 # Examples
 
 ```julia-repl
@@ -168,7 +174,7 @@ function (m::FiniteDifferenceMethod)(
     ) / h^m.q
 end
 # Handle arguments that are not floats. Assume that converting to float is desired.
-(m::FiniteDifferenceMethod)(f::Function, x::T, h) where T<:Real =  m(f, float(x), h)
+(m::FiniteDifferenceMethod)(f::Function, x::T, h) where T<:Real = m(f, float(x), h)
 
 # Check the method and derivative orders for consistency.
 function _check_p_q(p::Integer, q::Integer)
@@ -348,3 +354,43 @@ function _central_grid(p::Int)
 end
 
 _exponentiate_grid(grid::Vector, base::Int=3) = sign.(grid) .* base .^ abs.(grid) ./ base
+
+"""
+    extrapolate_fdm(
+        m::FiniteDifferenceMethod,
+        f::Function,
+        x::T;
+        factor::Int=1000,
+        kw_args...
+    ) where T<:AbstractFloat
+
+Use Richardson extrapolation to refine a finite difference method. This method uses
+[`estimate_step`](@ref) to determine an appropriate initialisation for
+[`Richardson.extrapolate`](@ref).
+
+Takes further in keyword arguments for [`Richardson.extrapolate`](@ref).
+
+# Arguments
+- `m::FiniteDifferenceMethod`: Finite difference method to estimate the step size for.
+- `f::Function`: Function to evaluate the derivative of.
+- `x::T`: Point to estimate the derivative at.
+
+# Factor
+- `factor::Int=1000`: Factor to amplify the estimated step size by.
+
+# Returns
+- Estimate of the derivative.
+"""
+function extrapolate_fdm(
+    m::FiniteDifferenceMethod,
+    f::Function,
+    x::T;
+    factor::Int=1000,
+    kw_args...
+) where T<:AbstractFloat
+    h_conservative = estimate_step(m, f, x)[1] * factor
+    return extrapolate(h -> m(f, x, h), h_conservative; kw_args...)
+end
+# Handle arguments that are not floats. Assume that converting to float is desired.
+extrapolate_fdm(m::FiniteDifferenceMethod, f::Function, x::T; kw_args...) where T<:Real =
+    extrapolate_fdm(m, f, float(x); kw_args...)

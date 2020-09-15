@@ -4,6 +4,7 @@ module FiniteDifferences
     using LinearAlgebra
     using Printf
     using Random
+    using Richardson
 
     export to_vec, grad, jacobian, jvp, j′vp
 

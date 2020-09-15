@@ -79,4 +79,12 @@ using FiniteDifferences: add_tiny
               coefficients:          [-0.5, 0.5]
             """
     end
+
+    @testset "extrapolate_fdm" begin
+        # Also test an `Integer` argument as input.
+        for x in [1, 1.0]
+            estimate, _ = extrapolate_fdm(forward_fdm(4, 3), exp, x, contract=0.8)
+            @test estimate ≈ exp(1.0) atol=1e-7
+        end
+    end
 end
