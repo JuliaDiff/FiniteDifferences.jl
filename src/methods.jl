@@ -205,7 +205,7 @@ end
 
 # Estimate the bound on the derivative by amplifying the ∞-norm.
 function _make_default_bound_estimator(; condition::Int=DEFAULT_CONDITION)
-    return (f, x) -> condition * maximum(abs.(f(x)))
+    return (f, x) -> condition * maximum(abs, f(x))
 end
 
 function Base.show(io::IO, x::FiniteDifferenceMethod)
