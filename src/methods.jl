@@ -383,9 +383,9 @@ end
 
 Use Richardson extrapolation to refine a finite difference method. This method uses
 [`estimate_step`](@ref) to determine an appropriate initial step size for
-[`Richardson.extrapolate`](@ref).
+`Richardson.extrapolate`.
 
-Takes further in keyword arguments for [`Richardson.extrapolate`](@ref). This method
+Takes further in keyword arguments for `Richardson.extrapolate`. This method
 automatically sets `power = 2` if `m` is symmetric.
 
 # Arguments
@@ -397,7 +397,7 @@ automatically sets `power = 2` if `m` is symmetric.
 - `factor::Int=1000`: Factor to amplify the estimated step size by.
 
 # Returns
-- Estimate of the derivative.
+- `Tuple{Real, Real}`: Estimate of the derivative and error.
 """
 function extrapolate_fdm(
     m::FiniteDifferenceMethod,
@@ -417,15 +417,15 @@ extrapolate_fdm(m::FiniteDifferenceMethod, f::Function, x::T; kw_args...) where 
     extrapolate_fdm(
         m::FiniteDifferenceMethod,
         f::Function,
-        x::T
+        x::T,
         h;
         kw_args...
     ) where T<:AbstractFloat
 
 Use Richardson extrapolation to refine a finite difference method. This method requires
-a given initial step size for [`Richardson.extrapolate`](@ref).
+a given initial step size for `Richardson.extrapolate`.
 
-Takes further in keyword arguments for [`Richardson.extrapolate`](@ref). This method
+Takes further in keyword arguments for `Richardson.extrapolate`. This method
 automatically sets `power = 2` if `m` is symmetric.
 
 # Arguments
@@ -435,7 +435,7 @@ automatically sets `power = 2` if `m` is symmetric.
 - `h`: Initial step size.
 
 # Returns
-- Estimate of the derivative.
+- `Tuple{Real, Real}`: Estimate of the derivative and error.
 """
 function extrapolate_fdm(
     m::FiniteDifferenceMethod,
