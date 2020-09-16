@@ -120,7 +120,7 @@ function (m::FiniteDifferenceMethod)(
     max_step=convert(T, 0.1)
 ) where T<:AbstractFloat
     # The automatic step size calculation fails if `m.q == 0`, so handle that edge case.
-    m.q == 0 && return f(x)
+    iszero(m.q) && return f(x)
     h, _ = estimate_step(m, f, x, factor=factor, max_step=max_step)
     return m(f, x, h)
 end
