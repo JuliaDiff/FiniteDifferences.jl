@@ -181,7 +181,7 @@ function _check_p_q(p::Integer, q::Integer)
     # Check whether the method can be computed. We require the factorial of the method order
     # to be computable with regular `Int`s, but `factorial` will after 20, so 20 is the
     # largest we can allow.
-    p > 20 && throw(ArgumentError("order of the method is too large to be computed"))
+    p > 20 && throw(DomainError(p, "order of the method (`p`) is too large to be computed"))
     return
 end
 
