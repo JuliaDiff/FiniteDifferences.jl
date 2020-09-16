@@ -365,7 +365,7 @@ _exponentiate_grid(grid::Vector, base::Int=3) = sign.(grid) .* base .^ abs.(grid
     ) where T<:AbstractFloat
 
 Use Richardson extrapolation to refine a finite difference method. This method uses
-[`estimate_step`](@ref) to determine an appropriate initialisation for
+[`estimate_step`](@ref) to determine an appropriate initial step size for
 [`Richardson.extrapolate`](@ref).
 
 Takes further in keyword arguments for [`Richardson.extrapolate`](@ref).
@@ -389,8 +389,44 @@ function extrapolate_fdm(
     kw_args...
 ) where T<:AbstractFloat
     h_conservative = estimate_step(m, f, x)[1] * factor
-    return extrapolate(h -> m(f, x, h), h_conservative; kw_args...)
+    return extrapolate_fdm(m, f, x, h_conservative; kw_args...)
 end
 # Handle arguments that are not floats. Assume that converting to float is desired.
 extrapolate_fdm(m::FiniteDifferenceMethod, f::Function, x::T; kw_args...) where T<:Real =
     extrapolate_fdm(m, f, float(x); kw_args...)
+
+"""
+    extrapolate_fdm(
+        m::FiniteDifferenceMethod,
+        f::Function,
+        x::T
+        h;
+        kw_args...
+    ) where T<:AbstractFloat
+
+Use Richardson extrapolation to refine a finite difference method. This method requires
+a given initial step size for [`Richardson.extrapolate`](@ref).
+
+Takes further in keyword arguments for [`Richardson.extrapolate`](@ref).
+
+# Arguments
+- `m::FiniteDifferenceMethod`: Finite difference method to estimate the step size for.
+- `f::Function`: Function to evaluate the derivative of.
+- `x::T`: Point to estimate the derivative at.
+- `h`: Initial step size.
+
+# Returns
+- Estimate of the derivative.
+"""
+function extrapolate_fdm(
+    m::FiniteDifferenceMethod,
+    f::Function,
+    x::T,
+    h;
+    kw_args...
+) where T<:AbstractFloat
+    return extrapolate(h -> m(f, x, h), h; kw_args...)
+end
+# Handle arguments that are not floats. Assume that converting to float is desired.
+extrapolate_fdm(m::FiniteDifferenceMethod, f::Function, x::T, h; kw_args...) where T<:Real =
+    extrapolate_fdm(m, f, float(x), h; kw_args...)
