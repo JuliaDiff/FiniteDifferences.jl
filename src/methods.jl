@@ -208,7 +208,7 @@ function _make_default_bound_estimator(; condition::Int=DEFAULT_CONDITION)
     return (f, x) -> condition * maximum(abs, f(x))
 end
 
-function Base.show(io::IO, x::FiniteDifferenceMethod)
+function Base.show(io::IO, m::MIME"text/plain", x::FiniteDifferenceMethod)
     @printf io "FiniteDifferenceMethod:\n"
     @printf io "  order of method:       %d\n" length(x.grid)
     @printf io "  order of derivative:   %d\n" x.q
