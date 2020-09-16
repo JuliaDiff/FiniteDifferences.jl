@@ -71,7 +71,7 @@ using FiniteDifferences: add_tiny
     end
 
     @testset "Printing FiniteDifferenceMethods" begin
-        @test sprint(show, central_fdm(2, 1)) == """
+        @test sprint(show, "text/plain", central_fdm(2, 1)) == """
             FiniteDifferenceMethod:
               order of method:       2
               order of derivative:   1
