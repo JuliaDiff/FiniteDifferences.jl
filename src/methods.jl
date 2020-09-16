@@ -125,8 +125,9 @@ function (m::FiniteDifferenceMethod)(
     return m(f, x, h)
 end
 # Handle arguments that are not floats. Assume that converting to float is desired.
-(m::FiniteDifferenceMethod)(f::Function, x::T; kw_args...) where T<:Real =
-    m(f, float(x); kw_args...)
+function (m::FiniteDifferenceMethod)(f::Function, x::T; kw_args...) where T<:Real
+    return m(f, float(x); kw_args...)
+end
 
 """
     (m::FiniteDifferenceMethod)(
@@ -205,8 +206,9 @@ function _coefs(grid::AbstractVector{<:Real}, q::Integer)
 end
 
 # Estimate the bound on the derivative by amplifying the ∞-norm.
-_make_default_bound_estimator(; condition::Int=DEFAULT_CONDITION) =
-    (f, x) -> condition * maximum(abs.(f(x)))
+function _make_default_bound_estimator(; condition::Int=DEFAULT_CONDITION)
+    return (f, x) -> condition * maximum(abs.(f(x)))
+end
 
 function Base.show(io::IO, x::FiniteDifferenceMethod)
     @printf io "FiniteDifferenceMethod:\n"
@@ -410,8 +412,14 @@ function extrapolate_fdm(
     return extrapolate_fdm(m, f, x, h_conservative; kw_args...)
 end
 # Handle arguments that are not floats. Assume that converting to float is desired.
-extrapolate_fdm(m::FiniteDifferenceMethod, f::Function, x::T; kw_args...) where T<:Real =
-    extrapolate_fdm(m, f, float(x); kw_args...)
+function extrapolate_fdm(
+    m::FiniteDifferenceMethod,
+    f::Function,
+    x::T;
+    kw_args...
+) where T<:Real
+    return extrapolate_fdm(m, f, float(x); kw_args...)
+end
 
 """
     extrapolate_fdm(
@@ -452,5 +460,12 @@ function extrapolate_fdm(
     return extrapolate(h -> m(f, x, h), h; power=power, kw_args...)
 end
 # Handle arguments that are not floats. Assume that converting to float is desired.
-extrapolate_fdm(m::FiniteDifferenceMethod, f::Function, x::T, h; kw_args...) where T<:Real =
-    extrapolate_fdm(m, f, float(x), h; kw_args...)
+function extrapolate_fdm(
+    m::FiniteDifferenceMethod,
+    f::Function,
+    x::T,
+    h;
+    kw_args...
+) where T<:Real
+    return extrapolate_fdm(m, f, float(x), h; kw_args...)
+end
