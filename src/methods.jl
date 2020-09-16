@@ -286,13 +286,7 @@ for direction in [:forward, :central, :backward]
                 grid,
                 q,
                 coefs,
-                _make_adaptive_bound_estimator(
-                    $fdm_fun,
-                    p,
-                    adapt,
-                    condition,
-                    geom=geom
-                )
+                _make_adaptive_bound_estimator($fdm_fun, p, adapt, condition, geom=geom),
             )
         end
 
