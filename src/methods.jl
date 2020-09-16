@@ -176,8 +176,10 @@ end
 # Check the method and derivative orders for consistency.
 function _check_p_q(p::Integer, q::Integer)
     q >= 0 || throw(DomainError(q, "order of derivative (`q`) must be non-negative"))
-    q < p || throw(ArgumentError("order of the method must be strictly greater than that " *
-                                 "of the derivative"))
+    q < p || throw(DomainError(
+        (q, p),
+        "order of the method (q) must be strictly greater than that of the derivative (p)",
+    ))
     # Check whether the method can be computed. We require the factorial of the method order
     # to be computable with regular `Int`s, but `factorial` will after 20, so 20 is the
     # largest we can allow.
