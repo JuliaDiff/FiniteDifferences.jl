@@ -329,7 +329,7 @@ function _make_adaptive_bound_estimator(
     if adapt >= 1
         estimate_derivative =
             constructor(q + 1, q, adapt=adapt - 1, condition=condition; kw_args...)
-        return (f, x) -> maximum(abs.(estimate_derivative(f, x)))
+        return (f, x) -> maximum(abs, estimate_derivative(f, x))
     else
         return _make_default_bound_estimator(condition=condition)
     end
