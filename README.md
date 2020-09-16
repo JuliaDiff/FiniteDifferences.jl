@@ -24,38 +24,42 @@ Right now here are the differences:
  - FiniteDiff.jl is carefully optimized to minimize allocations
  - FiniteDiff.jl supports coloring vectors for efficient calculation of sparse Jacobians
 
-## Examples
+
+#### FDM.jl
+This package was formerly called FDM.jl. We recommend users of FDM.jl [update to FiniteDifferences.jl](https://github.com/JuliaDiff/FiniteDifferences.jl/issues/37).
+
+
+## Example: Scalar Derivatives
 
 Compute the first derivative of `sin` with a 5th order central method:
 
 ```julia
 julia> central_fdm(5, 1)(sin, 1) - cos(1)
--1.247890679678676e-13
+-2.4313884239290928e-14
 ```
+
 Compute the second derivative of `sin` with a 5th order central method:
 
 ```julia
 julia> central_fdm(5, 2)(sin, 1) + sin(1)
-9.747314066999024e-12
+-4.367495254342657e-11
 ```
 
-Construct a FiniteDifferences on a custom grid:
+The functions `forward_fdm` and `backward_fdm` can be used to construct
+forward differences and backward differences respectively.
+
+Alternatively, you can construct a finite difference method on a custom grid:
 
 ```julia
-julia> method, report = fdm([-2, 0, 5], 1, report=true)
-(FiniteDifferences.method, FiniteDifferencesReport:
+julia> method = FiniteDifferenceMethod([-2, 0, 5], 1)
+FiniteDifferenceMethod:
   order of method:       3
   order of derivative:   1
   grid:                  [-2, 0, 5]
-  coefficients:          [-0.357143, 0.3, 0.0571429]
-  roundoff error:        2.22e-16
-  bounds on derivatives: 1.00e+00
-  step size:             3.62e-06
-  accuracy:              6.57e-11
-)
+  coefficients:          [-0.35714285714285715, 0.3, 0.05714285714285714]
 
 julia> method(sin, 1) - cos(1)
--2.05648831297367e-11
+-8.423706177040913e-11
 ```
 
 Compute a directional derivative:
@@ -64,10 +68,78 @@ Compute a directional derivative:
 julia> f(x) = sum(x)
 f (generic function with 1 method)
 
-julia> central_fdm(5, 1)(ε -> f([1, 1, 1] + ε * [1, 2, 3]), 0) - 6
--2.922107000813412e-13
+julia> central_fdm(5, 1)(ε -> f([1, 1, 1] .+ ε .* [1, 2, 3]), 0) - 6
+-6.217248937900877e-15
 ```
 
-## FDM.jl
+## Example: Multivariate Derivatives
 
-This package was formerly called FDM.jl. We recommend users of FDM.jl [update to FiniteDifferences.jl](https://github.com/JuliaDiff/FiniteDifferences.jl/issues/37).
+Consider a quadratic function:
+
+```julia
+julia> a = randn(3, 3); a = a * a'
+3×3 Array{Float64,2}:
+  8.0663   -1.12965   1.68556
+ -1.12965   3.55005  -3.10405
+  1.68556  -3.10405   3.77251
+
+julia> f(x) = 0.5 * x' * a * x
+```
+
+Compute the gradient:
+
+```julia
+julia> grad(central_fdm(5, 1), f, x)[1] - a * x
+3-element Array{Float64,1}:
+ -1.2612133559741778e-12
+ -3.526068326209497e-13
+ -2.3305801732931286e-12
+```
+
+Compute the Jacobian:
+
+```julia
+julia> jacobian(central_fdm(5, 1), f, x)[1] - (a * x)'
+1×3 Array{Float64,2}:
+ -1.26121e-12  -3.52607e-13  -2.33058e-12
+```
+
+The Jacobian can also be computed for non-scalar functions:
+
+```julia
+julia> a = randn(3, 3)
+3×3 Array{Float64,2}:
+ -0.343783   1.5708     0.723289
+ -0.425706  -0.478881  -0.306881
+  1.27326   -0.171606   2.23671
+
+julia> f(x) = a * x
+
+julia> jacobian(central_fdm(5, 1), f, x)[1] - a
+3×3 Array{Float64,2}:
+ -2.81331e-13   2.77556e-13  1.28342e-13
+ -3.34732e-14  -6.05072e-15  6.05072e-15
+ -2.24709e-13   1.88821e-13  1.06581e-14
+```
+
+To compute Jacobian--vector products, use `jvp` and `j′vp`:
+ 
+```julia
+julia> v = randn(3)
+3-element Array{Float64,1}:
+ -1.290782164377614
+ -0.37701592844250903
+ -1.4288108966380777
+
+julia> jvp(central_fdm(5, 1), f, (x, v)) - a * v
+3-element Array{Float64,1}:
+ -1.3233858453531866e-13
+  9.547918011776346e-15
+  3.632649736573512e-13
+
+julia> j′vp(central_fdm(5, 1), f, x, v)[1] - a'x
+ 3-element Array{Float64,1}:
+  3.5704772471945034e-13
+  4.04121180963557e-13
+  1.2807532812075806e-12
+```
