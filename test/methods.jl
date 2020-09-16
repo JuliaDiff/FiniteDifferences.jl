@@ -80,11 +80,55 @@ using FiniteDifferences: add_tiny
             """
     end
 
+    @testset "_is_symmetric" begin
+        # Test odd grids:
+        @test FiniteDifferences._is_symmetric([2, 1, 0, 1, 2])
+        @test !FiniteDifferences._is_symmetric([2, 1, 0, 3, 2])
+        @test !FiniteDifferences._is_symmetric([4, 1, 0, 1, 2])
+
+        # Test even grids:
+        @test FiniteDifferences._is_symmetric([2, 1, 1, 2])
+        @test !FiniteDifferences._is_symmetric([2, 1, 3, 2])
+        @test !FiniteDifferences._is_symmetric([4, 1, 1, 2])
+
+        # Test zero at centre:
+        @test FiniteDifferences._is_symmetric([2, 1, 4, 1, 2])
+        @test !FiniteDifferences._is_symmetric([2, 1, 4, 1, 2], centre_zero=true)
+        @test FiniteDifferences._is_symmetric([2, 1, 1, 2], centre_zero=true)
+
+        # Test negation of a half:
+        @test !FiniteDifferences._is_symmetric([2, 1, -1, -2])
+        @test FiniteDifferences._is_symmetric([2, 1, -1, -2], negate_half=true)
+        @test FiniteDifferences._is_symmetric([2, 1, 0, -1, -2], negate_half=true)
+        @test FiniteDifferences._is_symmetric([2, 1, 4, -1, -2], negate_half=true)
+        @test !FiniteDifferences._is_symmetric(
+            [2, 1, 4, -1, -2],
+            negate_half=true,
+            centre_zero=true
+        )
+
+        # Test symmetry of `central_fdm`.
+        for p in 2:10
+            m = central_fdm(p, 1)
+            @test FiniteDifferences._is_symmetric(m)
+        end
+
+        # Test asymmetry of `forward_fdm` and `backward_fdm`.
+        for p in 2:10
+            for f in [forward_fdm, backward_fdm]
+                m = f(p, 1)
+                @test !FiniteDifferences._is_symmetric(m)
+            end
+        end
+    end
+
     @testset "extrapolate_fdm" begin
         # Also test an `Integer` argument as input.
         for x in [1, 1.0]
-            estimate, _ = extrapolate_fdm(forward_fdm(4, 3), exp, x, contract=0.8)
-            @test estimate ≈ exp(1.0) atol=1e-7
+            for f in [forward_fdm, central_fdm, backward_fdm]
+                estimate, _ = extrapolate_fdm(f(4, 3), exp, x, contract=0.8)
+                @test estimate ≈ exp(1.0) atol=1e-7
+            end
         end
     end
 end

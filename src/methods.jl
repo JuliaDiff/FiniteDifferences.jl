@@ -355,6 +355,23 @@ end
 
 _exponentiate_grid(grid::Vector, base::Int=3) = sign.(grid) .* base .^ abs.(grid) ./ base
 
+function _is_symmetric(vec::Vector; centre_zero=false, negate_half=false)
+    n = div(length(vec), 2)
+    half_sign = negate_half ? -1 : 1
+    if isodd(length(vec))
+        centre_zero && vec[n + 1] != 0 && return false
+        return vec[1:n] == half_sign .* reverse(vec[n + 2:end])
+    else
+        return vec[1:n] == half_sign .* reverse(vec[n + 1:end])
+    end
+end
+
+function _is_symmetric(m::FiniteDifferenceMethod)
+    grid_symmetric = _is_symmetric(m.grid, centre_zero=true, negate_half=true)
+    coefs_symmetric =_is_symmetric(m.coefs, negate_half=true)
+    return grid_symmetric && coefs_symmetric
+end
+
 """
     extrapolate_fdm(
         m::FiniteDifferenceMethod,
@@ -368,7 +385,8 @@ Use Richardson extrapolation to refine a finite difference method. This method u
 [`estimate_step`](@ref) to determine an appropriate initial step size for
 [`Richardson.extrapolate`](@ref).
 
-Takes further in keyword arguments for [`Richardson.extrapolate`](@ref).
+Takes further in keyword arguments for [`Richardson.extrapolate`](@ref). This method
+automatically sets `power = 2` if `m` is symmetric.
 
 # Arguments
 - `m::FiniteDifferenceMethod`: Finite difference method to estimate the step size for.
@@ -407,7 +425,8 @@ extrapolate_fdm(m::FiniteDifferenceMethod, f::Function, x::T; kw_args...) where 
 Use Richardson extrapolation to refine a finite difference method. This method requires
 a given initial step size for [`Richardson.extrapolate`](@ref).
 
-Takes further in keyword arguments for [`Richardson.extrapolate`](@ref).
+Takes further in keyword arguments for [`Richardson.extrapolate`](@ref). This method
+automatically sets `power = 2` if `m` is symmetric.
 
 # Arguments
 - `m::FiniteDifferenceMethod`: Finite difference method to estimate the step size for.
@@ -425,7 +444,12 @@ function extrapolate_fdm(
     h;
     kw_args...
 ) where T<:AbstractFloat
-    return extrapolate(h -> m(f, x, h), h; kw_args...)
+    if _is_symmetric(m)
+        power = 2
+    else
+        power = 1
+    end
+    return extrapolate(h -> m(f, x, h), h; power=power, kw_args...)
 end
 # Handle arguments that are not floats. Assume that converting to float is desired.
 extrapolate_fdm(m::FiniteDifferenceMethod, f::Function, x::T, h; kw_args...) where T<:Real =
