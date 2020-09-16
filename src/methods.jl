@@ -254,7 +254,7 @@ function estimate_step(
     f_x = float(f(x))
 
     # Estimate the bound and round-off error.
-    ε = add_tiny(maximum(eps.(f_x))) * factor
+    ε = add_tiny(maximum(eps, f_x)) * factor
     M = add_tiny(m.bound_estimator(f, x))
 
     # Set the step size by minimising an upper bound on the error of the estimate.
