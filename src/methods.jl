@@ -31,11 +31,11 @@ A finite difference method.
 - `bound_estimator::Function`: A function that takes in the function and the evaluation
     point and returns a bound on the magnitude of the `length(grid)`th derivative.
 """
-struct FiniteDifferenceMethod{G<:AbstractVector, C<:AbstractVector}
+struct FiniteDifferenceMethod{G<:AbstractVector, C<:AbstractVector, E<:Function}
     grid::G
     q::Int
     coefs::C
-    bound_estimator::Function
+    bound_estimator::E
 end
 
 """
