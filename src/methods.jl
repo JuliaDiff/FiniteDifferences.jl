@@ -164,11 +164,7 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 -1.7741363933510002e-13
 ```
 """
-function (m::FiniteDifferenceMethod)(
-    f::Function,
-    x::T,
-    h
-) where T<:AbstractFloat
+function (m::FiniteDifferenceMethod)(f::Function, x::T, h) where T<:AbstractFloat
     return sum(
         i -> convert(T, m.coefs[i]) * f(T(x + h * m.grid[i])),
         eachindex(m.grid)
