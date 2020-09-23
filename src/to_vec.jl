@@ -85,6 +85,15 @@ function to_vec(X::Adjoint)
     return x_vec, Adjoint_from_vec
 end
 
+function to_vec(X::PermutedDimsArray{T, D, P, Pinv} where {T, D}) where {P, Pinv}
+    x_vec, back = to_vec(collect(X))
+    function PermutedDimsArray_from_vec(x_vec)
+        X_parent = collect(PermutedDimsArray(back(x_vec), Pinv))
+        return PermutedDimsArray(X_parent, P)
+    end
+    return x_vec, PermutedDimsArray_from_vec
+end
+
 # Non-array data structures
 
 function to_vec(x::Tuple)

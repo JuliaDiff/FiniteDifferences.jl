@@ -67,6 +67,16 @@ end
             test_to_vec(Op(randn(T, 2, 5)))
         end
 
+        @testset "PermutedDimsArray" begin
+            test_to_vec(PermutedDimsArray(randn(T, 3, 1), (2, 1)))
+            test_to_vec(PermutedDimsArray(randn(T, 4, 2, 3), (3, 1, 2)))
+            test_to_vec(
+                PermutedDimsArray(
+                    [randn(T, 3) for _ in 1:3, _ in 1:2, _ in 1:4], (2, 1, 3),
+                ),
+            )
+        end
+
         @testset "Tuples" begin
             test_to_vec((5, 4))
             test_to_vec((5, randn(T, 5)))
