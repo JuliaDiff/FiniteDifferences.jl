@@ -113,11 +113,11 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 (0.0010632902144695163, 1.9577610541734626e-13)
 ```
 """
-function (m::FiniteDifferenceMethod)(f::Function, x::Real; kw_args...)
+@inline function (m::FiniteDifferenceMethod)(f::Function, x::Real; kw_args...)
     # Assume that converting to float is desired.
     return _call_method(m, f, float(x); kw_args...)
 end
-function _call_method(
+@inline function _call_method(
     m::FiniteDifferenceMethod,
     f::Function,
     x::T;
@@ -161,11 +161,11 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 -1.7741363933510002e-13
 ```
 """
-function (m::FiniteDifferenceMethod)(f::Function, x::Real, h::Real)
+@inline function (m::FiniteDifferenceMethod)(f::Function, x::Real, h::Real)
     # Assume that converting to float is desired.
     return _eval_method(m, f, float(x), h)
 end
-function _eval_method(
+@inline function _eval_method(
     m::FiniteDifferenceMethod,
     f::Function,
     x::T,
