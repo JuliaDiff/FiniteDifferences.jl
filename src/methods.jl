@@ -1,10 +1,10 @@
 export FiniteDifferenceMethod, fdm, backward_fdm, forward_fdm, central_fdm, extrapolate_fdm
 
 """
-    add_tiny(x::Real)
+    add_tiny(x::Union{AbstractFloat, Integer})
 
-Add a tiny number, 10^{-40}, to `x`, preserving the type. If `x` is an `Integer`, it is
-promoted to a suitable floating point type.
+Add a tiny number, 10^{-40}, to a real floating point number `x`, preserving the type. If
+`x` is an `Integer`, it is promoted to a suitable floating point type.
 """
 add_tiny(x::T) where T<:AbstractFloat = x + convert(T, 1e-40)
 add_tiny(x::Integer) = add_tiny(float(x))
