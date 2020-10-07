@@ -386,7 +386,8 @@ end
 Use Richardson extrapolation to refine a finite difference method.
 
 Takes further in keyword arguments for `Richardson.extrapolate`. This method
-automatically sets `power = 2` if `m` is symmetric, and defaults `breaktol = Inf`.
+automatically sets `power = 2` if `m` is symmetric and `power = 1`. Moreover, it defaults
+`breaktol = Inf`.
 
 # Arguments
 - `m::FiniteDifferenceMethod`: Finite difference method to estimate the step size for.
@@ -402,12 +403,10 @@ function extrapolate_fdm(
     f::Function,
     x::T,
     h::Real=0.1 * max(abs(x), one(x));
-    power=nothing,
-    breaktol=Inf,
+    power::Int=1,
+    breaktol::Real=Inf,
     kw_args...
 ) where T<:AbstractFloat
-    if isnothing(power)
-        power = _is_symmetric(m) ? 2 : 1
-    end
+    (power == 1 && _is_symmetric(m)) && (power = 2)
     return extrapolate(h -> m(f, x, h), h; power=power, breaktol=breaktol, kw_args...)
 end
