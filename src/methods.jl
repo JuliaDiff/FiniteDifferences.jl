@@ -6,7 +6,7 @@ export FiniteDifferenceMethod, fdm, backward_fdm, forward_fdm, central_fdm, extr
 Add a tiny number, 10^{-40}, to `x`, preserving the type. If `x` is an `Integer`, it is
 promoted to a suitable floating point type.
 """
-add_tiny(x::T) where T<:Real = x + convert(T, 1e-40)
+add_tiny(x::T) where T<:AbstractFloat = x + convert(T, 1e-40)
 add_tiny(x::Integer) = add_tiny(float(x))
 
 """
@@ -19,7 +19,7 @@ derivatives.
 const DEFAULT_CONDITION = 100
 
 """
-    FiniteDifferenceMethod{G<:AbstractVector, C<:AbstractVector}
+    FiniteDifferenceMethod{G<:AbstractVector, C<:AbstractVector, E<:Function}
 
 A finite difference method.
 
@@ -42,7 +42,7 @@ end
     FiniteDifferenceMethod(
         grid::AbstractVector,
         q::Int;
-        condition::Int=DEFAULT_CONDITION
+        condition::Real=DEFAULT_CONDITION
     )
 
 Construct a finite difference method.
@@ -50,7 +50,7 @@ Construct a finite difference method.
 # Arguments
 - `grid::Abstract`: The grid. See [`FiniteDifferenceMethod`](@ref).
 - `q::Int`: Order of the derivative to estimate.
-- `condition::Int`: Condition number. See [`DEFAULT_CONDITION`](@ref).
+- `condition::Real`: Condition number. See [`DEFAULT_CONDITION`](@ref).
 
 # Returns
 - `FiniteDifferenceMethod`: Specified finite difference method.
@@ -58,7 +58,7 @@ Construct a finite difference method.
 function FiniteDifferenceMethod(
     grid::AbstractVector,
     q::Int;
-    condition::Int=DEFAULT_CONDITION
+    condition::Real=DEFAULT_CONDITION
 )
     p = length(grid)
     _check_p_q(p, q)
@@ -74,8 +74,8 @@ end
     (m::FiniteDifferenceMethod)(
         f::Function,
         x::T;
-        factor::Int=1,
-        max_step=convert(T, 0.1)
+        factor::Real=1,
+        max_step::Real=0.1 * max(abs(x), one(x))
     ) where T<:AbstractFloat
 
 Estimate the derivative of `f` at `x` using the finite differencing method `m` and an
@@ -86,9 +86,9 @@ automatically determined step size.
 - `x::T`: Input to estimate derivative at.
 
 # Keywords
-- `factor::Int=1`: Factor to amplify the estimated round-off error by. This can be used
+- `factor::Real=1`: Factor to amplify the estimated round-off error by. This can be used
     to force a more conservative step size.
-- `max_step=convert(T, 0.1)`: Maximum step size.
+- `max_step::Real=0.1 * max(abs(x), one(x))`: Maximum step size.
 
 # Returns
 - Estimate of the derivative.
@@ -113,28 +113,25 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 (0.0010632902144695163, 1.9577610541734626e-13)
 ```
 """
-function (m::FiniteDifferenceMethod)(
+function (m::FiniteDifferenceMethod)(f::Function, x::Real; kw_args...)
+    # Assume that converting to float is desired.
+    return _call_method(m, f, float(x); kw_args...)
+end
+function _call_method(
+    m::FiniteDifferenceMethod,
     f::Function,
     x::T;
-    factor::Int=1,
-    max_step=convert(T, 0.1)
+    factor::Real=1,
+    max_step::Real=0.1 * max(abs(x), one(x))
 ) where T<:AbstractFloat
     # The automatic step size calculation fails if `m.q == 0`, so handle that edge case.
     iszero(m.q) && return f(x)
     h, _ = estimate_step(m, f, x, factor=factor, max_step=max_step)
-    return m(f, x, h)
-end
-# Handle arguments that are not floats. Assume that converting to float is desired.
-function (m::FiniteDifferenceMethod)(f::Function, x::T; kw_args...) where T<:Real
-    return m(f, float(x); kw_args...)
+    return _eval_method(m, f, x, h)
 end
 
 """
-    (m::FiniteDifferenceMethod)(
-        f::Function,
-        x::T,
-        h
-    ) where T<:AbstractFloat
+    (m::FiniteDifferenceMethod)(f::Function, x::T, h::Real) where T<:AbstractFloat
 
 Estimate the derivative of `f` at `x` using the finite differencing method `m` and a given
 step size.
@@ -142,7 +139,7 @@ step size.
 # Arguments
 - `f::Function`: Function to estimate derivative of.
 - `x::T`: Input to estimate derivative at.
-- `h`: Step size.
+- `h::Real`: Step size.
 
 # Returns
 - Estimate of the derivative.
@@ -164,14 +161,21 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 -1.7741363933510002e-13
 ```
 """
-function (m::FiniteDifferenceMethod)(f::Function, x::T, h) where T<:AbstractFloat
+function (m::FiniteDifferenceMethod)(f::Function, x::Real, h::Real)
+    # Assume that converting to float is desired.
+    return _eval_method(m, f, float(x), h)
+end
+function _eval_method(
+    m::FiniteDifferenceMethod,
+    f::Function,
+    x::T,
+    h::Real
+) where T<:AbstractFloat
     return sum(
         i -> convert(T, m.coefs[i]) * f(T(x + h * m.grid[i])),
         eachindex(m.grid)
     ) / h^m.q
 end
-# Handle arguments that are not floats. Assume that converting to float is desired.
-(m::FiniteDifferenceMethod)(f::Function, x::T, h) where T<:Real = m(f, float(x), h)
 
 # Check the method and derivative orders for consistency.
 function _check_p_q(p::Integer, q::Integer)
@@ -204,8 +208,9 @@ function _coefs(grid::AbstractVector{<:Real}, q::Integer)
 end
 
 # Estimate the bound on the derivative by amplifying the ∞-norm.
-function _make_default_bound_estimator(; condition::Int=DEFAULT_CONDITION)
-    return (f, x) -> condition * maximum(abs, f(x))
+function _make_default_bound_estimator(; condition::Real=DEFAULT_CONDITION)
+    default_bound_estimator(f, x) = condition * maximum(abs, f(x))
+    return default_bound_estimator
 end
 
 function Base.show(io::IO, m::MIME"text/plain", x::FiniteDifferenceMethod)
@@ -221,8 +226,8 @@ end
         m::FiniteDifferenceMethod,
         f::Function,
         x::T;
-        factor::Int=1,
-        max_step=convert(T, 0.1)
+        factor::Real=1,
+        max_step::Real=0.1 * max(abs(x), one(x))
     ) where T<:AbstractFloat
 
 Estimate the step size for a finite difference method `m`. Also estimates the error of the
@@ -234,20 +239,20 @@ estimate of the derivative.
 - `x::T`: Point to estimate the derivative at.
 
 # Keywords
-- `factor::Int=1`. Factor to amplify the estimated round-off error by. This can be used
+- `factor::Real=1`. Factor to amplify the estimated round-off error by. This can be used
     to force a more conservative step size.
-- `max_step=convert(T, 0.1)`: Maximum step size.
+- `max_step::Real=0.1 * max(abs(x), one(x))`: Maximum step size.
 
 # Returns
-- `Tuple{T, T}`: Estimated step size and an estimate of the error of the finite difference
-    estimate.
+- `Tuple{T, <:AbstractFloat}`: Estimated step size and an estimate of the error of the
+    finite difference estimate.
 """
 function estimate_step(
     m::FiniteDifferenceMethod,
     f::Function,
     x::T;
-    factor::Int=1,
-    max_step=convert(T, 0.1)
+    factor::Real=1,
+    max_step::Real=0.1 * max(abs(x), one(x))
 ) where T<:AbstractFloat
     p = length(m.coefs)
     q = m.q
@@ -275,7 +280,7 @@ for direction in [:forward, :central, :backward]
             p::Int,
             q::Int;
             adapt::Int=1,
-            condition::Int=DEFAULT_CONDITION,
+            condition::Real=DEFAULT_CONDITION,
             geom::Bool=false
         )
             _check_p_q(p, q)
@@ -295,7 +300,7 @@ for direction in [:forward, :central, :backward]
         p::Int,
         q::Int;
         adapt::Int=1,
-        condition::Int=DEFAULT_CONDITION,
+        condition::Real=DEFAULT_CONDITION,
         geom::Bool=false
     )
 
@@ -310,7 +315,7 @@ spaced points.
 - `adapt::Int=1`: Use another finite difference method to estimate the magnitude of the
     `p`th order derivative, which is important for the step size computation. Recurse
     this procedure `adapt` times.
-- `condition::Int`: Condition number. See [`DEFAULT_CONDITION`](@ref).
+- `condition::Real`: Condition number. See [`DEFAULT_CONDITION`](@ref).
 - `geom::Bool`: Use geometrically spaced points instead of linearly spaced points.
 
 # Returns
@@ -350,7 +355,7 @@ end
 
 _exponentiate_grid(grid::Vector, base::Int=3) = sign.(grid) .* base .^ abs.(grid) ./ base
 
-function _is_symmetric(vec::Vector; centre_zero=false, negate_half=false)
+function _is_symmetric(vec::Vector; centre_zero::Bool=false, negate_half::Bool=false)
     n = div(length(vec), 2)
     half_sign = negate_half ? -1 : 1
     if isodd(length(vec))
@@ -371,94 +376,38 @@ end
     extrapolate_fdm(
         m::FiniteDifferenceMethod,
         f::Function,
-        x::T;
-        factor::Int=1000,
-        kw_args...
-    ) where T<:AbstractFloat
-
-Use Richardson extrapolation to refine a finite difference method. This method uses
-[`estimate_step`](@ref) to determine an appropriate initial step size for
-`Richardson.extrapolate`.
-
-Takes further in keyword arguments for `Richardson.extrapolate`. This method
-automatically sets `power = 2` if `m` is symmetric.
-
-# Arguments
-- `m::FiniteDifferenceMethod`: Finite difference method to estimate the step size for.
-- `f::Function`: Function to evaluate the derivative of.
-- `x::T`: Point to estimate the derivative at.
-
-# Factor
-- `factor::Int=1000`: Factor to amplify the estimated step size by.
-
-# Returns
-- `Tuple{Real, Real}`: Estimate of the derivative and error.
-"""
-function extrapolate_fdm(
-    m::FiniteDifferenceMethod,
-    f::Function,
-    x::T;
-    factor::Int=1000,
-    kw_args...
-) where T<:AbstractFloat
-    h_conservative = estimate_step(m, f, x)[1] * factor
-    return extrapolate_fdm(m, f, x, h_conservative; kw_args...)
-end
-# Handle arguments that are not floats. Assume that converting to float is desired.
-function extrapolate_fdm(
-    m::FiniteDifferenceMethod,
-    f::Function,
-    x::T;
-    kw_args...
-) where T<:Real
-    return extrapolate_fdm(m, f, float(x); kw_args...)
-end
-
-"""
-    extrapolate_fdm(
-        m::FiniteDifferenceMethod,
-        f::Function,
         x::T,
-        h;
+        h::Real=0.1 * max(abs(x), one(x));
+        power=nothing,
+        breaktol=Inf,
         kw_args...
     ) where T<:AbstractFloat
 
-Use Richardson extrapolation to refine a finite difference method. This method requires
-a given initial step size for `Richardson.extrapolate`.
+Use Richardson extrapolation to refine a finite difference method.
 
 Takes further in keyword arguments for `Richardson.extrapolate`. This method
-automatically sets `power = 2` if `m` is symmetric.
+automatically sets `power = 2` if `m` is symmetric, and defaults `breaktol = Inf`.
 
 # Arguments
 - `m::FiniteDifferenceMethod`: Finite difference method to estimate the step size for.
 - `f::Function`: Function to evaluate the derivative of.
 - `x::T`: Point to estimate the derivative at.
-- `h`: Initial step size.
+- `h::Real=0.1 * max(abs(x), one(x))`: Initial step size.
 
 # Returns
-- `Tuple{Real, Real}`: Estimate of the derivative and error.
+- `Tuple{<:AbstractFloat, <:AbstractFloat}`: Estimate of the derivative and error.
 """
 function extrapolate_fdm(
     m::FiniteDifferenceMethod,
     f::Function,
     x::T,
-    h;
+    h::Real=0.1 * max(abs(x), one(x));
+    power=nothing,
+    breaktol=Inf,
     kw_args...
 ) where T<:AbstractFloat
-    if _is_symmetric(m)
-        power = 2
-    else
-        power = 1
+    if isnothing(power)
+        power = _is_symmetric(m) ? 2 : 1
     end
-    return extrapolate(h -> m(f, x, h), h; power=power, kw_args...)
-end
-# Handle arguments that are not floats. Assume that converting to float is desired.
-function extrapolate_fdm(
-    m::FiniteDifferenceMethod,
-    f::Function,
-    x::T,
-    h;
-    kw_args...
-) where T<:Real
-    return extrapolate_fdm(m, f, float(x), h; kw_args...)
+    return extrapolate(h -> m(f, x, h), h; power=power, breaktol=breaktol, kw_args...)
 end
