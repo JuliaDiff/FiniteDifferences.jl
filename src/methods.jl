@@ -265,7 +265,7 @@ function estimate_step(
     # Set the step size by minimising an upper bound on the error of the estimate.
     C₁ = ε * sum(abs, m.coefs)
     C₂ = M * sum(n -> abs(m.coefs[n] * m.grid[n]^p), eachindex(m.coefs)) / factorial(p)
-    # type-inference fails on this, so we annotate it, which gives big performance benifits
+    # Type inference fails on this, so we annotate it, which gives big performance benefits.
     h::T = convert(T, min((q / (p - q) * C₁ / C₂)^(1 / p), max_step))
 
     # Estimate the accuracy of the method.
