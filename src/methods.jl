@@ -285,7 +285,7 @@ for direction in [:forward, :central, :backward]
             geom::Bool=false
         )
             _check_p_q(p, q)
-            grid = collect($grid_fun(p))
+            grid = $grid_fun(p)
             geom && (grid = _exponentiate_grid(grid))
             coefs = _coefs(grid, q)
             return FiniteDifferenceMethod(
@@ -342,13 +342,13 @@ function _make_adaptive_bound_estimator(
     end
 end
 
-_forward_grid(p::Int) = 0:(p - 1)
+_forward_grid(p::Int) = collect(0:(p - 1))
 
-_backward_grid(p::Int) = (1 - p):0
+_backward_grid(p::Int) = collect((1 - p):0)
 
 function _central_grid(p::Int)
     if isodd(p)
-        return div(1 - p, 2):div(p - 1, 2)
+        return collect(div(1 - p, 2):div(p - 1, 2))
     else
         return vcat(div(-p, 2):-1, 1:div(p, 2))
     end
