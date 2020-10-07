@@ -357,13 +357,12 @@ end
 _exponentiate_grid(grid::Vector, base::Int=3) = sign.(grid) .* base .^ abs.(grid) ./ base
 
 function _is_symmetric(vec::Vector; centre_zero::Bool=false, negate_half::Bool=false)
-    n = div(length(vec), 2)
     half_sign = negate_half ? -1 : 1
     if isodd(length(vec))
-        centre_zero && vec[n + 1] != 0 && return false
-        return vec[1:n] == half_sign .* reverse(vec[n + 2:end])
+        centre_zero && vec[end ÷ 2 + 1] != 0 && return false
+        return vec[1:end ÷ 2] == half_sign .* reverse(vec[(end ÷ 2 + 2):end])
     else
-        return vec[1:n] == half_sign .* reverse(vec[n + 1:end])
+        return vec[1:end ÷ 2] == half_sign .* reverse(vec[(end ÷ 2 + 1):end])
     end
 end
 
