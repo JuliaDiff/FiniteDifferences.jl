@@ -2,10 +2,12 @@
 
 ```@docs
 FiniteDifferenceMethod
-fdm
-backward_fdm
-central_fdm
+FiniteDifferenceMethod(::AbstractVector, ::Int; ::Int)
+FiniteDifferences.estimate_step
 forward_fdm
+central_fdm
+backward_fdm
+extrapolate_fdm
 assert_approx_equal
 FiniteDifferences.DEFAULT_CONDITION
 ```

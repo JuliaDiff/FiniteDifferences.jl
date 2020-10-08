@@ -30,10 +30,10 @@ uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 version = "0.25.1"
 
 [[FiniteDifferences]]
-deps = ["ChainRulesCore", "LinearAlgebra", "Printf", "Random"]
+deps = ["ChainRulesCore", "LinearAlgebra", "Printf", "Random", "Richardson"]
 path = ".."
 uuid = "26cc04aa-876d-5657-8c51-4c34ba976000"
-version = "0.10.7"
+version = "0.10.8"
 
 [[InteractiveUtils]]
 deps = ["Markdown"]
@@ -92,6 +92,12 @@ uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 [[Random]]
 deps = ["Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[[Richardson]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "74d2cf4de9eda38175c3f94bd94c755a023d5623"
+uuid = "708f8203-808e-40c0-ba2d-98a6953ed40d"
+version = "1.1.0"
 
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"

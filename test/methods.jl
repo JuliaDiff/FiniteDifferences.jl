@@ -1,4 +1,4 @@
-using FiniteDifferences: Forward, Backward, Central, Nonstandard, add_tiny
+using FiniteDifferences: add_tiny
 
 @testset "Methods" begin
 
@@ -31,33 +31,32 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard, add_tiny
     # Test all combinations of the above settings, i.e. differentiate all functions using
     # all methods and data types.
     @testset "foo=$(foo.f), method=$m, type=$(T)" for foo in foos, m in methods, T in types
-
-        @testset "method-order=$order" for order in [1, 2, 3]
-            @test m(order, 0; adapt=2)(foo.f, T(1)) isa T
-            @test m(order, 0; adapt=2)(foo.f, T(1)) == T(foo.f(1))
+        @testset "method-order=$order" for order in [1, 2, 3, 4, 5]
+            @test m(order, 0, adapt=2)(foo.f, T(1)) isa T
+            @test m(order, 0, adapt=2)(foo.f, T(1)) == T(foo.f(1))
         end
 
         @test m(10, 1)(foo.f, T(1)) isa T
         @test m(10, 1)(foo.f, T(1)) ≈ T(foo.d1)
 
-        @test m(10, 2; bound=1)(foo.f, T(1)) isa T
+        @test m(10, 2)(foo.f, T(1)) isa T
         if T == Float64
-            @test m(10, 2; bound=1)(foo.f, T(1)) ≈ T(foo.d2)
+            @test m(10, 2)(foo.f, T(1)) ≈ T(foo.d2)
         end
     end
 
     # Integration test to ensure that Integer-output functions can be tested.
-    @testset "Integer Output" begin
+    @testset "Integer output" begin
         @test isapprox(central_fdm(5, 1)(x -> 5, 0), 0; rtol=1e-12, atol=1e-12)
     end
 
     @testset "Adaptation improves estimate" begin
-        @test forward_fdm(5, 1)(log, 0.001; adapt=0) ≈ 969.2571703
-        @test forward_fdm(5, 1)(log, 0.001; adapt=1) ≈ 1000
+        @test forward_fdm(5, 1, adapt=0)(log, 0.001) ≈ 997.077814
+        @test forward_fdm(5, 1, adapt=1)(log, 0.001) ≈ 1000
     end
 
     @testset "Limiting step size" begin
-        @test !isfinite(central_fdm(5, 1)(abs, 0.001; max_step=0))
+        @test !isfinite(central_fdm(5, 1)(abs, 0.001, max_step=0))
         @test central_fdm(5, 1)(abs, 0.001) ≈ 1.0
     end
 
@@ -65,62 +64,71 @@ using FiniteDifferences: Forward, Backward, Central, Nonstandard, add_tiny
         # Regression test against issues with precision during computation of _coeffs
         # see https://github.com/JuliaDiff/FiniteDifferences.jl/issues/64
 
-        @test fdm(central_fdm(9, 5), exp, 1.0, adapt=4) ≈ exp(1) atol=1e-7
+        @test central_fdm(9, 5, adapt=4, condition=1)(exp, 1.0) ≈ exp(1) atol=1e-7
 
         poly(x) = 4x^3 + 3x^2 + 2x + 1
-        @test fdm(central_fdm(9, 3), poly, 1.0, adapt=4) ≈ 24 atol=1e-11
+        @test central_fdm(9, 3, adapt=4)(poly, 1.0) ≈ 24 atol=1e-11
     end
 
-
     @testset "Printing FiniteDifferenceMethods" begin
-        @test sprint(show, central_fdm(2, 1)) == """
+        @test sprint(show, "text/plain", central_fdm(2, 1)) == """
             FiniteDifferenceMethod:
               order of method:       2
               order of derivative:   1
               grid:                  [-1, 1]
               coefficients:          [-0.5, 0.5]
             """
-        m, _ = fdm(central_fdm(2, 1), sin, 1, Val(true))
-        report = sprint(show, m)
-        regex_float = r"[\d\.\+-e]+"
-        regex_array = r"\[([\d.+-e]+(, )?)+\]"
-        @test occursin(Regex(join(map(x -> x.pattern,
-            [
-                r"FiniteDifferenceMethod:",
-                r"order of method:", r"\d+",
-                r"order of derivative:", r"\d+",
-                r"grid:", regex_array,
-                r"coefficients:", regex_array,
-                r"roundoff error:", regex_float,
-                r"bounds on derivatives:", regex_float,
-                r"step size:", regex_float,
-                r"accuracy:", regex_float,
-                r""
-            ]
-        ), r"\s*".pattern)), report)
     end
 
-    @testset "Breaking deprecations" begin
-        @test_throws ErrorException fdm([1,2,3], 4)  # Custom grids need Nonstandard
-        for f in (forward_fdm, backward_fdm, central_fdm)
-            @test_throws ErrorException f(2, 1; M=1)  # Old kwarg, now misplaced
-            @test_throws ErrorException f(2, 1, Val(true))  # Ask fdm for reports instead
+    @testset "_is_symmetric" begin
+        # Test odd grids:
+        @test FiniteDifferences._is_symmetric([2, 1, 0, 1, 2])
+        @test !FiniteDifferences._is_symmetric([2, 1, 0, 3, 2])
+        @test !FiniteDifferences._is_symmetric([4, 1, 0, 1, 2])
+
+        # Test even grids:
+        @test FiniteDifferences._is_symmetric([2, 1, 1, 2])
+        @test !FiniteDifferences._is_symmetric([2, 1, 3, 2])
+        @test !FiniteDifferences._is_symmetric([4, 1, 1, 2])
+
+        # Test zero at centre:
+        @test FiniteDifferences._is_symmetric([2, 1, 4, 1, 2])
+        @test !FiniteDifferences._is_symmetric([2, 1, 4, 1, 2], centre_zero=true)
+        @test FiniteDifferences._is_symmetric([2, 1, 1, 2], centre_zero=true)
+
+        # Test negation of a half:
+        @test !FiniteDifferences._is_symmetric([2, 1, -1, -2])
+        @test FiniteDifferences._is_symmetric([2, 1, -1, -2], negate_half=true)
+        @test FiniteDifferences._is_symmetric([2, 1, 0, -1, -2], negate_half=true)
+        @test FiniteDifferences._is_symmetric([2, 1, 4, -1, -2], negate_half=true)
+        @test !FiniteDifferences._is_symmetric(
+            [2, 1, 4, -1, -2],
+            negate_half=true,
+            centre_zero=true
+        )
+
+        # Test symmetry of `central_fdm`.
+        for p in 2:10
+            m = central_fdm(p, 1)
+            @test FiniteDifferences._is_symmetric(m)
+        end
+
+        # Test asymmetry of `forward_fdm` and `backward_fdm`.
+        for p in 2:10
+            for f in [forward_fdm, backward_fdm]
+                m = f(p, 1)
+                @test !FiniteDifferences._is_symmetric(m)
+            end
         end
     end
 
-    @testset "Types" begin
-        @testset "$T" for T in (Forward, Backward, Central)
-            @test T(5, 1)(sin, 1; adapt=4) ≈ cos(1)
-            @test_throws ArgumentError T(3, 3)
-            @test_throws ArgumentError T(3, 4)
-            @test_throws ArgumentError T(40, 5)
-            @test_throws ArgumentError T(5, 1)(sin, 1; adapt=200)
-            @test_throws ArgumentError T(5, 1)(sin, 1; eps=0.0)
-            @test_throws ArgumentError T(5, 1)(sin, 1; bound=0.0)
-        end
-        @testset "Nonstandard" begin
-            @test Nonstandard([-2, -1, 1], 1)(sin, 1) ≈ cos(1)
-            @test_throws ArgumentError Nonstandard([-2, -1, 1], 1)(sin, 1; adapt=2)
+    @testset "extrapolate_fdm" begin
+        # Also test an `Integer` argument as input.
+        for x in [1, 1.0]
+            for f in [forward_fdm, central_fdm, backward_fdm]
+                estimate, _ = extrapolate_fdm(f(4, 3), exp, x, contract=0.8)
+                @test estimate ≈ exp(1.0) atol=1e-7
+            end
         end
     end
 end
