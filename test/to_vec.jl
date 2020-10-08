@@ -50,6 +50,9 @@ end
         test_to_vec(DummyType(randn(T, 2, 9)))
         test_to_vec(SVector{2, T}(1.0, 2.0))
         test_to_vec(SMatrix{2, 2, T}(1.0, 2.0, 3.0, 4.0))
+        test_to_vec(@view randn(T, 10)[1:4])  # SubArray -- Vector
+        test_to_vec(@view randn(T, 10, 2)[1:4, :])  # SubArray -- Matrix
+        test_to_vec(Base.ReshapedArray(rand(T, 3, 3), (9,), ()))
 
         @testset "$Op" for Op in (Symmetric, Hermitian)
             test_to_vec(Op(randn(T, 11, 11)))
