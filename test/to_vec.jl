@@ -105,6 +105,29 @@ end
         end
     end
 
+    @testset "ChainRulesCore Differentials" begin
+        @testset "Composite{Tuple}" begin
+            @testset "basic" begin
+                x_tup = (1.0, 2.0, 3.0)
+                x_comp = Composite{typeof(x_tup)}(x_tup...)
+                test_to_vec(x_comp)
+            end
+
+            @testset "nested" begin
+                x_inner = (2, 3)
+                x_outer = (1, x_inner)
+                x_comp = Composite{typeof(x_outer)}(1, Composite{typeof(x_inner)}(2, 3))
+
+                test_to_vec(x_comp)
+            end
+        end
+
+        @testset "AbstractZero" begin
+            test_to_vec(Zero())
+            test_to_vec(DoesNotExist())
+        end
+    end
+
     @testset "FillVector" begin
         x = FillVector(5.0, 10)
         x_vec, from_vec = to_vec(x)
