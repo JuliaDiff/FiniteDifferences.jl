@@ -142,22 +142,23 @@ end
 
 
 # ChainRulesCore Differentials
-function FiniteDifferences.to_vec(x::Composite{P, T}) where{P, T<:Tuple}
-    x_tuple = convert(Tuple, x)
-    x_vec, back_tuple = FiniteDifferences.to_vec(x_tuple)
-    function CompositeTuple_from_vec(y_vec)
-        y_tuple = back_tuple(y_vec)
-        return Composite{P, typeof(y_tuple)}(y_tuple)
+function FiniteDifferences.to_vec(x::Composite{P}) where{P}
+    x_canon = canonicalize(x)  # to be safe, fill in every field and put in primal order.
+    x_inner = ChainRulesCore.backing(x_canon)
+    x_vec, back_inner = FiniteDifferences.to_vec(x_inner)
+    function Composite_from_vec(y_vec)
+        y_back = back_inner(y_vec)
+        return Composite{P, typeof(y_back)}(y_back)
     end
-    return x_vec, CompositeTuple_from_vec
+    return x_vec, Composite_from_vec
 end
 
 
 function FiniteDifferences.to_vec(x::AbstractZero)
-    function from_vec_AbstractZero(z)
+    function AbstractZero_from_vec(z)
         length(z) == 1  || throw(DimensionMismatch("tried to go back to $x from $z"))
         iszero(first(z)) || throw(DomainError(first(z)))
         return x
     end
-    return [false], from_vec_AbstractZero
+    return [false], AbstractZero_from_vec
 end

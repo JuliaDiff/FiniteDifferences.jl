@@ -1,6 +1,6 @@
 name = "FiniteDifferences"
 uuid = "26cc04aa-876d-5657-8c51-4c34ba976000"
-version = "0.11.1"
+version = "0.11.2"
 
 [deps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
@@ -11,8 +11,8 @@ Richardson = "708f8203-808e-40c0-ba2d-98a6953ed40d"
 
 [compat]
 ChainRulesCore = "0.9"
-julia = "1"
 Richardson = "1.2"
+julia = "1"
 
 [extras]
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
