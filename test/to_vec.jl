@@ -18,6 +18,14 @@ struct FillVector <: AbstractVector{Float64}
     len::Int
 end
 
+# For testing Composite{ThreeFields}
+struct ThreeFields
+    a
+    b
+    c
+end
+
+
 Base.size(x::FillVector) = (x.len,)
 Base.getindex(x::FillVector, n::Int) = x.x
 
@@ -102,6 +110,43 @@ end
             else
                 test_to_vec(Dict(:a=>3 + 2im, :b=>randn(T, 10, 11), :c=>(5+im, 2-im, 1+im)))
             end
+        end
+    end
+
+    @testset "ChainRulesCore Differentials" begin
+        @testset "Composite{Tuple}" begin
+            @testset "basic" begin
+                x_tup = (1.0, 2.0, 3.0)
+                x_comp = Composite{typeof(x_tup)}(x_tup...)
+                test_to_vec(x_comp)
+            end
+
+            @testset "nested" begin
+                x_inner = (2, 3)
+                x_outer = (1, x_inner)
+                x_comp = Composite{typeof(x_outer)}(1, Composite{typeof(x_inner)}(2, 3))
+                test_to_vec(x_comp)
+            end
+        end
+
+        @testset "Composite Struct" begin
+            @testset "NamedTuple basic" begin
+                nt = (; a=1.0, b=20.0)
+                comp = Composite{typeof(nt)}(; nt...)
+                test_to_vec(comp)
+            end
+
+            @testset "Struct" begin
+                test_to_vec(Composite{ThreeFields}(; a=10.0, b=20.0, c=30.0))
+                test_to_vec(Composite{ThreeFields}(; a=10.0, b=20.0,))
+                test_to_vec(Composite{ThreeFields}(; a=10.0, c=30.0))
+                test_to_vec(Composite{ThreeFields}(; c=30.0, a=10.0, b=20.0))
+            end
+        end
+
+        @testset "AbstractZero" begin
+            test_to_vec(Zero())
+            test_to_vec(DoesNotExist())
         end
     end
 

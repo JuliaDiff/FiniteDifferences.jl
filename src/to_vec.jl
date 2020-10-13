@@ -139,3 +139,26 @@ function to_vec(d::Dict)
     end
     return d_vec, Dict_from_vec
 end
+
+
+# ChainRulesCore Differentials
+function FiniteDifferences.to_vec(x::Composite{P}) where{P}
+    x_canon = canonicalize(x)  # to be safe, fill in every field and put in primal order.
+    x_inner = ChainRulesCore.backing(x_canon)
+    x_vec, back_inner = FiniteDifferences.to_vec(x_inner)
+    function Composite_from_vec(y_vec)
+        y_back = back_inner(y_vec)
+        return Composite{P, typeof(y_back)}(y_back)
+    end
+    return x_vec, Composite_from_vec
+end
+
+
+function FiniteDifferences.to_vec(x::AbstractZero)
+    function AbstractZero_from_vec(z)
+        length(z) == 1  || throw(DimensionMismatch("tried to go back to $x from $z"))
+        iszero(first(z)) || throw(DomainError(first(z)))
+        return x
+    end
+    return [false], AbstractZero_from_vec
+end
