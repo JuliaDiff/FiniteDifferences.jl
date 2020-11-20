@@ -155,10 +155,8 @@ end
 
 
 function FiniteDifferences.to_vec(x::AbstractZero)
-    function AbstractZero_from_vec(z)
-        length(z) == 1  || throw(DimensionMismatch("tried to go back to $x from $z"))
-        iszero(first(z)) || throw(DomainError(first(z)))
+    function AbstractZero_from_vec(x_vec::Vector)
         return x
     end
-    return [false], AbstractZero_from_vec
+    return Bool[], AbstractZero_from_vec
 end
