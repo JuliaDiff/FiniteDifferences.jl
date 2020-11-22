@@ -113,7 +113,8 @@ end
 # Non-array data structures
 
 function to_vec(x::Tuple)
-    x_vecs, x_backs = zip(map(to_vec, x)...)
+    x_vecs_and_backs = map(to_vec, x)
+    x_vecs, x_backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
     sz = cumsum(collect(map(length, x_vecs)))
     function Tuple_from_vec(v)
         return ntuple(length(x)) do n
