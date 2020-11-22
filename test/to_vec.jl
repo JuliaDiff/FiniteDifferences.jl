@@ -47,6 +47,9 @@ end
             test_to_vec(.7 + .8im)
             test_to_vec(1 + 2im)
         end
+        test_to_vec(T[])
+        test_to_vec(Vector{T}[])
+        test_to_vec(Matrix{T}[])
         test_to_vec(randn(T, 3))
         test_to_vec(randn(T, 5, 11))
         test_to_vec(randn(T, 13, 17, 19))
