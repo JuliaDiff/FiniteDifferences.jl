@@ -115,10 +115,11 @@ end
 function to_vec(x::Tuple)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, x_backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
-    sz = cumsum(collect(map(length, x_vecs)))
+    lengths = map(length, x_vecs)
+    sz = cumsum(lengths)
     function Tuple_from_vec(v)
-        return ntuple(length(x)) do n
-            return x_backs[n](v[sz[n] - length(x_vecs[n]) + 1:sz[n]])
+        map(x_backs, lengths, sz) do x_back, l, s
+            return x_back(v[s - l + 1:s])
         end
     end
     return reduce(vcat, x_vecs), Tuple_from_vec
