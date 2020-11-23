@@ -34,6 +34,7 @@ function test_to_vec(x::T; check_inferred = true) where {T}
     x_vec, back = to_vec(x)
     @test x_vec isa Vector
     @test all(s -> s isa Real, x_vec)
+    check_inferred && @inferred back(x_vec)
     @test x == back(x_vec)
     return nothing
 end
@@ -95,9 +96,9 @@ end
         @testset "Tuples" begin
             test_to_vec((5, 4))
             test_to_vec((5, randn(T, 5)))
-            test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1))
+            test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1); check_inferred = false)
             test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5))
-            test_to_vec(((6, 5), 3, randn(T, 3, 2, 0, 1)))
+            test_to_vec(((6, 5), 3, randn(T, 3, 2, 0, 1)); check_inferred = false)
             test_to_vec((DummyType(randn(T, 2, 7)), DummyType(randn(T, 3, 9))))
             test_to_vec((DummyType(randn(T, 3, 2)), randn(T, 11, 8)))
         end
@@ -129,7 +130,7 @@ end
                 x_inner = (2, 3)
                 x_outer = (1, x_inner)
                 x_comp = Composite{typeof(x_outer)}(1, Composite{typeof(x_inner)}(2, 3))
-                test_to_vec(x_comp)
+                test_to_vec(x_comp; check_inferred = false)
             end
         end
 
