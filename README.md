@@ -1,5 +1,6 @@
 # FiniteDifferences.jl: Finite Difference Methods
 
+[![CI](https://github.com/JuliaDiff/FiniteDifferences.jl/workflows/CI/badge.svg?branch=master)](https://github.com/JuliaDiff/FiniteDifferences.jl/actions?query=workflow%3ACI)
 [![Build Status](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl.svg?branch=master)](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl)
 [![codecov.io](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl/coverage.svg?branch=master)](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl?branch=master)
 [![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/F/FiniteDifferences.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
