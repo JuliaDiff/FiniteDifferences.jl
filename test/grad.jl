@@ -203,21 +203,26 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
     end
 
     @testset "Symmetric/Hermitian composeable" begin
-        # test that two-stage finite differences of f(Symmetric(x)) gives same result as
-        # composed one-stage
-        fdm = FiniteDifferences.central_fdm(5, 1)
-        f = x -> sum(sin, x)
-        n = 3
-        x = randn(ComplexF64, n, n)
-        symx = Symmetric(x)
-        y = f(symx)
+        @testset "$T" for T in (Symmetric, Hermitian)
+            # test that multi-stage finite differences of f(T(x)) gives same result as
+            # composed single-stage
+            fdm = FiniteDifferences.central_fdm(5, 1)
+            f = x -> sum(sin, x)
+            n = 3
+            x = randn(ComplexF64, n, n)
+            symx = T(x)
+            symz = symx^2
+            y = f(symz)
 
-        ẋ = randn(ComplexF64, n, n)
-        ṡymx = jvp(fdm, Symmetric, (x, ẋ))
-        @test jvp(fdm, f, (symx, ṡymx)) ≈ jvp(fdm, x -> f(Symmetric(x)), (x, ẋ))
+            ẋ = randn(ComplexF64, n, n)
+            ṡymx = jvp(fdm, T, (x, ẋ))
+            ṡymz = jvp(fdm, x -> x^2, (symx, ṡymx))
+            @test jvp(fdm, f, (symz, ṡymz)) ≈ jvp(fdm, x -> f(T(x)^2), (x, ẋ))
 
-        ȳ = randn(typeof(y))
-        s̄ymx = j′vp(fdm, f, ȳ, symx)[1]
-        @test j′vp(fdm, Symmetric, s̄ymx, x)[1] ≈ j′vp(fdm, x -> f(Symmetric(x)), ȳ, x)[1]
+            ȳ = randn(typeof(y))
+            s̄ymz = j′vp(fdm, f, ȳ, symz)[1]
+            s̄ymx = j′vp(fdm, x -> x^2, s̄ymz, symx)[1]
+            @test j′vp(fdm, T, s̄ymx, x)[1] ≈ j′vp(fdm, x -> f(T(x)^2), ȳ, x)[1]
+        end
     end
 end
