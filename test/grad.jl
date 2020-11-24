@@ -201,4 +201,23 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
         @test [real(x̄), imag(x̄)] ≈ Jx'z̄_vec
         @test [real(ȳ), imag(ȳ)] ≈ Jy'z̄_vec
     end
+
+    @testset "Symmetric/Hermitian composeable" begin
+        # test that two-stage finite differences of f(Symmetric(x)) gives same result as
+        # composed one-stage
+        fdm = FiniteDifferences.central_fdm(5, 1)
+        f = x -> sum(sin, x)
+        n = 3
+        x = randn(ComplexF64, n, n)
+        symx = Symmetric(x)
+        y = f(symx)
+
+        ẋ = randn(ComplexF64, n, n)
+        ṡymx = jvp(fdm, Symmetric, (x, ẋ))
+        @test jvp(fdm, f, (symx, ṡymx)) ≈ jvp(fdm, x -> f(Symmetric(x)), (x, ẋ))
+
+        ȳ = randn(typeof(y))
+        s̄ymx = j′vp(fdm, f, ȳ, symx)[1]
+        @test j′vp(fdm, Symmetric, s̄ymx, x)[1] ≈ j′vp(fdm, x -> f(Symmetric(x)), ȳ, x)[1]
+    end
 end
