@@ -68,9 +68,13 @@ function to_vec(x::T) where {T<:LinearAlgebra.AbstractTriangular}
 end
 
 function to_vec(x::T) where {T<:LinearAlgebra.HermOrSym}
-    x_vec, back = to_vec(Matrix(x))
+    x_vec, back = to_vec(x.uplo === 'U' ? UpperTriangular(triu(x)) : LowerTriangular(tril(x)))
     function HermOrSym_from_vec(x_vec)
-        return T(back(x_vec), x.uplo)
+        fdual = T <: Symmetric ? transpose : adjoint
+        trix = back(x_vec)
+        idx = diagind(trix)
+        @views trix[idx] .= (trix[idx] .+ fdual(trix)[idx]) ./ 2
+        return T(trix, x.uplo)
     end
     return x_vec, HermOrSym_from_vec
 end
