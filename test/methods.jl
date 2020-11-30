@@ -118,4 +118,9 @@
             end
         end
     end
+
+    @testset "Derivative of cosc at 0 (#124)" begin
+        @test central_fdm(5, 1)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=1e-9
+        @test central_fdm(10, 1, adapt=3)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=5e-14
+    end
 end
