@@ -10,10 +10,9 @@ estimate. This function deals with the case that `f(x) = 0`.
 @inline function estimate_magitude(f, x)
     M = float(maximum(abs, f(x)))
     M > 0 && (return M)
-    # `f(x) = 0`, but it may not be zero around `x`. We conclude that `x` is likely a
+    # Ouch, `f(x) = 0`. But it may not be zero around `x`. We conclude that `x` is likely a
     # pathological input for `f`. Perturb `x`. Assume that the pertubed value for `x` is
-    # highly unlikely also a pathological value for `f`, so use that as the magnitude for
-    # `f`.
+    # highly unlikely also a pathological value for `f`.
     Δ = 0.1 * max(abs(x), one(x))
     return float(maximum(abs, f(x + Δ)))
 end
