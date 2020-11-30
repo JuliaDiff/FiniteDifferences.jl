@@ -1,17 +1,4 @@
-using FiniteDifferences: add_tiny
-
 @testset "Methods" begin
-
-    @testset "add_tiny" begin
-        @test add_tiny(convert(Float64, 5)) isa Float64
-        @test add_tiny(convert(Float32, 5)) isa Float32
-        @test add_tiny(convert(Float16, 5)) isa Float16
-
-        @test add_tiny(convert(Int, 5)) isa Float64
-        @test add_tiny(convert(UInt, 5)) isa Float64
-        @test add_tiny(convert(Bool, 1)) isa Float64
-    end
-
     # The different approaches to approximating the gradient to try.
     methods = [forward_fdm, backward_fdm, central_fdm]
 
