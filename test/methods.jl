@@ -4,13 +4,13 @@ import FiniteDifferences: estimate_magitude
     @testset "estimate_magitude" begin
         f64(x::Float64) = x
         f64_int(x::Float64) = Int(x)
-        @assert estimate_magitude(f64, 1.0) == 1.0
-        @assert estimate_magitude(f64_int, 1.0) == 1.0
+        @assert estimate_magitude(f64, 1.0) === 1.0
+        @assert estimate_magitude(f64_int, 1.0) === 1.0
 
         f32(x::Float32) = x
         f32_int(x::Float32) = Int(x)
-        @assert estimate_magitude(f32, 1f0) == 1f0
-        @assert estimate_magitude(f32_int, 1f0) == 1f0
+        @assert estimate_magitude(f32, 1f0) === 1f0
+        @assert estimate_magitude(f32_int, 1f0) === 1f0
     end
 
 
