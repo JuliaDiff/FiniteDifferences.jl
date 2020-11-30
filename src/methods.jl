@@ -1,19 +1,19 @@
 export FiniteDifferenceMethod, fdm, backward_fdm, forward_fdm, central_fdm, extrapolate_fdm
 
 """
-    estimate_magitude(f, x)
+    estimate_magitude(f, x::T) where T<:AbstractFloat
 
 Estimate the magnitude of `f` in a neighbourhood of `x`, assuming that the outputs of `f`
 have a "typical" order of magnitude. The result should be interpreted as a very rough
 estimate. This function deals with the case that `f(x) = 0`.
 """
-@inline function estimate_magitude(f, x)
+function estimate_magitude(f, x::T) where T<:AbstractFloat
     M = float(maximum(abs, f(x)))
     M > 0 && (return M)
     # Ouch, `f(x) = 0`. But it may not be zero around `x`. We conclude that `x` is likely a
     # pathological input for `f`. Perturb `x`. Assume that the pertubed value for `x` is
     # highly unlikely also a pathological value for `f`.
-    Δ = 0.1 * max(abs(x), one(x))
+    Δ = convert(T, 0.1) * max(abs(x), one(x))
     return float(maximum(abs, f(x + Δ)))
 end
 
@@ -217,7 +217,7 @@ end
 
 # Estimate the bound on the derivative by amplifying the ∞-norm.
 function _make_default_bound_estimator(; condition::Real=DEFAULT_CONDITION)
-    @inline default_bound_estimator(f, x) = condition * estimate_magitude(f, x)
+    default_bound_estimator(f, x) = condition * estimate_magitude(f, x)
     return default_bound_estimator
 end
 
