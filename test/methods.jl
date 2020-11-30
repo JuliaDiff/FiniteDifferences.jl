@@ -143,4 +143,8 @@ import FiniteDifferences: estimate_magitude
         @test central_fdm(5, 1)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=1e-9
         @test central_fdm(10, 1, adapt=3)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=5e-14
     end
+
+    @testset "Derivative of a constant (#125)" begin
+        @test central_fdm(2, 1)(x -> 0, 0) ≈ 0 atol=1e-10
+    end
 end

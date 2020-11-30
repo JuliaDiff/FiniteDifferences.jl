@@ -265,8 +265,12 @@ function estimate_step(
     p = length(m.coefs)
     q = m.q
 
-    # Estimate the bound and round-off error.
-    ε = eps(estimate_magitude(f, x)) * factor
+    # Estimate the round-off error. It can happen that the function is zero around `x`, in
+    # which case we cannot take `eps(f(x))`. Therefore, we assume a lower bound that is
+    # equal to `eps(T) / 1000`, which gives `f` four orders of magnitude wiggle room.
+    ε = max(eps(estimate_magitude(f, x)), eps(T) / 1000) * factor
+
+    # Estimate the bound on the derivatives.
     M = m.bound_estimator(f, x)
 
     # Set the step size by minimising an upper bound on the error of the estimate.
