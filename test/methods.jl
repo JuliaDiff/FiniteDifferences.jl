@@ -1,4 +1,4 @@
-import FiniteDifferences: estimate_magitude
+import FiniteDifferences: estimate_magitude, estimate_roundoff_error
 
 @testset "Methods" begin
     @testset "estimate_magitude" begin
@@ -18,6 +18,21 @@ import FiniteDifferences: estimate_magitude
         @test estimate_magitude(f32_int, 1f0) === 10.0
     end
 
+    @testset "estimate_roundoff_error" begin
+        # `Float64`s:
+        @test estimate_roundoff_error(identity, 1.0) == eps(1.0)
+        #   Pertubation from `estimate_magitude`:
+        @test estimate_roundoff_error(identity, 0.0) == eps(0.1)
+
+        # `Float32`s:
+        @test estimate_roundoff_error(identity, 1f0) == eps(1f0)
+        #   Pertubation from `estimate_magitude`:
+        @test estimate_roundoff_error(identity, 0.0f0) == eps(0.1f0)
+
+        # Test lower bound of `eps(T) / 1000`.
+        @test estimate_roundoff_error(x -> 1e-100, 0.0) == eps(1.0) / 1000
+        @test estimate_roundoff_error(x -> 1f-100, 0f0) == eps(1f0) / 1000
+    end
 
     # The different approaches to approximating the gradient to try.
     methods = [forward_fdm, backward_fdm, central_fdm]

@@ -18,6 +18,18 @@ function estimate_magitude(f, x::T) where T<:AbstractFloat
 end
 
 """
+    estimate_roundoff_error(f, x::T) where T<:AbstractFloat
+
+Estimate the round-off error of `f(x)`. This function deals with the case that `f(x) = 0`.
+"""
+function estimate_roundoff_error(f, x::T) where T<:AbstractFloat
+    # Estimate the round-off error. It can happen that the function is zero around `x`, in
+    # which case we cannot take `eps(f(x))`. Therefore, we assume a lower bound that is
+    # equal to `eps(T) / 1000`, which gives `f` four orders of magnitude wiggle room.
+    return max(eps(estimate_magitude(f, x)), eps(T) / 1000)
+end
+
+"""
     FiniteDifferences.DEFAULT_CONDITION
 
 The default [condition number](https://en.wikipedia.org/wiki/Condition_number) used when
@@ -265,10 +277,8 @@ function estimate_step(
     p = length(m.coefs)
     q = m.q
 
-    # Estimate the round-off error. It can happen that the function is zero around `x`, in
-    # which case we cannot take `eps(f(x))`. Therefore, we assume a lower bound that is
-    # equal to `eps(T) / 1000`, which gives `f` four orders of magnitude wiggle room.
-    ε = max(eps(estimate_magitude(f, x)), eps(T) / 1000) * factor
+    # Estimate the round-off error.
+    ε = estimate_roundoff_error(f, x) * factor
 
     # Estimate the bound on the derivatives.
     M = m.bound_estimator(f, x)
