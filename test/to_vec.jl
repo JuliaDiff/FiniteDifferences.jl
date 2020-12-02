@@ -95,18 +95,18 @@ end
 
         @testset "Tuples" begin
             test_to_vec((5, 4))
-            test_to_vec((5, randn(T, 5)))
+            test_to_vec((5, randn(T, 5)); check_inferred = VERSION ≥ v"1.2")
             test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1); check_inferred = false)
-            test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5))
+            test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5); check_inferred = VERSION ≥ v"1.2")
             test_to_vec(((6, 5), 3, randn(T, 3, 2, 0, 1)); check_inferred = false)
             test_to_vec((DummyType(randn(T, 2, 7)), DummyType(randn(T, 3, 9))))
             test_to_vec((DummyType(randn(T, 3, 2)), randn(T, 11, 8)))
         end
         @testset "NamedTuple" begin
             if T == Float64
-                test_to_vec((a=5, b=randn(10, 11), c=(5, 4, 3)))
+                test_to_vec((a=5, b=randn(10, 11), c=(5, 4, 3)); check_inferred = VERSION ≥ v"1.2")
             else
-                test_to_vec((a=3 + 2im, b=randn(T, 10, 11), c=(5+im, 2-im, 1+im)))
+                test_to_vec((a=3 + 2im, b=randn(T, 10, 11), c=(5+im, 2-im, 1+im)); check_inferred = VERSION ≥ v"1.2")
             end
         end
         @testset "Dictionary" begin
