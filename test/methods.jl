@@ -1,15 +1,37 @@
-using FiniteDifferences: add_tiny
+import FiniteDifferences: estimate_magitude, estimate_roundoff_error
 
 @testset "Methods" begin
+    @testset "estimate_magitude" begin
+        f64(x::Float64) = x
+        f64_int(x::Float64) = Int(10x)
+        @test estimate_magitude(f64, 0.0) === 0.1
+        @test estimate_magitude(f64, 1.0) === 1.0
+        @test estimate_magitude(f64_int, 0.0) === 1.0
+        @test estimate_magitude(f64_int, 1.0) === 10.0
 
-    @testset "add_tiny" begin
-        @test add_tiny(convert(Float64, 5)) isa Float64
-        @test add_tiny(convert(Float32, 5)) isa Float32
-        @test add_tiny(convert(Float16, 5)) isa Float16
+        f32(x::Float32) = x
+        f32_int(x::Float32) = Int(10 * x)
+        @test estimate_magitude(f32, 0f0) === 0.1f0
+        @test estimate_magitude(f32, 1f0) === 1f0
+        # In this case, the `Int` is converted with `float`, so we expect a `Float64`.
+        @test estimate_magitude(f32_int, 0f0) === 1.0
+        @test estimate_magitude(f32_int, 1f0) === 10.0
+    end
 
-        @test add_tiny(convert(Int, 5)) isa Float64
-        @test add_tiny(convert(UInt, 5)) isa Float64
-        @test add_tiny(convert(Bool, 1)) isa Float64
+    @testset "estimate_roundoff_error" begin
+        # `Float64`s:
+        @test estimate_roundoff_error(identity, 1.0) == eps(1.0)
+        #   Pertubation from `estimate_magitude`:
+        @test estimate_roundoff_error(identity, 0.0) == eps(0.1)
+
+        # `Float32`s:
+        @test estimate_roundoff_error(identity, 1f0) == eps(1f0)
+        #   Pertubation from `estimate_magitude`:
+        @test estimate_roundoff_error(identity, 0.0f0) == eps(0.1f0)
+
+        # Test lower bound of `eps(T) / 1000`.
+        @test estimate_roundoff_error(x -> 1e-100, 0.0) == eps(1.0) / 1000
+        @test estimate_roundoff_error(x -> 1f-100, 0f0) == eps(1f0) / 1000
     end
 
     # The different approaches to approximating the gradient to try.
@@ -130,5 +152,14 @@ using FiniteDifferences: add_tiny
                 @test estimate ≈ exp(1.0) atol=1e-7
             end
         end
+    end
+
+    @testset "Derivative of cosc at 0 (#124)" begin
+        @test central_fdm(5, 1)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=1e-9
+        @test central_fdm(10, 1, adapt=3)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=5e-14
+    end
+
+    @testset "Derivative of a constant (#125)" begin
+        @test central_fdm(2, 1)(x -> 0, 0) ≈ 0 atol=1e-10
     end
 end

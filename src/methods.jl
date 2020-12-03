@@ -1,13 +1,33 @@
 export FiniteDifferenceMethod, fdm, backward_fdm, forward_fdm, central_fdm, extrapolate_fdm
 
 """
-    add_tiny(x::Union{AbstractFloat, Integer})
+    estimate_magitude(f, x::T) where T<:AbstractFloat
 
-Add a tiny number, 10^{-40}, to a real floating point number `x`, preserving the type. If
-`x` is an `Integer`, it is promoted to a suitable floating point type.
+Estimate the magnitude of `f` in a neighbourhood of `x`, assuming that the outputs of `f`
+have a "typical" order of magnitude. The result should be interpreted as a very rough
+estimate. This function deals with the case that `f(x) = 0`.
 """
-add_tiny(x::T) where T<:AbstractFloat = x + convert(T, 1e-40)
-add_tiny(x::Integer) = add_tiny(float(x))
+function estimate_magitude(f, x::T) where T<:AbstractFloat
+    M = float(maximum(abs, f(x)))
+    M > 0 && (return M)
+    # Ouch, `f(x) = 0`. But it may not be zero around `x`. We conclude that `x` is likely a
+    # pathological input for `f`. Perturb `x`. Assume that the pertubed value for `x` is
+    # highly unlikely also a pathological value for `f`.
+    Δ = convert(T, 0.1) * max(abs(x), one(x))
+    return float(maximum(abs, f(x + Δ)))
+end
+
+"""
+    estimate_roundoff_error(f, x::T) where T<:AbstractFloat
+
+Estimate the round-off error of `f(x)`. This function deals with the case that `f(x) = 0`.
+"""
+function estimate_roundoff_error(f, x::T) where T<:AbstractFloat
+    # Estimate the round-off error. It can happen that the function is zero around `x`, in
+    # which case we cannot take `eps(f(x))`. Therefore, we assume a lower bound that is
+    # equal to `eps(T) / 1000`, which gives `f` four orders of magnitude wiggle room.
+    return max(eps(estimate_magitude(f, x)), eps(T) / 1000)
+end
 
 """
     FiniteDifferences.DEFAULT_CONDITION
@@ -209,7 +229,7 @@ end
 
 # Estimate the bound on the derivative by amplifying the ∞-norm.
 function _make_default_bound_estimator(; condition::Real=DEFAULT_CONDITION)
-    default_bound_estimator(f, x) = condition * maximum(abs, f(x))
+    default_bound_estimator(f, x) = condition * estimate_magitude(f, x)
     return default_bound_estimator
 end
 
@@ -256,17 +276,18 @@ function estimate_step(
 ) where T<:AbstractFloat
     p = length(m.coefs)
     q = m.q
-    f_x = float(f(x))
 
-    # Estimate the bound and round-off error.
-    ε = add_tiny(maximum(eps, f_x)) * factor
-    M = add_tiny(m.bound_estimator(f, x))
+    # Estimate the round-off error.
+    ε = estimate_roundoff_error(f, x) * factor
+
+    # Estimate the bound on the derivatives.
+    M = m.bound_estimator(f, x)
 
     # Set the step size by minimising an upper bound on the error of the estimate.
     C₁ = ε * sum(abs, m.coefs)
     C₂ = M * sum(n -> abs(m.coefs[n] * m.grid[n]^p), eachindex(m.coefs)) / factorial(p)
     # Type inference fails on this, so we annotate it, which gives big performance benefits.
-    h::T = convert(T, min((q / (p - q) * C₁ / C₂)^(1 / p), max_step))
+    h::T = convert(T, min((q / (p - q) * (C₁ / C₂))^(1 / p), max_step))
 
     # Estimate the accuracy of the method.
     accuracy = h^(-q) * C₁ + h^(p - q) * C₂
@@ -292,7 +313,7 @@ for direction in [:forward, :central, :backward]
                 grid,
                 q,
                 coefs,
-                _make_adaptive_bound_estimator($fdm_fun, p, adapt, condition, geom=geom),
+                _make_adaptive_bound_estimator($fdm_fun, p, q, adapt, condition, geom=geom),
             )
         end
 
@@ -327,6 +348,7 @@ end
 
 function _make_adaptive_bound_estimator(
     constructor::Function,
+    p::Int,
     q::Int,
     adapt::Int,
     condition::Int;
@@ -334,9 +356,9 @@ function _make_adaptive_bound_estimator(
 )
     if adapt >= 1
         estimate_derivative = constructor(
-            q + 1, q, adapt=adapt - 1, condition=condition; kw_args...
+            p + 1, p, adapt=adapt - 1, condition=condition; kw_args...
         )
-        return (f, x) -> maximum(abs, estimate_derivative(f, x))
+        return (f, x) -> estimate_magitude(x′ -> estimate_derivative(f, x′), x)
     else
         return _make_default_bound_estimator(condition=condition)
     end
