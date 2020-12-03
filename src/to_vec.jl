@@ -29,7 +29,9 @@ function to_vec(x::AbstractVector)
         x_Vec = [backs[n](x_vec[sz[n] - length(x_vecs[n]) + 1:sz[n]]) for n in eachindex(x)]
         return oftype(x, x_Vec)
     end
-    return vcat(x_vecs...), Vector_from_vec
+    # handle empty x
+    x_vec = isempty(x_vecs) ? eltype(eltype(x_vecs))[] : reduce(vcat, x_vecs)
+    return x_vec, Vector_from_vec
 end
 
 function to_vec(x::AbstractArray)
@@ -99,11 +101,11 @@ function to_vec(X::Adjoint)
     return x_vec, Adjoint_from_vec
 end
 
-function to_vec(X::PermutedDimsArray{T, D, P, Pinv} where {T, D}) where {P, Pinv}
-    x_vec, back = to_vec(collect(X))
+function to_vec(X::T) where {T<:PermutedDimsArray}
+    x_vec, back = to_vec(parent(X))
     function PermutedDimsArray_from_vec(x_vec)
-        X_parent = collect(PermutedDimsArray(back(x_vec), Pinv))
-        return PermutedDimsArray(X_parent, P)
+        X_parent = back(x_vec)
+        return T(X_parent)
     end
     return x_vec, PermutedDimsArray_from_vec
 end
@@ -111,11 +113,13 @@ end
 # Non-array data structures
 
 function to_vec(x::Tuple)
-    x_vecs, x_backs = zip(map(to_vec, x)...)
-    sz = cumsum(collect(map(length, x_vecs)))
+    x_vecs_and_backs = map(to_vec, x)
+    x_vecs, x_backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
+    lengths = map(length, x_vecs)
+    sz = typeof(lengths)(cumsum(collect(lengths)))
     function Tuple_from_vec(v)
-        return ntuple(length(x)) do n
-            return x_backs[n](v[sz[n] - length(x_vecs[n]) + 1:sz[n]])
+        map(x_backs, lengths, sz) do x_back, l, s
+            return x_back(v[s - l + 1:s])
         end
     end
     return reduce(vcat, x_vecs), Tuple_from_vec

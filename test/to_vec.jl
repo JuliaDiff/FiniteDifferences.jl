@@ -29,10 +29,12 @@ end
 Base.size(x::FillVector) = (x.len,)
 Base.getindex(x::FillVector, n::Int) = x.x
 
-function test_to_vec(x::T) where {T}
+function test_to_vec(x::T; check_inferred = true) where {T}
+    check_inferred && @inferred to_vec(x)
     x_vec, back = to_vec(x)
     @test x_vec isa Vector
     @test all(s -> s isa Real, x_vec)
+    check_inferred && @inferred back(x_vec)
     @test x == back(x_vec)
     return nothing
 end
@@ -46,13 +48,16 @@ end
             test_to_vec(.7 + .8im)
             test_to_vec(1 + 2im)
         end
+        test_to_vec(T[])
+        test_to_vec(Vector{T}[])
+        test_to_vec(Matrix{T}[])
         test_to_vec(randn(T, 3))
         test_to_vec(randn(T, 5, 11))
         test_to_vec(randn(T, 13, 17, 19))
         test_to_vec(randn(T, 13, 0, 19))
-        test_to_vec([1.0, randn(T, 2), randn(T, 1), 2.0])
-        test_to_vec([randn(T, 5, 4, 3), (5, 4, 3), 2.0])
-        test_to_vec(reshape([1.0, randn(T, 5, 4, 3), randn(T, 4, 3), 2.0], 2, 2))
+        test_to_vec([1.0, randn(T, 2), randn(T, 1), 2.0]; check_inferred = false)
+        test_to_vec([randn(T, 5, 4, 3), (5, 4, 3), 2.0]; check_inferred = false)
+        test_to_vec(reshape([1.0, randn(T, 5, 4, 3), randn(T, 4, 3), 2.0], 2, 2); check_inferred = false)
         test_to_vec(UpperTriangular(randn(T, 13, 13)))
         test_to_vec(Diagonal(randn(T, 7)))
         test_to_vec(DummyType(randn(T, 2, 9)))
@@ -90,25 +95,25 @@ end
 
         @testset "Tuples" begin
             test_to_vec((5, 4))
-            test_to_vec((5, randn(T, 5)))
-            test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1))
-            test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5))
-            test_to_vec(((6, 5), 3, randn(T, 3, 2, 0, 1)))
+            test_to_vec((5, randn(T, 5)); check_inferred = VERSION ≥ v"1.2")
+            test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1); check_inferred = false)
+            test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5); check_inferred = VERSION ≥ v"1.2")
+            test_to_vec(((6, 5), 3, randn(T, 3, 2, 0, 1)); check_inferred = false)
             test_to_vec((DummyType(randn(T, 2, 7)), DummyType(randn(T, 3, 9))))
             test_to_vec((DummyType(randn(T, 3, 2)), randn(T, 11, 8)))
         end
         @testset "NamedTuple" begin
             if T == Float64
-                test_to_vec((a=5, b=randn(10, 11), c=(5, 4, 3)))
+                test_to_vec((a=5, b=randn(10, 11), c=(5, 4, 3)); check_inferred = VERSION ≥ v"1.2")
             else
-                test_to_vec((a=3 + 2im, b=randn(T, 10, 11), c=(5+im, 2-im, 1+im)))
+                test_to_vec((a=3 + 2im, b=randn(T, 10, 11), c=(5+im, 2-im, 1+im)); check_inferred = VERSION ≥ v"1.2")
             end
         end
         @testset "Dictionary" begin
             if T == Float64
-                test_to_vec(Dict(:a=>5, :b=>randn(10, 11), :c=>(5, 4, 3)))
+                test_to_vec(Dict(:a=>5, :b=>randn(10, 11), :c=>(5, 4, 3)); check_inferred = false)
             else
-                test_to_vec(Dict(:a=>3 + 2im, :b=>randn(T, 10, 11), :c=>(5+im, 2-im, 1+im)))
+                test_to_vec(Dict(:a=>3 + 2im, :b=>randn(T, 10, 11), :c=>(5+im, 2-im, 1+im)); check_inferred = false)
             end
         end
     end
@@ -125,7 +130,7 @@ end
                 x_inner = (2, 3)
                 x_outer = (1, x_inner)
                 x_comp = Composite{typeof(x_outer)}(1, Composite{typeof(x_inner)}(2, 3))
-                test_to_vec(x_comp)
+                test_to_vec(x_comp; check_inferred = false)
             end
         end
 
