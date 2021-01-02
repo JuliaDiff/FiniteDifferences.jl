@@ -17,10 +17,10 @@ round-off errors by.
 """
 const DEFAULT_FACTOR = 1
 
-abstract type FiniteDifferenceMethod end
+abstract type FiniteDifferenceMethod{P,Q} end
 
 """
-    UnadaptedFiniteDifferenceMethod{P,Q} <: FiniteDifferenceMethod
+    UnadaptedFiniteDifferenceMethod{P,Q} <: FiniteDifferenceMethod{P,Q}
 
 A finite difference method that estimates a `Q`th order derivative from `P` function
 evaluations. This method does not dynamically adapt its step size.
@@ -34,12 +34,18 @@ evaluations. This method does not dynamically adapt its step size.
     perform adaptation for this finite difference method.
 - `condition::Float64`: Condition number. See See [`DEFAULT_CONDITION`](@ref).
 - `factor::Float64`: Factor number. See See [`DEFAULT_FACTOR`](@ref).
+- `∇f_magnitude_mult::Float64`: Internally computed quantity that is used to estimate
+    the magnitude of `∇f(x)`.
+- `f_magnitude_mult::Float64`: Internally computed quantity that is used to estimate
+    the magnitude of `f(x)`.
 """
-struct UnadaptedFiniteDifferenceMethod{P,Q} <: FiniteDifferenceMethod
+struct UnadaptedFiniteDifferenceMethod{P,Q} <: FiniteDifferenceMethod{P,Q}
     grid::NTuple{P,Float64}
     coefs::NTuple{P,Float64}
     condition::Float64
     factor::Float64
+    ∇f_magnitude_mult::Float64
+    f_magnitude_mult::Float64
 end
 
 """
@@ -47,7 +53,7 @@ end
         P,
         Q,
         E<:FiniteDifferenceMethod
-    } <: FiniteDifferenceMethod
+    } <: FiniteDifferenceMethod{P,Q}
 
 A finite difference method that estimates a `Q`th order derivative from `P` function
 evaluations. This method does dynamically adapt its step size.
@@ -59,18 +65,24 @@ evaluations. This method does dynamically adapt its step size.
     function evaluations will be weighted by.
 - `condition::Float64`: Condition number. See See [`DEFAULT_CONDITION`](@ref).
 - `factor::Float64`: Factor number. See See [`DEFAULT_FACTOR`](@ref).
-- `bound_estimator::E`: A finite difference method that is tuned to perform adaptation for
-    this finite difference method.
+- `∇f_magnitude_mult::Float64`: Internally computed quantity that is used to estimate
+    the magnitude of `∇f(x)`.
+- `f_magnitude_mult::Float64`: Internally computed quantity that is used to estimate
+    the magnitude of `f(x)`.
+- `bound_estimator::FiniteDifferenceMethod`: A finite difference method that is tuned to
+    perform adaptation for this finite difference method.
 """
 struct AdaptedFiniteDifferenceMethod{
     P,
     Q,
     E<:FiniteDifferenceMethod
-} <: FiniteDifferenceMethod
+} <: FiniteDifferenceMethod{P,Q}
     grid::NTuple{P,Float64}
     coefs::NTuple{P,Float64}
     condition::Float64
     factor::Float64
+    ∇f_magnitude_mult::Float64
+    f_magnitude_mult::Float64
     bound_estimator::E
 end
 
@@ -96,18 +108,20 @@ Construct a finite difference method.
 - `FiniteDifferenceMethod`: Specified finite difference method.
 """
 function FiniteDifferenceMethod(
-    grid::AbstractVector,
+    grid::NTuple{P, Int},
     q::Int;
     condition::Real=DEFAULT_CONDITION,
     factor::Real=DEFAULT_FACTOR
-)
-    p = length(grid)
-    _check_p_q(p, q)
-    return UnadaptedFiniteDifferenceMethod{p,q}(
+) where P
+    _check_p_q(P, q)
+    coefs, ∇f_magnitude_mult, f_magnitude_mult = _coefs(grid, q)
+    return UnadaptedFiniteDifferenceMethod{P,q}(
         grid,
-        _coefs(grid, q),
+        grid,
         Float64(condition),
-        Float64(factor)
+        Float64(factor),
+        ∇f_magnitude_mult,
+        f_magnitude_mult
     )
 end
 
@@ -232,26 +246,36 @@ function _check_p_q(p::Integer, q::Integer)
     return
 end
 
-const _COEFFS_CACHE = Dict{Tuple{Tuple{Vararg{Int}}, Integer}, Tuple{Vararg{Float64}}}()
+const _COEFFS_CACHE = Dict{
+    Tuple{Tuple{Vararg{Int}}, Integer},
+    Tuple{Tuple{Vararg{Float64}}, Float64, Float64}
+}()
 
 # Compute coefficients for the method and cache the result.
-function _coefs(grid::Tuple{Vararg{Int}}, q::Integer) where N
+function _coefs(grid::NTuple{P, Int}, q::Integer) where P
     return get!(_COEFFS_CACHE, (grid, q)) do
-        p = length(grid)
         # For high precision on the `\`, we use `Rational`, and to prevent overflows we use
         # `Int128`. At the end we go to `Float64` for fast floating point math, rather than
         # rational math.
-        C = [Rational{Int128}(g^i) for i in 0:(p - 1), g in grid]
-        x = zeros(Rational{Int128}, p)
+        C = [Rational{Int128}(g^i) for i in 0:(P - 1), g in grid]
+        x = zeros(Rational{Int128}, P)
         x[q + 1] = factorial(q)
-        return Tuple(Float64.(C \ x))
+        coefs = Tuple(Float64.(C \ x))
+        # Also precompute multipliers.
+        ∇f_magnitude_mult = sum(coefs .* grid .^ P) / factorial(P)
+        f_magnitude_mult = sum(abs.(coefs))
+        return coefs, ∇f_magnitude_mult, f_magnitude_mult
     end
 end
 
-function Base.show(io::IO, m::MIME"text/plain", x::FiniteDifferenceMethod)
+function Base.show(
+    io::IO,
+    m::MIME"text/plain",
+    x::FiniteDifferenceMethod{P, Q}
+) where {P, Q}
     @printf io "FiniteDifferenceMethod:\n"
-    @printf io "  order of method:       %d\n" length(x.grid)
-    @printf io "  order of derivative:   %d\n" x.q
+    @printf io "  order of method:       %d\n" P
+    @printf io "  order of derivative:   %d\n" Q
     @printf io "  grid:                  %s\n" x.grid
     @printf io "  coefficients:          %s\n" x.coefs
 end
@@ -324,10 +348,10 @@ for direction in [:forward, :central, :backward]
             _check_p_q(p, q)
             grid = $grid_fun(p)
             geom && (grid = _exponentiate_grid(grid))
-            coefs = _coefs(grid, q)
+            coefs, ∇f_magnitude_mult, f_magnitude_mult = _coefs(grid, q)
             if adapt >= 1
                 bound_estimator = $fdm_fun(
-                    p + 2
+                    p + 2,
                     p;
                     adapt=adapt - 1,
                     condition=condition,
@@ -337,16 +361,20 @@ for direction in [:forward, :central, :backward]
                 return AdaptedFiniteDifferenceMethod{p, q, typeof(bound_estimator)}(
                     grid,
                     coefs,
-                    condition,
+                    Float64(condition),
                     Float64(factor),
-                    Float64(bound_estimator)
+                    ∇f_magnitude_mult,
+                    f_magnitude_mult,
+                    bound_estimator
                 )
             else
                 return UnadaptedFiniteDifferenceMethod{p, q}(
                     grid,
                     coefs,
                     Float64(condition),
-                    Float64(factor)
+                    Float64(factor),
+                    ∇f_magnitude_mult,
+                    f_magnitude_mult
                 )
             end
         end
