@@ -324,18 +324,31 @@ for direction in [:forward, :central, :backward]
             q::Int;
             adapt::Int=1,
             condition::Real=DEFAULT_CONDITION,
+            factor::Real=DEFAULT_FACTOR,
             geom::Bool=false
         )
             _check_p_q(p, q)
             grid = $grid_fun(p)
             geom && (grid = _exponentiate_grid(grid))
             coefs = _coefs(grid, q)
-            return FiniteDifferenceMethod(
-                grid,
-                q,
-                coefs,
-                _make_adaptive_bound_estimator($fdm_fun, p, q, adapt, condition, geom=geom),
-            )
+            if adapt >= 1
+                bound_estimator = $fdm_fun(
+                    p + 2
+                    p;
+                    adapt=adapt - 1,
+                    condition=condition,
+                    factor=factor
+                )
+                return AdaptedFiniteDifferenceMethod{p, q, typeof(bound_estimator)}(
+                    grid,
+                    coefs,
+                    condition,
+                    factor,
+                    bound_estimator
+                )
+            else
+                return UnadaptedFiniteDifferenceMethod{p, q}(grid, coefs, condition, factor)
+            end
         end
 
         @doc """
@@ -344,11 +357,11 @@ for direction in [:forward, :central, :backward]
         q::Int;
         adapt::Int=1,
         condition::Real=DEFAULT_CONDITION,
+        factor::Real=DEFAULT_FACTOR,
         geom::Bool=false
     )
 
-Contruct a finite difference method at a $($(Meta.quot(direction))) grid of `p` linearly
-spaced points.
+Contruct a finite difference method at a $($(Meta.quot(direction))) grid of `p` points.
 
 # Arguments
 - `p::Int`: Number of grid points.
@@ -359,29 +372,12 @@ spaced points.
     `p`th order derivative, which is important for the step size computation. Recurse
     this procedure `adapt` times.
 - `condition::Real`: Condition number. See [`DEFAULT_CONDITION`](@ref).
+- `factor::Real`: Factor number. See [`DEFAULT_FACTOR`](@ref).
 - `geom::Bool`: Use geometrically spaced points instead of linearly spaced points.
 
 # Returns
 - `FiniteDifferenceMethod`: The specified finite difference method.
         """ $fdm_fun
-    end
-end
-
-function _make_adaptive_bound_estimator(
-    constructor::Function,
-    p::Int,
-    q::Int,
-    adapt::Int,
-    condition::Int;
-    kw_args...
-)
-    if adapt >= 1
-        estimate_derivative = constructor(
-            p + 1, p, adapt=adapt - 1, condition=condition; kw_args...
-        )
-        return (f, x) -> estimate_magitude(x′ -> estimate_derivative(f, x′), x)
-    else
-        return _make_default_bound_estimator(condition=condition)
     end
 end
 
