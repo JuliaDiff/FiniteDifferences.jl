@@ -1,60 +1,76 @@
 export FiniteDifferenceMethod, fdm, backward_fdm, forward_fdm, central_fdm, extrapolate_fdm
 
 """
-    estimate_magitude(f, x::T) where T<:AbstractFloat
-
-Estimate the magnitude of `f` in a neighbourhood of `x`, assuming that the outputs of `f`
-have a "typical" order of magnitude. The result should be interpreted as a very rough
-estimate. This function deals with the case that `f(x) = 0`.
-"""
-function estimate_magitude(f, x::T) where T<:AbstractFloat
-    M = float(maximum(abs, f(x)))
-    M > 0 && (return M)
-    # Ouch, `f(x) = 0`. But it may not be zero around `x`. We conclude that `x` is likely a
-    # pathological input for `f`. Perturb `x`. Assume that the pertubed value for `x` is
-    # highly unlikely also a pathological value for `f`.
-    Δ = convert(T, 0.1) * max(abs(x), one(x))
-    return float(maximum(abs, f(x + Δ)))
-end
-
-"""
-    estimate_roundoff_error(f, x::T) where T<:AbstractFloat
-
-Estimate the round-off error of `f(x)`. This function deals with the case that `f(x) = 0`.
-"""
-function estimate_roundoff_error(f, x::T) where T<:AbstractFloat
-    # Estimate the round-off error. It can happen that the function is zero around `x`, in
-    # which case we cannot take `eps(f(x))`. Therefore, we assume a lower bound that is
-    # equal to `eps(T) / 1000`, which gives `f` four orders of magnitude wiggle room.
-    return max(eps(estimate_magitude(f, x)), eps(T) / 1000)
-end
-
-"""
     FiniteDifferences.DEFAULT_CONDITION
 
-The default [condition number](https://en.wikipedia.org/wiki/Condition_number) used when
-computing bounds. It provides amplification of the ∞-norm when passed to the function's
-derivatives.
+The default value for the [condition number](https://en.wikipedia.org/wiki/Condition_number)
+of finite difference method. The condition number specifies the amplification of the ∞-norm
+when passed to the function's derivative.
 """
-const DEFAULT_CONDITION = 100
+const DEFAULT_CONDITION = 10
 
 """
-    FiniteDifferenceMethod{G<:AbstractVector, C<:AbstractVector, E<:Function}
+    FiniteDifferences.DEFAULT_FACTOR
 
-A finite difference method.
+The default factor number. The factor number specifies the multiple to amplify the estimated
+round-off errors by.
+"""
+const DEFAULT_FACTOR = 1
+
+abstract type FiniteDifferenceMethod end
+
+"""
+    UnadaptedFiniteDifferenceMethod{P,Q} <: FiniteDifferenceMethod
+
+A finite difference method that estimates a `Q`th order derivative from `P` function
+evaluations. This method does not dynamically adapt its step size.
 
 # Fields
-- `grid::G`: Multiples of the step size that the function will be evaluated at.
-- `q::Int`: Order of derivative to estimate.
-- `coefs::C`: Coefficients corresponding to the grid functions that the function evaluations
-    will be weighted by.
-- `bound_estimator::Function`: A function that takes in the function and the evaluation
-    point and returns a bound on the magnitude of the `length(grid)`th derivative.
+- `grid::NTuple{P,Float64}`: Multiples of the step size that the function will be evaluated
+    at.
+- `coefs::NTuple{P,Float64}`: Coefficients corresponding to the grid functions that the
+    function evaluations will be weighted by.
+- `bound_estimator::FiniteDifferenceMethod`: A finite difference method that is tuned to
+    perform adaptation for this finite difference method.
+- `condition::Float64`: Condition number. See See [`DEFAULT_CONDITION`](@ref).
+- `factor::Float64`: Factor number. See See [`DEFAULT_FACTOR`](@ref).
 """
-struct FiniteDifferenceMethod{G<:AbstractVector, C<:AbstractVector, E<:Function}
-    grid::G
-    q::Int
-    coefs::C
+struct UnadaptedFiniteDifferenceMethod{P,Q} <: FiniteDifferenceMethod
+    grid::NTuple{P,Float64}
+    coefs::NTuple{P,Float64}
+    condition::Float64
+    factor::Float64
+end
+
+"""
+    AdaptedFiniteDifferenceMethod{
+        P,
+        Q,
+        E<:FiniteDifferenceMethod
+    } <: FiniteDifferenceMethod
+
+A finite difference method that estimates a `Q`th order derivative from `P` function
+evaluations. This method does dynamically adapt its step size.
+
+# Fields
+- `grid::NTuple{P,Float64}`: Multiples of the step size that the function will be evaluated
+    at.
+- `coefs::NTuple{P,Float64}`: Coefficients corresponding to the grid functions that the
+    function evaluations will be weighted by.
+- `condition::Float64`: Condition number. See See [`DEFAULT_CONDITION`](@ref).
+- `factor::Float64`: Factor number. See See [`DEFAULT_FACTOR`](@ref).
+- `bound_estimator::E`: A finite difference method that is tuned to perform adaptation for
+    this finite difference method.
+"""
+struct AdaptedFiniteDifferenceMethod{
+    P,
+    Q,
+    E<:FiniteDifferenceMethod
+} <: FiniteDifferenceMethod
+    grid::NTuple{P,Float64}
+    coefs::NTuple{P,Float64}
+    condition::Float64
+    factor::Float64
     bound_estimator::E
 end
 
@@ -62,7 +78,8 @@ end
     FiniteDifferenceMethod(
         grid::AbstractVector,
         q::Int;
-        condition::Real=DEFAULT_CONDITION
+        condition::Real=DEFAULT_CONDITION,
+        factor::Real=DEFAULT_FACTOR
     )
 
 Construct a finite difference method.
@@ -70,7 +87,10 @@ Construct a finite difference method.
 # Arguments
 - `grid::Abstract`: The grid. See [`FiniteDifferenceMethod`](@ref).
 - `q::Int`: Order of the derivative to estimate.
+
+# Keyword Arguments
 - `condition::Real`: Condition number. See [`DEFAULT_CONDITION`](@ref).
+- `factor::Real`: Factor number. See [`DEFAULT_FACTOR`](@ref).
 
 # Returns
 - `FiniteDifferenceMethod`: Specified finite difference method.
@@ -78,15 +98,16 @@ Construct a finite difference method.
 function FiniteDifferenceMethod(
     grid::AbstractVector,
     q::Int;
-    condition::Real=DEFAULT_CONDITION
+    condition::Real=DEFAULT_CONDITION,
+    factor::Real=DEFAULT_FACTOR
 )
     p = length(grid)
     _check_p_q(p, q)
-    return FiniteDifferenceMethod(
+    return UnadaptedFiniteDifferenceMethod{p,q}(
         grid,
-        q,
         _coefs(grid, q),
-        _make_default_bound_estimator(condition=condition)
+        Float64(condition),
+        Float64(factor)
     )
 end
 
