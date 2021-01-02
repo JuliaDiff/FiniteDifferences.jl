@@ -343,11 +343,16 @@ for direction in [:forward, :central, :backward]
                     grid,
                     coefs,
                     condition,
-                    factor,
-                    bound_estimator
+                    Float64(factor),
+                    Float64(bound_estimator)
                 )
             else
-                return UnadaptedFiniteDifferenceMethod{p, q}(grid, coefs, condition, factor)
+                return UnadaptedFiniteDifferenceMethod{p, q}(
+                    grid,
+                    coefs,
+                    Float64(condition),
+                    Float64(factor)
+                )
             end
         end
 
