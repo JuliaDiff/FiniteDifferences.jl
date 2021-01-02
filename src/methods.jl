@@ -248,12 +248,6 @@ function _coefs(grid::Tuple{Vararg{Int}}, q::Integer) where N
     end
 end
 
-# Estimate the bound on the derivative by amplifying the ∞-norm.
-function _make_default_bound_estimator(; condition::Real=DEFAULT_CONDITION)
-    default_bound_estimator(f, x) = condition * estimate_magitude(f, x)
-    return default_bound_estimator
-end
-
 function Base.show(io::IO, m::MIME"text/plain", x::FiniteDifferenceMethod)
     @printf io "FiniteDifferenceMethod:\n"
     @printf io "  order of method:       %d\n" length(x.grid)
@@ -337,7 +331,8 @@ for direction in [:forward, :central, :backward]
                     p;
                     adapt=adapt - 1,
                     condition=condition,
-                    factor=factor
+                    factor=factor,
+                    geom=geom
                 )
                 return AdaptedFiniteDifferenceMethod{p, q, typeof(bound_estimator)}(
                     grid,
