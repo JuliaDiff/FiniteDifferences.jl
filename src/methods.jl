@@ -232,10 +232,10 @@ function _check_p_q(p::Integer, q::Integer)
     return
 end
 
-const _COEFFS_CACHE = Dict{Tuple{AbstractVector{<:Real}, Integer}, Vector{Float64}}()
+const _COEFFS_CACHE = Dict{Tuple{Tuple{Vararg{Int}}, Integer}, Tuple{Vararg{Float64}}}()
 
 # Compute coefficients for the method and cache the result.
-function _coefs(grid::AbstractVector{<:Real}, q::Integer)
+function _coefs(grid::Tuple{Vararg{Int}}, q::Integer) where N
     return get!(_COEFFS_CACHE, (grid, q)) do
         p = length(grid)
         # For high precision on the `\`, we use `Rational`, and to prevent overflows we use
@@ -244,7 +244,7 @@ function _coefs(grid::AbstractVector{<:Real}, q::Integer)
         C = [Rational{Int128}(g^i) for i in 0:(p - 1), g in grid]
         x = zeros(Rational{Int128}, p)
         x[q + 1] = factorial(q)
-        return Float64.(C \ x)
+        return Tuple(Float64.(C \ x))
     end
 end
 
