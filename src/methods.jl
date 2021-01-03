@@ -545,7 +545,7 @@ function _exponentiate_grid(grid::Tuple{Vararg{Int}}, base::Int=3)
     return sign.(grid) .* div.(base .^ abs.(grid), base)
 end
 
-function _is_symmetric(vec::Vector; centre_zero::Bool=false, negate_half::Bool=false)
+function _is_symmetric(vec::Tuple; centre_zero::Bool=false, negate_half::Bool=false)
     half_sign = negate_half ? -1 : 1
     if isodd(length(vec))
         centre_zero && vec[end ÷ 2 + 1] != 0 && return false
@@ -565,14 +565,14 @@ end
     extrapolate_fdm(
         m::FiniteDifferenceMethod,
         f::Function,
-        x::T,
-        step::Real=0.1 * max(abs(x), one(x));
-        power=nothing,
-        breaktol=Inf,
+        x::Real,
+        initial_step::Real=10,
+        power::Int=1,
+        breaktol::Real=Inf,
         kw_args...
     ) where T<:AbstractFloat
 
-Use Richardson extrapolation to refine a finite difference method.
+Use Richardson extrapolation to extrapolate a finite difference method.
 
 Takes further in keyword arguments for `Richardson.extrapolate`. This method
 automatically sets `power = 2` if `m` is symmetric and `power = 1`. Moreover, it defaults
@@ -581,8 +581,8 @@ automatically sets `power = 2` if `m` is symmetric and `power = 1`. Moreover, it
 # Arguments
 - `m::FiniteDifferenceMethod`: Finite difference method to estimate the step size for.
 - `f::Function`: Function to evaluate the derivative of.
-- `x::T`: Point to estimate the derivative at.
-- `step::Real=0.1 * max(abs(x), one(x))`: Initial step size.
+- `x::Real`: Point to estimate the derivative at.
+- `initial_step::Real=10`: Initial step size.
 
 # Returns
 - `Tuple{<:AbstractFloat, <:AbstractFloat}`: Estimate of the derivative and error.
@@ -590,12 +590,18 @@ automatically sets `power = 2` if `m` is symmetric and `power = 1`. Moreover, it
 function extrapolate_fdm(
     m::FiniteDifferenceMethod,
     f::Function,
-    x::T,
-    step::Real=0.1 * max(abs(x), one(x));
+    x::Real,
+    initial_step::Real=10,
     power::Int=1,
     breaktol::Real=Inf,
     kw_args...
 ) where T<:AbstractFloat
     (power == 1 && _is_symmetric(m)) && (power = 2)
-    return extrapolate(h -> m(f, x, h), h; power=power, breaktol=breaktol, kw_args...)
+    return extrapolate(
+        step -> m(f, x, step),
+        float(initial_step);
+        power=power,
+        breaktol=breaktol,
+        kw_args...
+    )
 end
