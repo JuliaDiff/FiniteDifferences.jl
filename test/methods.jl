@@ -32,6 +32,11 @@
         end
     end
 
+    @testset "Test allocations" begin
+        m = central_fdm(5, 2, adapt=2)
+        @test (@benchmark $m(sin, 1)).allocs == 0
+    end
+
     # Integration test to ensure that Integer-output functions can be tested.
     @testset "Integer output" begin
         @test isapprox(central_fdm(5, 1)(x -> 5, 0), 0; rtol=1e-12, atol=1e-12)

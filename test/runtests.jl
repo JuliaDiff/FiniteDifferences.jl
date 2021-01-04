@@ -1,3 +1,4 @@
+using BenchmarkTools
 using ChainRulesCore
 using FiniteDifferences
 using LinearAlgebra
