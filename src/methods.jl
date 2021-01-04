@@ -232,8 +232,7 @@ function _evals(
     x::T,
     step::Real
 ) where {TF<:Function,T<:AbstractFloat}
-    xs = x .+ T(step) .* m.grid
-    return f.(xs)
+    return f.(x .+ T(step) .* m.grid)
 end
 
 function _eval_method(
@@ -243,6 +242,8 @@ function _eval_method(
     step::Real,
     coefs::SVector{P,Float64}
 ) where {P,Q,TF,T<:AbstractFloat}
+    # If we substitute `T.(coefs)` in the expression below, then allocations occur. We
+    # therefore perform the broadcasting first.
     coefs = T.(coefs)
     return sum(fs .* coefs) ./ T(step)^Q
 end
