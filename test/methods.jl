@@ -1,39 +1,4 @@
-import FiniteDifferences: estimate_magitude, estimate_roundoff_error
-
 @testset "Methods" begin
-    @testset "estimate_magitude" begin
-        f64(x::Float64) = x
-        f64_int(x::Float64) = Int(10x)
-        @test estimate_magitude(f64, 0.0) === 0.1
-        @test estimate_magitude(f64, 1.0) === 1.0
-        @test estimate_magitude(f64_int, 0.0) === 1.0
-        @test estimate_magitude(f64_int, 1.0) === 10.0
-
-        f32(x::Float32) = x
-        f32_int(x::Float32) = Int(10 * x)
-        @test estimate_magitude(f32, 0f0) === 0.1f0
-        @test estimate_magitude(f32, 1f0) === 1f0
-        # In this case, the `Int` is converted with `float`, so we expect a `Float64`.
-        @test estimate_magitude(f32_int, 0f0) === 1.0
-        @test estimate_magitude(f32_int, 1f0) === 10.0
-    end
-
-    @testset "estimate_roundoff_error" begin
-        # `Float64`s:
-        @test estimate_roundoff_error(identity, 1.0) == eps(1.0)
-        #   Pertubation from `estimate_magitude`:
-        @test estimate_roundoff_error(identity, 0.0) == eps(0.1)
-
-        # `Float32`s:
-        @test estimate_roundoff_error(identity, 1f0) == eps(1f0)
-        #   Pertubation from `estimate_magitude`:
-        @test estimate_roundoff_error(identity, 0.0f0) == eps(0.1f0)
-
-        # Test lower bound of `eps(T) / 1000`.
-        @test estimate_roundoff_error(x -> 1e-100, 0.0) == eps(1.0) / 1000
-        @test estimate_roundoff_error(x -> 1f-100, 0f0) == eps(1f0) / 1000
-    end
-
     # The different approaches to approximating the gradient to try.
     methods = [forward_fdm, backward_fdm, central_fdm]
 
@@ -47,7 +12,7 @@ import FiniteDifferences: estimate_magitude, estimate_roundoff_error
         (f=sin, d1=cos(1), d2=-sin(1)),
         (f=exp, d1=exp(1), d2=exp(1)),
         (f=abs2, d1=2, d2=2),
-        (f=x -> sqrt(x + 1), d1=0.5 / sqrt(2), d2=-0.25 / 2^(3/2)),
+        (f=x -> sqrt(max(x + 1,0)), d1=0.5 / sqrt(2), d2=-0.25 / 2^(3/2)),
     ]
 
     # Test all combinations of the above settings, i.e. differentiate all functions using
@@ -73,12 +38,13 @@ import FiniteDifferences: estimate_magitude, estimate_roundoff_error
     end
 
     @testset "Adaptation improves estimate" begin
-        @test forward_fdm(5, 1, adapt=0)(log, 0.001) ≈ 997.077814
+        @test abs(forward_fdm(5, 1, adapt=0)(log, 0.001) - 1000) > 1
         @test forward_fdm(5, 1, adapt=1)(log, 0.001) ≈ 1000
     end
 
     @testset "Limiting step size" begin
-        @test !isfinite(central_fdm(5, 1)(abs, 0.001, max_step=0))
+        @test !isfinite(central_fdm(5, 1)(abs, 0.001, max_range=0))
+        @test central_fdm(10, 1)(log, 1e-3, max_range=9e-4) ≈ 1000
         @test central_fdm(5, 1)(abs, 0.001) ≈ 1.0
     end
 
@@ -86,7 +52,8 @@ import FiniteDifferences: estimate_magitude, estimate_roundoff_error
         # Regression test against issues with precision during computation of _coeffs
         # see https://github.com/JuliaDiff/FiniteDifferences.jl/issues/64
 
-        @test central_fdm(9, 5, adapt=4, condition=1)(exp, 1.0) ≈ exp(1) atol=1e-7
+        @test central_fdm(9, 5, adapt=4)(exp, 1.0) ≈ exp(1) atol=2e-7
+        @test central_fdm(15, 5, adapt=2)(exp, 1.0) ≈ exp(1) atol=5e-12
 
         poly(x) = 4x^3 + 3x^2 + 2x + 1
         @test central_fdm(9, 3, adapt=4)(poly, 1.0) ≈ 24 atol=1e-11
@@ -104,27 +71,27 @@ import FiniteDifferences: estimate_magitude, estimate_roundoff_error
 
     @testset "_is_symmetric" begin
         # Test odd grids:
-        @test FiniteDifferences._is_symmetric([2, 1, 0, 1, 2])
-        @test !FiniteDifferences._is_symmetric([2, 1, 0, 3, 2])
-        @test !FiniteDifferences._is_symmetric([4, 1, 0, 1, 2])
+        @test FiniteDifferences._is_symmetric(SVector{5}(2, 1, 0, 1, 2))
+        @test !FiniteDifferences._is_symmetric(SVector{5}(2, 1, 0, 3, 2))
+        @test !FiniteDifferences._is_symmetric(SVector{5}(4, 1, 0, 1, 2))
 
         # Test even grids:
-        @test FiniteDifferences._is_symmetric([2, 1, 1, 2])
-        @test !FiniteDifferences._is_symmetric([2, 1, 3, 2])
-        @test !FiniteDifferences._is_symmetric([4, 1, 1, 2])
+        @test FiniteDifferences._is_symmetric(SVector{4}(2, 1, 1, 2))
+        @test !FiniteDifferences._is_symmetric(SVector{4}(2, 1, 3, 2))
+        @test !FiniteDifferences._is_symmetric(SVector{4}(4, 1, 1, 2))
 
         # Test zero at centre:
-        @test FiniteDifferences._is_symmetric([2, 1, 4, 1, 2])
-        @test !FiniteDifferences._is_symmetric([2, 1, 4, 1, 2], centre_zero=true)
-        @test FiniteDifferences._is_symmetric([2, 1, 1, 2], centre_zero=true)
+        @test FiniteDifferences._is_symmetric(SVector{5}(2, 1, 4, 1, 2))
+        @test !FiniteDifferences._is_symmetric(SVector{5}(2, 1, 4, 1, 2), centre_zero=true)
+        @test FiniteDifferences._is_symmetric(SVector{4}(2, 1, 1, 2), centre_zero=true)
 
         # Test negation of a half:
-        @test !FiniteDifferences._is_symmetric([2, 1, -1, -2])
-        @test FiniteDifferences._is_symmetric([2, 1, -1, -2], negate_half=true)
-        @test FiniteDifferences._is_symmetric([2, 1, 0, -1, -2], negate_half=true)
-        @test FiniteDifferences._is_symmetric([2, 1, 4, -1, -2], negate_half=true)
+        @test !FiniteDifferences._is_symmetric(SVector{4}(2, 1, -1, -2))
+        @test FiniteDifferences._is_symmetric(SVector{4}(2, 1, -1, -2), negate_half=true)
+        @test FiniteDifferences._is_symmetric(SVector{5}(2, 1, 0, -1, -2), negate_half=true)
+        @test FiniteDifferences._is_symmetric(SVector{5}(2, 1, 4, -1, -2), negate_half=true)
         @test !FiniteDifferences._is_symmetric(
-            [2, 1, 4, -1, -2],
+            SVector{5}(2, 1, 4, -1, -2),
             negate_half=true,
             centre_zero=true
         )
@@ -155,8 +122,8 @@ import FiniteDifferences: estimate_magitude, estimate_roundoff_error
     end
 
     @testset "Derivative of cosc at 0 (#124)" begin
-        @test central_fdm(5, 1)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=1e-9
-        @test central_fdm(10, 1, adapt=3)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=5e-14
+        @test central_fdm(5, 1)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=1e-13
+        @test central_fdm(10, 1, adapt=3)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=1e-15
     end
 
     @testset "Derivative of a constant (#125)" begin
