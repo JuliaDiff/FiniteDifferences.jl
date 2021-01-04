@@ -214,9 +214,7 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 ```
 """
 function (m::FiniteDifferenceMethod{P,Q})(
-    f::TF,
-    x::Real,
-    step::Real
+    f::TF, x::Real, step::Real,
 ) where {P,Q,TF<:Function}
     # Assume that converting to float is desired.
     x = float(x)
