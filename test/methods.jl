@@ -34,6 +34,10 @@
         end
     end
 
+    @testset "Test custom grid" begin
+        @test FiniteDifferenceMethod([-2, 0, 5], 1)(sin, 1) ≈ cos(1)
+    end
+
     @testset "Test allocations" begin
         m = central_fdm(5, 2, adapt=2)
         @test (@benchmark $m(sin, 1)).allocs == 0

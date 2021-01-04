@@ -94,7 +94,7 @@ end
 
 """
     FiniteDifferenceMethod(
-        grid::SVector{P,Int},
+        grid::Vector{Int},
         q::Int;
         condition::Real=DEFAULT_CONDITION,
         factor::Real=DEFAULT_FACTOR,
@@ -104,7 +104,7 @@ end
 Construct a finite difference method.
 
 # Arguments
-- `grid::SVector{P,Int}`: The grid. See [`AdaptedFiniteDifferenceMethod`](@ref) or
+- `grid::Vector{Int}`: The grid. See [`AdaptedFiniteDifferenceMethod`](@ref) or
     [`UnadaptedFiniteDifferenceMethod`](@ref).
 - `q::Int`: Order of the derivative to estimate.
 
@@ -118,15 +118,17 @@ Construct a finite difference method.
 - `FiniteDifferenceMethod`: Specified finite difference method.
 """
 function FiniteDifferenceMethod(
-    grid::SVector{P,Int},
+    grid::Vector{Int},
     q::Int;
     condition::Real=DEFAULT_CONDITION,
     factor::Real=DEFAULT_FACTOR,
     max_range::Real=Inf
-) where P
-    _check_p_q(P, q)
+)
+    p = length(grid)
+    grid = SVector{p}(grid)  # Internally, we work with static vectors.
+    _check_p_q(p, q)
     coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult = _coefs_mults(grid, q)
-    return UnadaptedFiniteDifferenceMethod{P,q}(
+    return UnadaptedFiniteDifferenceMethod{p,q}(
         grid,
         coefs,
         coefs_neighbourhood,
