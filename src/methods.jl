@@ -26,11 +26,10 @@ A finite difference method that estimates a `Q`th order derivative from `P` func
 evaluations. This method does not dynamically adapt its step size.
 
 # Fields
-- `grid::NTuple{P,Float64}`: Multiples of the step size that the function will be evaluated
-    at.
-- `coefs::NTuple{P,Float64}`: Coefficients corresponding to the grid functions that the
+- `grid::SVector{P,Int}`: Multiples of the step size that the function will be evaluated at.
+- `coefs::SVector{P,Float64}`: Coefficients corresponding to the grid functions that the
     function evaluations will be weighted by.
-- `coefs_neighbourhood::NTuple{3,NTuple{P,Float64}}`: Sets of coefficients used for
+- `coefs_neighbourhood::NTuple{3,SVector{P,Float64}}`: Sets of coefficients used for
     estimating the magnitude of the derivative in a neighbourhood.
 - `bound_estimator::FiniteDifferenceMethod`: A finite difference method that is tuned to
     perform adaptation for this finite difference method.
@@ -40,9 +39,9 @@ evaluations. This method does not dynamically adapt its step size.
 - `f_error_mult::Float64`: Internally computed quantity.
 """
 struct UnadaptedFiniteDifferenceMethod{P,Q} <: FiniteDifferenceMethod{P,Q}
-    grid::NTuple{P,Int}
-    coefs::NTuple{P,Float64}
-    coefs_neighbourhood::NTuple{3,NTuple{P,Float64}}
+    grid::SVector{P,Int}
+    coefs::SVector{P,Float64}
+    coefs_neighbourhood::NTuple{3,SVector{P,Float64}}
     condition::Float64
     factor::Float64
     ∇f_magnitude_mult::Float64
@@ -60,11 +59,10 @@ A finite difference method that estimates a `Q`th order derivative from `P` func
 evaluations. This method does dynamically adapt its step size.
 
 # Fields
-- `grid::NTuple{P,Float64}`: Multiples of the step size that the function will be evaluated
-    at.
-- `coefs::NTuple{P,Float64}`: Coefficients corresponding to the grid functions that the
+- `grid::SVector{P,Int}`: Multiples of the step size that the function will be evaluated at.
+- `coefs::SVector{P,Float64}`: Coefficients corresponding to the grid functions that the
     function evaluations will be weighted by.
-- `coefs_neighbourhood::NTuple{3,NTuple{P,Float64}}`: Sets of coefficients used for
+- `coefs_neighbourhood::NTuple{3,SVector{P,Float64}}`: Sets of coefficients used for
     estimating the magnitude of the derivative in a neighbourhood.
 - `condition::Float64`: Condition number. See See [`DEFAULT_CONDITION`](@ref).
 - `factor::Float64`: Factor number. See See [`DEFAULT_FACTOR`](@ref).
@@ -78,9 +76,9 @@ struct AdaptedFiniteDifferenceMethod{
     Q,
     E<:FiniteDifferenceMethod
 } <: FiniteDifferenceMethod{P,Q}
-    grid::NTuple{P,Int}
-    coefs::NTuple{P,Float64}
-    coefs_neighbourhood::NTuple{3,NTuple{P,Float64}}
+    grid::SVector{P,Int}
+    coefs::SVector{P,Float64}
+    coefs_neighbourhood::NTuple{3,SVector{P,Float64}}
     condition::Float64
     factor::Float64
     ∇f_magnitude_mult::Float64
@@ -90,7 +88,7 @@ end
 
 """
     FiniteDifferenceMethod(
-        grid::NTuple{P,Int},
+        grid::SVector{P,Int},
         q::Int;
         condition::Real=DEFAULT_CONDITION,
         factor::Real=DEFAULT_FACTOR
@@ -99,7 +97,7 @@ end
 Construct a finite difference method.
 
 # Arguments
-- `grid::NTuple{P,Int}`: The grid. See [`AdaptedFiniteDifferenceMethod`](@ref) or
+- `grid::SVector{P,Int}`: The grid. See [`AdaptedFiniteDifferenceMethod`](@ref) or
     [`UnadaptedFiniteDifferenceMethod`](@ref).
 - `q::Int`: Order of the derivative to estimate.
 
@@ -111,13 +109,13 @@ Construct a finite difference method.
 - `FiniteDifferenceMethod`: Specified finite difference method.
 """
 function FiniteDifferenceMethod(
-    grid::NTuple{P,Int},
+    grid::SVector{P,Int},
     q::Int;
     condition::Real=DEFAULT_CONDITION,
     factor::Real=DEFAULT_FACTOR
 ) where P
     _check_p_q(P, q)
-    coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult = _coefs(grid, q)
+    coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult = _coefs_mults(grid, q)
     return UnadaptedFiniteDifferenceMethod{P,q}(
         grid,
         coefs,
@@ -156,8 +154,8 @@ julia> fdm = central_fdm(5, 1)
 FiniteDifferenceMethod:
   order of method:       5
   order of derivative:   1
-  grid:                  (-2, -1, 0, 1, 2)
-  coefficients:          (0.08333333333333333, -0.6666666666666666, 0.0, 0.6666666666666666, -0.08333333333333333)
+  grid:                  [-2, -1, 0, 1, 2]
+  coefficients:          [0.08333333333333333, -0.6666666666666666, 0.0, 0.6666666666666666, -0.08333333333333333]
 
 julia> fdm(sin, 1)
 0.5403023058681607
@@ -169,43 +167,100 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 (0.001065235154086019, 1.9541865128909085e-13)
 ```
 """
-@inline function (m::FiniteDifferenceMethod)(f::Function, x::Real; kw_args...)
+function (m::FiniteDifferenceMethod)(f::Function, x::Real; kw_args...)
     # Assume that converting to float is desired.
     return _call_method(m, f, float(x); kw_args...)
 end
-@inline function _call_method(
-    m::FiniteDifferenceMethod{P,0},
-    f::Function,
-    x::T;
-    max_range::Real=Inf
-) where {P,T<:AbstractFloat}
-    # The automatic step size calculation fails if `Q == 0`, so handle that edge case.
-     return f(x)
- end
-@inline function _call_method(
-    m::FiniteDifferenceMethod,
-    f::Function,
-    x::T;
-    max_range::Real=Inf
-) where {T<:AbstractFloat}
-    step, _ = estimate_step(m, f, x, max_range=max_range)
-    return _eval_method(m, _evals(m, f, x, step), x, step, m.coefs)
+
+# The automatic step size calculation fails if `Q == 0`, so handle that edge case.
+for t in [:UnadaptedFiniteDifferenceMethod, :AdaptedFiniteDifferenceMethod]
+    @eval function _call_method(
+        m::$t{P,0},
+        f::Function,
+        x::T;
+        max_range::Real=Inf
+    ) where {P,T<:AbstractFloat}
+         return f(x)
+    end
 end
 
-function _estimate_magnitudes(
-    m::FiniteDifferenceMethod,
+macro _evals(P, m, f, x, step)
+    assemble_f = Expr(:call,
+        Expr(:curly, :SVector, :($P)),
+        [Expr(:call, f, :(xs[$i])) for i = 1:P]...
+    )
+    return esc(quote
+        xs = $x .+ $step .* $(m).grid
+        $assemble_f
+    end)
+end
+
+macro _eval_method(P, Q, fs, coefs, step)
+    dot = Expr(:call, :+, [:($fs[$i] * $coefs[$i]) for i = 1:P]...)
+    return esc(:($dot ./ $step^$Q))
+end
+
+@generated function _call_method(
+    m::UnadaptedFiniteDifferenceMethod{P,Q},
     f::Function,
     x::T;
     max_range::Real=Inf
-) where {T<:AbstractFloat}
-    step, _ = estimate_step(m, f, x, max_range=max_range)
-    fs = _evals(m, f, x, step)
-    # Estimate magnitude of `∇f` in a neighbourhood of `x`.
-    ∇fs = _eval_method.((m,), (fs,), x, step, m.coefs_neighbourhood)
-    ∇f_magnitude = maximum(maximum.(abs.(∇fs)))
-    # Estimate magnitude of `f` in a neighbourhood of `x`.
-    f_magnitude = maximum(maximum.(abs.(fs)))
-    return ∇f_magnitude, f_magnitude
+) where {P,Q,T<:AbstractFloat}
+    return quote
+        step = T(first(_estimate_step_acc(m, x, max_range)))
+        fs = @_evals($P, m, f, x, step)
+        return @_eval_method($P, $Q, fs, T.(m.coefs), step)
+    end
+end
+@generated function _call_method(
+    m::AdaptedFiniteDifferenceMethod{P,Q},
+    f::Function,
+    x::T;
+    max_range::Real=Inf
+) where {P,Q,T<:AbstractFloat}
+    return quote
+        step = T(first(@_estimate_step_adapted($P, $Q, m, f, x, max_range)))
+        fs = @_evals($P, m, f, x, step)
+        return @_eval_method($P, $Q, fs, T.(m.coefs), step)
+    end
+end
+
+@generated function _estimate_magnitudes(
+    m::UnadaptedFiniteDifferenceMethod{P,Q},
+    f::Function,
+    x::T;
+    max_range::Real=Inf
+) where {P,Q,T<:AbstractFloat}
+    return quote
+        step = T(first(_estimate_step_acc(m, x, max_range)))
+        @_estimate_magnitudes_body($P, $Q)
+    end
+end
+@generated function _estimate_magnitudes(
+    m::AdaptedFiniteDifferenceMethod{P,Q},
+    f::Function,
+    x::T;
+    max_range::Real=Inf
+) where {P,Q,T<:AbstractFloat}
+    return quote
+        step = T(first(@_estimate_step_adapted($P, $Q, m, f, x, max_range)))
+        @_estimate_magnitudes_body($P, $Q)
+    end
+end
+macro _estimate_magnitudes_body(P, Q)
+    return esc(quote
+        fs = @_evals($P, m, f, x, step)
+        # Estimate magnitude of `∇f` in a neighbourhood of `x`.
+        ∇fs = SVector{3}(
+            @_eval_method($P, $Q, fs, m.coefs_neighbourhood[1], step),
+            @_eval_method($P, $Q, fs, m.coefs_neighbourhood[2], step),
+            @_eval_method($P, $Q, fs, m.coefs_neighbourhood[3], step)
+        )
+        ∇f_magnitude = maximum(maximum.(abs, ∇fs))
+        # Estimate magnitude of `f` in a neighbourhood of `x`.
+        f_magnitude = maximum(maximum.(abs, fs))
+        return ∇f_magnitude, f_magnitude
+    end)
 end
 
 """
@@ -229,37 +284,36 @@ julia> fdm = central_fdm(5, 1)
 FiniteDifferenceMethod:
   order of method:       5
   order of derivative:   1
-  grid:                  (-2, -1, 0, 1, 2)
-  coefficients:          (0.08333333333333333, -0.6666666666666666, 0.0, 0.6666666666666666, -0.08333333333333333)
+  grid:                  [-2, -1, 0, 1, 2]
+  coefficients:          [0.08333333333333333, -0.6666666666666666, 0.0, 0.6666666666666666, -0.08333333333333333]
 
- julia> fdm(sin, 1, 1e-3)
+julia> fdm(sin, 1, 1e-3)
  0.5403023058679624
 
 julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 -1.7741363933510002e-13
 ```
 """
-@inline function (m::FiniteDifferenceMethod)(f::Function, x::Real, step::Real)
+@inline function (m::FiniteDifferenceMethod{P, Q})(
+    f::Function,
+    x::Real,
+    step::Real
+) where {P,Q}
     # Assume that converting to float is desired.
     x = float(x)
-    return _eval_method(m, _evals(m, f, x, step), x, step, m.coefs)
+    return _call_method_with_step(m, f, x, step)
 end
-@inline function _evals(
-    m::FiniteDifferenceMethod,
+@generated function _call_method_with_step(
+    m::FiniteDifferenceMethod{P,Q},
     f::Function,
     x::T,
-    step::T
-) where {T<:AbstractFloat}
-    return f.(x .+ step .* m.grid)
-end
-@inline function _eval_method(
-    m::FiniteDifferenceMethod{P,Q},
-    fs::NTuple{P},
-    x::T,
-    step::Real,
-    coefs::NTuple{P,Float64}
+    step::Real
 ) where {P,Q,T<:AbstractFloat}
-    return sum(T.(coefs) .* fs) ./ T(step^Q)
+    return quote
+        step = T(step)
+        fs = @_evals($P, m, f, x, step)
+        return @_eval_method($P, $Q, fs, T.(m.coefs), step)
+    end
 end
 
 # Check the method and derivative orders for consistency.
@@ -276,46 +330,47 @@ function _check_p_q(p::Integer, q::Integer)
     return
 end
 
-function _compute_coefs(grid, p, q)
+function _coefs(grid, p, q)
     # For high precision on the `\`, we use `Rational`, and to prevent overflows we use
-    # `Int128`. At the end we go to `Float64` for fast floating point math, rather than
+    # `BigInt`. At the end we go to `Float64` for fast floating point math, rather than
     # rational math.
-    C = [Rational{Int128}(g^i) for i in 0:(p - 1), g in grid]
-    x = zeros(Rational{Int128}, p)
+    C = [Rational{BigInt}(g^i) for i in 0:(p - 1), g in grid]
+    x = zeros(Rational{BigInt}, p)
     x[q + 1] = factorial(q)
-    return Tuple(Float64.(C \ x))
+    return SVector{p}(Float64.(C \ x))
 end
 
-const _COEFFS_CACHE = Dict{
-    Tuple{Tuple{Vararg{Int}},Integer},
-    Tuple{Tuple{Vararg{Float64}},Tuple{Vararg{Tuple{Vararg{Float64}}}},Float64,Float64}
+const _COEFFS_MULTS_CACHE = Dict{
+    Tuple{SVector,Integer},
+    Tuple{SVector,Tuple{Vararg{SVector}},Float64,Float64}
 }()
 
 # Compute coefficients for the method and cache the result.
-function _coefs(grid::NTuple{P, Int}, q::Integer) where P
-    return get!(_COEFFS_CACHE, (grid, q)) do
-        coefs = _compute_coefs(grid, P, q)
+function _coefs_mults(grid::SVector{P, Int}, q::Integer) where P
+    return get!(_COEFFS_MULTS_CACHE, (grid, q)) do
+        # Compute coefficients for derivative estimate.
+        coefs = _coefs(grid, P, q)
         # Compute coefficients for a neighbourhood estimate.
         if all(grid .>= 0)
             coefs_neighbourhood = (
-                _compute_coefs(grid .- 2, P, q),
-                _compute_coefs(grid .- 1, P, q),
-                _compute_coefs(grid, P, q)
+                _coefs(grid .- 2, P, q),
+                _coefs(grid .- 1, P, q),
+                _coefs(grid, P, q)
             )
         elseif all(grid .<= 0)
             coefs_neighbourhood = (
-                _compute_coefs(grid, P, q),
-                _compute_coefs(grid .+ 1, P, q),
-                _compute_coefs(grid .+ 2, P, q)
+                _coefs(grid, P, q),
+                _coefs(grid .+ 1, P, q),
+                _coefs(grid .+ 2, P, q)
             )
         else
             coefs_neighbourhood = (
-                _compute_coefs(grid .- 1, P, q),
-                _compute_coefs(grid, P, q),
-                _compute_coefs(grid .+ 1, P, q)
+                _coefs(grid .- 1, P, q),
+                _coefs(grid, P, q),
+                _coefs(grid .+ 1, P, q)
             )
         end
-        # Ccompute multipliers.
+        # Compute multipliers.
         ∇f_magnitude_mult = sum(abs.(coefs .* grid .^ P)) / factorial(P)
         f_error_mult = sum(abs.(coefs))
         return coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult
@@ -362,28 +417,57 @@ function estimate_step(
     f::Function,
     x::T;
     max_range::Real=Inf
-) where {T<:AbstractFloat}
-    step, acc = _estimate_step_acc(m, x, max_range)
-    return step, acc
+) where T<:AbstractFloat
+    return _estimate_step_acc(m, x, max_range)
 end
-function estimate_step(
-    m::AdaptedFiniteDifferenceMethod,
+@generated function estimate_step(
+    m::AdaptedFiniteDifferenceMethod{P,Q},
     f::Function,
     x::T;
     max_range::Real=Inf
+) where {P,Q,T<:AbstractFloat}
+    return :(@_estimate_step_adapted($P, $Q, m, f, x, max_range))
+end
+macro _estimate_step_adapted(P, Q, m, f, x, max_range)
+    return esc(quote
+        ∇f_magnitude, f_magnitude = _estimate_magnitudes(
+            $(m).bound_estimator,
+            $f,
+            $x,
+            max_range=$max_range
+        )
+        if ∇f_magnitude == 0 || f_magnitude == 0
+            step, acc = _estimate_step_acc($m, $x, $max_range)
+        else
+            step, acc = _estimate_step_acc(
+                $m,
+                $x,
+                ∇f_magnitude,
+                eps(f_magnitude),
+                $max_range
+            )
+        end
+        step, acc
+    end)
+end
+
+function _estimate_step_acc(
+    m::FiniteDifferenceMethod,
+    x::T,
+    max_range::Real
 ) where {T<:AbstractFloat}
-    ∇f_magnitude, f_magnitude = _estimate_magnitudes(
-        m.bound_estimator,
-        f,
-        x;
-        max_range=max_range
-    )
-    if ∇f_magnitude == 0 || f_magnitude == 0
-        step, acc = _estimate_step_acc(m, x, max_range)
-    else
-        step, acc = _estimate_step_acc(m, x, ∇f_magnitude, eps(f_magnitude), max_range)
-    end
-    return step, acc
+    step, acc = _compute_step_acc(m, x)
+    return _limit_step(m, x, step, acc, max_range)
+end
+function _estimate_step_acc(
+    m::AdaptedFiniteDifferenceMethod,
+    x::T,
+    ∇f_magnitude::Real,
+    f_error::Real,
+    max_range::Real
+) where {T<:AbstractFloat}
+    step, acc = _compute_step_acc(m, ∇f_magnitude, f_error)
+    return _limit_step(m, x, step, acc, max_range)
 end
 
 function _compute_step_acc(
@@ -399,31 +483,12 @@ function _compute_step_acc(
     acc = C₁ * step^(-Q) + C₂ * step^(P - Q)
     return step, acc
 end
-
-function _compute_default(
+function _compute_step_acc(
     m::FiniteDifferenceMethod,
     x::T
 ) where {T<:AbstractFloat}
+    # Set the step size using an heuristic and [`DEFAULT_CONDITION`](@ref).
     return _compute_step_acc(m, m.condition, eps(T))
-end
-
-function _estimate_step_acc(
-    m::FiniteDifferenceMethod,
-    x::T,
-    max_range::Real
-) where {T<:AbstractFloat}
-    step, acc = _compute_default(m, x)
-    return _limit_step(m, x, step, acc, max_range)
-end
-function _estimate_step_acc(
-    m::AdaptedFiniteDifferenceMethod{P,Q,E},
-    x::T,
-    ∇f_magnitude::Real,
-    f_error::Real,
-    max_range::Real
-) where {P,Q,E,T<:AbstractFloat}
-    step, acc = _compute_step_acc(m, ∇f_magnitude, f_error)
-    return _limit_step(m, x, step, acc, max_range)
 end
 
 function _limit_step(
@@ -441,7 +506,7 @@ function _limit_step(
     end
     # Second, prevent very large step sizes, which can occur for high-order methods or
     # slowly-varying functions.
-    step_default, _ = _compute_default(m, x)
+    step_default, _ = _compute_step_acc(m, x)
     step_max_default = 1000step_default
     if step > step_max_default
         step = step_max_default
@@ -464,7 +529,7 @@ for direction in [:forward, :central, :backward]
             _check_p_q(p, q)
             grid = $grid_fun(p)
             geom && (grid = _exponentiate_grid(grid))
-            coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult = _coefs(grid, q)
+            coefs, coefs_nbhd, ∇f_magnitude_mult, f_error_mult = _coefs_mults(grid, q)
             if adapt >= 1
                 bound_estimator = $fdm_fun(
                     # We need to increase the order by two to be able to estimate the
@@ -479,7 +544,7 @@ for direction in [:forward, :central, :backward]
                 return AdaptedFiniteDifferenceMethod{p, q, typeof(bound_estimator)}(
                     grid,
                     coefs,
-                    coefs_neighbourhood,
+                    coefs_nbhd,
                     Float64(condition),
                     Float64(factor),
                     ∇f_magnitude_mult,
@@ -490,7 +555,7 @@ for direction in [:forward, :central, :backward]
                 return UnadaptedFiniteDifferenceMethod{p, q}(
                     grid,
                     coefs,
-                    coefs_neighbourhood,
+                    coefs_nbhd,
                     Float64(condition),
                     Float64(factor),
                     ∇f_magnitude_mult,
@@ -529,23 +594,27 @@ Contruct a finite difference method at a $($(Meta.quot(direction))) grid of `p` 
     end
 end
 
-_forward_grid(p::Int) = Tuple(0:(p - 1))
+_forward_grid(p::Int) = SVector{p}(0:(p - 1))
 
-_backward_grid(p::Int) = Tuple((1 - p):0)
+_backward_grid(p::Int) = SVector{p}((1 - p):0)
 
 function _central_grid(p::Int)
     if isodd(p)
-        return Tuple(div(1 - p, 2):div(p - 1, 2))
+        return SVector{p}(div(1 - p, 2):div(p - 1, 2))
     else
-        return ((div(-p, 2):-1)..., (1:div(p, 2))...)
+        return SVector{p}((div(-p, 2):-1)..., (1:div(p, 2))...)
     end
 end
 
-function _exponentiate_grid(grid::Tuple{Vararg{Int}}, base::Int=3)
+function _exponentiate_grid(grid::SVector{P,Int}, base::Int=3) where P
     return sign.(grid) .* div.(base .^ abs.(grid), base)
 end
 
-function _is_symmetric(vec::Tuple; centre_zero::Bool=false, negate_half::Bool=false)
+function _is_symmetric(
+    vec::SVector{P};
+    centre_zero::Bool=false,
+    negate_half::Bool=false
+) where P
     half_sign = negate_half ? -1 : 1
     if isodd(length(vec))
         centre_zero && vec[end ÷ 2 + 1] != 0 && return false
@@ -591,7 +660,7 @@ function extrapolate_fdm(
     m::FiniteDifferenceMethod,
     f::Function,
     x::Real,
-    initial_step::Real=10,
+    initial_step::Real=10;
     power::Int=1,
     breaktol::Real=Inf,
     kw_args...
