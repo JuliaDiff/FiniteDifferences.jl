@@ -167,100 +167,19 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 (0.001065235154086019, 1.9541865128909085e-13)
 ```
 """
-function (m::FiniteDifferenceMethod)(f::Function, x::Real; kw_args...)
+function (m::FiniteDifferenceMethod)(f::TF, x::Real; max_range::Real=Inf) where TF<:Function
     # Assume that converting to float is desired.
-    return _call_method(m, f, float(x); kw_args...)
+    x = float(x)
+    step = first(estimate_step(m, f, x, max_range=max_range))
+    return m(f, x, step)
 end
-
-# The automatic step size calculation fails if `Q == 0`, so handle that edge case.
-for t in [:UnadaptedFiniteDifferenceMethod, :AdaptedFiniteDifferenceMethod]
-    @eval function _call_method(
-        m::$t{P,0},
-        f::Function,
-        x::T;
-        max_range::Real=Inf
-    ) where {P,T<:AbstractFloat}
-         return f(x)
-    end
-end
-
-macro _evals(P, m, f, x, step)
-    assemble_f = Expr(:call,
-        Expr(:curly, :SVector, :($P)),
-        [Expr(:call, f, :(xs[$i])) for i = 1:P]...
-    )
-    return esc(quote
-        xs = $x .+ $step .* $(m).grid
-        $assemble_f
-    end)
-end
-
-macro _eval_method(P, Q, fs, coefs, step)
-    dot = Expr(:call, :+, [:($fs[$i] * $coefs[$i]) for i = 1:P]...)
-    return esc(:($dot ./ $step^$Q))
-end
-
-@generated function _call_method(
-    m::UnadaptedFiniteDifferenceMethod{P,Q},
-    f::Function,
-    x::T;
+function (m::FiniteDifferenceMethod{P,0})(
+    f::TF,
+    x::Real;
     max_range::Real=Inf
-) where {P,Q,T<:AbstractFloat}
-    return quote
-        step = T(first(_estimate_step_acc(m, x, max_range)))
-        fs = @_evals($P, m, f, x, step)
-        return @_eval_method($P, $Q, fs, T.(m.coefs), step)
-    end
-end
-@generated function _call_method(
-    m::AdaptedFiniteDifferenceMethod{P,Q},
-    f::Function,
-    x::T;
-    max_range::Real=Inf
-) where {P,Q,T<:AbstractFloat}
-    return quote
-        step = T(first(@_estimate_step_adapted($P, $Q, m, f, x, max_range)))
-        fs = @_evals($P, m, f, x, step)
-        return @_eval_method($P, $Q, fs, T.(m.coefs), step)
-    end
-end
-
-@generated function _estimate_magnitudes(
-    m::UnadaptedFiniteDifferenceMethod{P,Q},
-    f::Function,
-    x::T;
-    max_range::Real=Inf
-) where {P,Q,T<:AbstractFloat}
-    return quote
-        step = T(first(_estimate_step_acc(m, x, max_range)))
-        @_estimate_magnitudes_body($P, $Q)
-    end
-end
-@generated function _estimate_magnitudes(
-    m::AdaptedFiniteDifferenceMethod{P,Q},
-    f::Function,
-    x::T;
-    max_range::Real=Inf
-) where {P,Q,T<:AbstractFloat}
-    return quote
-        step = T(first(@_estimate_step_adapted($P, $Q, m, f, x, max_range)))
-        @_estimate_magnitudes_body($P, $Q)
-    end
-end
-macro _estimate_magnitudes_body(P, Q)
-    return esc(quote
-        fs = @_evals($P, m, f, x, step)
-        # Estimate magnitude of `∇f` in a neighbourhood of `x`.
-        ∇fs = SVector{3}(
-            @_eval_method($P, $Q, fs, m.coefs_neighbourhood[1], step),
-            @_eval_method($P, $Q, fs, m.coefs_neighbourhood[2], step),
-            @_eval_method($P, $Q, fs, m.coefs_neighbourhood[3], step)
-        )
-        ∇f_magnitude = maximum(maximum.(abs, ∇fs))
-        # Estimate magnitude of `f` in a neighbourhood of `x`.
-        f_magnitude = maximum(maximum.(abs, fs))
-        return ∇f_magnitude, f_magnitude
-    end)
+) where {P,TF<:Function}
+    # The automatic step size calculation fails if `Q == 0`, so handle that edge case.
+    return f(x)
 end
 
 """
@@ -294,26 +213,36 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 -1.7741363933510002e-13
 ```
 """
-@inline function (m::FiniteDifferenceMethod{P, Q})(
-    f::Function,
+function (m::FiniteDifferenceMethod{P, Q})(
+    f::TF,
     x::Real,
     step::Real
-) where {P,Q}
+) where {P,Q,TF<:Function}
     # Assume that converting to float is desired.
     x = float(x)
-    return _call_method_with_step(m, f, x, step)
+    fs = _evals(m, f, x, step)
+    return _eval_method(m, fs, x, step, m.coefs)
 end
-@generated function _call_method_with_step(
-    m::FiniteDifferenceMethod{P,Q},
-    f::Function,
+
+function _evals(
+    m::FiniteDifferenceMethod,
+    f::TF,
     x::T,
     step::Real
-) where {P,Q,T<:AbstractFloat}
-    return quote
-        step = T(step)
-        fs = @_evals($P, m, f, x, step)
-        return @_eval_method($P, $Q, fs, T.(m.coefs), step)
-    end
+) where {TF<:Function,T<:AbstractFloat}
+    xs = x .+ T(step) .* m.grid
+    return f.(xs)
+end
+
+function _eval_method(
+    m::FiniteDifferenceMethod{P,Q},
+    fs::SVector{P,TF},
+    x::T,
+    step::Real,
+    coefs::SVector{P,Float64}
+) where {P, Q, TF, T<:AbstractFloat}
+    coefs = T.(coefs)
+    return sum(fs .* coefs) ./ T(step)^Q
 end
 
 # Check the method and derivative orders for consistency.
@@ -414,60 +343,59 @@ estimate of the derivative.
 """
 function estimate_step(
     m::UnadaptedFiniteDifferenceMethod,
-    f::Function,
+    f::TF,
     x::T;
     max_range::Real=Inf
-) where T<:AbstractFloat
-    return _estimate_step_acc(m, x, max_range)
+) where {TF<:Function,T<:AbstractFloat}
+    step, acc = _compute_step_acc_default(m, x)
+    return _limit_step(m, x, step, acc, max_range)
 end
-@generated function estimate_step(
+function estimate_step(
     m::AdaptedFiniteDifferenceMethod{P,Q},
-    f::Function,
+    f::TF,
     x::T;
     max_range::Real=Inf
-) where {P,Q,T<:AbstractFloat}
-    return :(@_estimate_step_adapted($P, $Q, m, f, x, max_range))
-end
-macro _estimate_step_adapted(P, Q, m, f, x, max_range)
-    return esc(quote
-        ∇f_magnitude, f_magnitude = _estimate_magnitudes(
-            $(m).bound_estimator,
-            $f,
-            $x,
-            max_range=$max_range
-        )
-        if ∇f_magnitude == 0 || f_magnitude == 0
-            step, acc = _estimate_step_acc($m, $x, $max_range)
-        else
-            step, acc = _estimate_step_acc(
-                $m,
-                $x,
-                ∇f_magnitude,
-                eps(f_magnitude),
-                $max_range
-            )
-        end
-        step, acc
-    end)
+) where {P,Q,TF<:Function,T<:AbstractFloat}
+    ∇f_magnitude, f_magnitude = _estimate_magnitudes(
+        m.bound_estimator,
+        f,
+        x,
+        max_range=max_range
+    )
+    if ∇f_magnitude == 0 || f_magnitude == 0
+        step, acc = _compute_step_acc_default(m, x)
+    else
+        step, acc = _compute_step_acc(m, ∇f_magnitude, eps(f_magnitude))
+    end
+    return _limit_step(m, x, step, acc, max_range)
 end
 
-function _estimate_step_acc(
-    m::FiniteDifferenceMethod,
-    x::T,
-    max_range::Real
-) where {T<:AbstractFloat}
-    step, acc = _compute_step_acc(m, x)
-    return _limit_step(m, x, step, acc, max_range)
+function _estimate_magnitudes(
+    m::FiniteDifferenceMethod{P,Q},
+    f::TF,
+    x::T;
+    max_range::Real=Inf
+) where {P,Q,TF<:Function,T<:AbstractFloat}
+    step = T(first(estimate_step(m, f, x, max_range=max_range)))
+    fs = _evals(m, f, x, step)
+    # Estimate magnitude of `∇f` in a neighbourhood of `x`.
+    ∇fs = SVector{3}(
+        _eval_method(m, fs, x, step, m.coefs_neighbourhood[1]),
+        _eval_method(m, fs, x, step, m.coefs_neighbourhood[2]),
+        _eval_method(m, fs, x, step, m.coefs_neighbourhood[3])
+    )
+    ∇f_magnitude = maximum(maximum.(abs, ∇fs))
+    # Estimate magnitude of `f` in a neighbourhood of `x`.
+    f_magnitude = maximum(maximum.(abs, fs))
+    return ∇f_magnitude, f_magnitude
 end
-function _estimate_step_acc(
-    m::AdaptedFiniteDifferenceMethod,
-    x::T,
-    ∇f_magnitude::Real,
-    f_error::Real,
-    max_range::Real
+
+function _compute_step_acc_default(
+    m::FiniteDifferenceMethod,
+    x::T
 ) where {T<:AbstractFloat}
-    step, acc = _compute_step_acc(m, ∇f_magnitude, f_error)
-    return _limit_step(m, x, step, acc, max_range)
+    # Compute a default step size using a heuristic and [`DEFAULT_CONDITION`](@ref).
+    return _compute_step_acc(m, m.condition, eps(T))
 end
 
 function _compute_step_acc(
@@ -482,13 +410,6 @@ function _compute_step_acc(
     # Estimate the accuracy of the method.
     acc = C₁ * step^(-Q) + C₂ * step^(P - Q)
     return step, acc
-end
-function _compute_step_acc(
-    m::FiniteDifferenceMethod,
-    x::T
-) where {T<:AbstractFloat}
-    # Set the step size using an heuristic and [`DEFAULT_CONDITION`](@ref).
-    return _compute_step_acc(m, m.condition, eps(T))
 end
 
 function _limit_step(
@@ -506,7 +427,7 @@ function _limit_step(
     end
     # Second, prevent very large step sizes, which can occur for high-order methods or
     # slowly-varying functions.
-    step_default, _ = _compute_step_acc(m, x)
+    step_default, _ = _compute_step_acc_default(m, x)
     step_max_default = 1000step_default
     if step > step_max_default
         step = step_max_default
