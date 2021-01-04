@@ -1,34 +1,36 @@
 @testset "Methods" begin
-    # The different approaches to approximating the gradient to try.
-    methods = [forward_fdm, backward_fdm, central_fdm]
+    @testset "Correctness" begin
+        # The different approaches to approximating the gradient to try.
+        methods = [forward_fdm, backward_fdm, central_fdm]
 
-    # The different floating point types to try and the associated required relative
-    # tolerance.
-    types = [Float32, Float64]
+        # The different floating point types to try and the associated required relative
+        # tolerance.
+        types = [Float32, Float64]
 
-    # The different functions to evaluate (.f), their first derivative at 1 (.d1),
-    # and second derivative at 1 (.d2).
-    foos = [
-        (f=sin, d1=cos(1), d2=-sin(1)),
-        (f=exp, d1=exp(1), d2=exp(1)),
-        (f=abs2, d1=2, d2=2),
-        (f=x -> sqrt(max(x + 1,0)), d1=0.5 / sqrt(2), d2=-0.25 / 2^(3/2)),
-    ]
+        # The different functions to evaluate (`.f`), their first derivative at 1 (`.d1`),
+        # and second derivative at 1 (`.d2`).
+        foos = [
+            (f=sin, d1=cos(1), d2=-sin(1)),
+            (f=exp, d1=exp(1), d2=exp(1)),
+            (f=abs2, d1=2, d2=2),
+            (f=x -> sqrt(max(x + 1,0)), d1=0.5 / sqrt(2), d2=-0.25 / 2^(3/2)),
+        ]
 
-    # Test all combinations of the above settings, i.e. differentiate all functions using
-    # all methods and data types.
-    @testset "foo=$(foo.f), method=$m, type=$(T)" for foo in foos, m in methods, T in types
-        @testset "method-order=$order" for order in [1, 2, 3, 4, 5]
-            @test m(order, 0, adapt=2)(foo.f, T(1)) isa T
-            @test m(order, 0, adapt=2)(foo.f, T(1)) == T(foo.f(1))
-        end
+        # Test all combinations of the above settings, i.e. differentiate all functions using
+        # all methods and data types.
+        @testset "foo=$(foo.f), method=$m, type=$(T)" for foo in foos, m in methods, T in types
+            @testset "method-order=$order" for order in [1, 2, 3, 4, 5]
+                @test m(order, 0, adapt=2)(foo.f, T(1)) isa T
+                @test m(order, 0, adapt=2)(foo.f, T(1)) == T(foo.f(1))
+            end
 
-        @test m(10, 1)(foo.f, T(1)) isa T
-        @test m(10, 1)(foo.f, T(1)) ≈ T(foo.d1)
+            @test m(10, 1)(foo.f, T(1)) isa T
+            @test m(10, 1)(foo.f, T(1)) ≈ T(foo.d1)
 
-        @test m(10, 2)(foo.f, T(1)) isa T
-        if T == Float64
-            @test m(10, 2)(foo.f, T(1)) ≈ T(foo.d2)
+            @test m(10, 2)(foo.f, T(1)) isa T
+            if T == Float64
+                @test m(10, 2)(foo.f, T(1)) ≈ T(foo.d2)
+            end
         end
     end
 
@@ -53,13 +55,10 @@
         @test central_fdm(5, 1)(abs, 0.001) ≈ 1.0
     end
 
-    @testset "Accuracy at high orders, with high adapt" begin
-        # Regression test against issues with precision during computation of _coeffs
-        # see https://github.com/JuliaDiff/FiniteDifferences.jl/issues/64
-
+    @testset "Accuracy at high orders and high adaptation (issue #64)" begin
+        # Regression test against issues with precision during computation of coefficients.
         @test central_fdm(9, 5, adapt=4)(exp, 1.0) ≈ exp(1) atol=2e-7
         @test central_fdm(15, 5, adapt=2)(exp, 1.0) ≈ exp(1) atol=5e-12
-
         poly(x) = 4x^3 + 3x^2 + 2x + 1
         @test central_fdm(9, 3, adapt=4)(poly, 1.0) ≈ 24 atol=1e-11
     end
@@ -126,12 +125,12 @@
         end
     end
 
-    @testset "Derivative of cosc at 0 (#124)" begin
+    @testset "Derivative of cosc at 0 (issue #124)" begin
         @test central_fdm(5, 1)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=1e-13
         @test central_fdm(10, 1, adapt=3)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=1e-15
     end
 
-    @testset "Derivative of a constant (#125)" begin
+    @testset "Derivative of a constant (issue #125)" begin
         @test central_fdm(2, 1)(x -> 0, 0) ≈ 0 atol=1e-10
     end
 end
