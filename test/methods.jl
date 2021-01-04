@@ -50,8 +50,8 @@
     end
 
     @testset "Limiting step size" begin
-        @test !isfinite(central_fdm(5, 1)(abs, 0.001, max_range=0))
-        @test central_fdm(10, 1)(log, 1e-3, max_range=9e-4) ≈ 1000
+        @test !isfinite(central_fdm(5, 1, max_range=0)(abs, 0.001))
+        @test central_fdm(10, 1, max_range=9e-4)(log, 1e-3) ≈ 1000
         @test central_fdm(5, 1)(abs, 0.001) ≈ 1.0
     end
 

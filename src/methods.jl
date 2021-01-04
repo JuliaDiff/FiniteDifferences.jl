@@ -35,6 +35,8 @@ evaluations. This method does not dynamically adapt its step size.
     perform adaptation for this finite difference method.
 - `condition::Float64`: Condition number. See See [`DEFAULT_CONDITION`](@ref).
 - `factor::Float64`: Factor number. See See [`DEFAULT_FACTOR`](@ref).
+- `max_range::Float64`: Maximum distance that a function is evaluated from the input at
+    which the derivative is estimated.
 - `∇f_magnitude_mult::Float64`: Internally computed quantity.
 - `f_error_mult::Float64`: Internally computed quantity.
 """
@@ -44,6 +46,7 @@ struct UnadaptedFiniteDifferenceMethod{P,Q} <: FiniteDifferenceMethod{P,Q}
     coefs_neighbourhood::NTuple{3,SVector{P,Float64}}
     condition::Float64
     factor::Float64
+    max_range::Float64
     ∇f_magnitude_mult::Float64
     f_error_mult::Float64
 end
@@ -66,6 +69,8 @@ evaluations. This method does dynamically adapt its step size.
     estimating the magnitude of the derivative in a neighbourhood.
 - `condition::Float64`: Condition number. See See [`DEFAULT_CONDITION`](@ref).
 - `factor::Float64`: Factor number. See See [`DEFAULT_FACTOR`](@ref).
+- `max_range::Float64`: Maximum distance that a function is evaluated from the input at
+    which the derivative is estimated.
 - `∇f_magnitude_mult::Float64`: Internally computed quantity.
 - `f_error_mult::Float64`: Internally computed quantity.
 - `bound_estimator::FiniteDifferenceMethod`: A finite difference method that is tuned to
@@ -81,6 +86,7 @@ struct AdaptedFiniteDifferenceMethod{
     coefs_neighbourhood::NTuple{3,SVector{P,Float64}}
     condition::Float64
     factor::Float64
+    max_range::Float64
     ∇f_magnitude_mult::Float64
     f_error_mult::Float64
     bound_estimator::E
@@ -91,7 +97,8 @@ end
         grid::SVector{P,Int},
         q::Int;
         condition::Real=DEFAULT_CONDITION,
-        factor::Real=DEFAULT_FACTOR
+        factor::Real=DEFAULT_FACTOR,
+        max_range::Real=Inf
     )
 
 Construct a finite difference method.
@@ -104,6 +111,8 @@ Construct a finite difference method.
 # Keywords
 - `condition::Real`: Condition number. See [`DEFAULT_CONDITION`](@ref).
 - `factor::Real`: Factor number. See [`DEFAULT_FACTOR`](@ref).
+- `max_range::Real=Inf`: Maximum distance that a function is evaluated from the input at
+    which the derivative is estimated.
 
 # Returns
 - `FiniteDifferenceMethod`: Specified finite difference method.
@@ -112,7 +121,8 @@ function FiniteDifferenceMethod(
     grid::SVector{P,Int},
     q::Int;
     condition::Real=DEFAULT_CONDITION,
-    factor::Real=DEFAULT_FACTOR
+    factor::Real=DEFAULT_FACTOR,
+    max_range::Real=Inf
 ) where P
     _check_p_q(P, q)
     coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult = _coefs_mults(grid, q)
@@ -122,17 +132,14 @@ function FiniteDifferenceMethod(
         coefs_neighbourhood,
         Float64(condition),
         Float64(factor),
+        Float64(max_range),
         ∇f_magnitude_mult,
         f_error_mult
     )
 end
 
 """
-    (m::FiniteDifferenceMethod)(
-        f::Function,
-        x::T;
-        max_range::Real=Inf
-    ) where T<:AbstractFloat
+    (m::FiniteDifferenceMethod)(f::Function, x::T) where T<:AbstractFloat
 
 Estimate the derivative of `f` at `x` using the finite differencing method `m` and an
 automatically determined step size.
@@ -140,9 +147,6 @@ automatically determined step size.
 # Arguments
 - `f::Function`: Function to estimate derivative of.
 - `x::T`: Input to estimate derivative at.
-
-# Keywords
-- `max_range::Real=Inf`: Upper bound on how far `f` can be evaluated away from `x`.
 
 # Returns
 - Estimate of the derivative.
@@ -167,17 +171,13 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 (0.001065235154086019, 1.9541865128909085e-13)
 ```
 """
-function (m::FiniteDifferenceMethod)(f::TF, x::Real; max_range::Real=Inf) where TF<:Function
+function (m::FiniteDifferenceMethod)(f::TF, x::Real) where TF<:Function
     # Assume that converting to float is desired.
     x = float(x)
-    step = first(estimate_step(m, f, x, max_range=max_range))
+    step = first(estimate_step(m, f, x))
     return m(f, x, step)
 end
-function (m::FiniteDifferenceMethod{P,0})(
-    f::TF,
-    x::Real;
-    max_range::Real=Inf
-) where {P,TF<:Function}
+function (m::FiniteDifferenceMethod{P,0})(f::TF, x::Real) where {P,TF<:Function}
     # The automatic step size calculation fails if `Q == 0`, so handle that edge case.
     return f(x)
 end
@@ -322,8 +322,7 @@ end
     function estimate_step(
         m::FiniteDifferenceMethod,
         f::Function,
-        x::T;
-        max_range::Real=Inf
+        x::T
     ) where T<:AbstractFloat
 
 Estimate the step size for a finite difference method `m`. Also estimates the error of the
@@ -334,9 +333,6 @@ estimate of the derivative.
 - `f::Function`: Function to evaluate the derivative of.
 - `x::T`: Point to estimate the derivative at.
 
-# Keywords
-- `max_range::Real=Inf`: Upper bound on how far `f` can be evaluated away from `x`.
-
 # Returns
 - `Tuple{<:AbstractFloat, <:AbstractFloat}`: Estimated step size and an estimate of the
     error of the finite difference estimate.
@@ -344,39 +340,31 @@ estimate of the derivative.
 function estimate_step(
     m::UnadaptedFiniteDifferenceMethod,
     f::TF,
-    x::T;
-    max_range::Real=Inf
+    x::T
 ) where {TF<:Function,T<:AbstractFloat}
     step, acc = _compute_step_acc_default(m, x)
-    return _limit_step(m, x, step, acc, max_range)
+    return _limit_step(m, x, step, acc)
 end
 function estimate_step(
     m::AdaptedFiniteDifferenceMethod{P,Q},
     f::TF,
-    x::T;
-    max_range::Real=Inf
+    x::T
 ) where {P,Q,TF<:Function,T<:AbstractFloat}
-    ∇f_magnitude, f_magnitude = _estimate_magnitudes(
-        m.bound_estimator,
-        f,
-        x,
-        max_range
-    )
+    ∇f_magnitude, f_magnitude = _estimate_magnitudes(m.bound_estimator, f, x)
     if ∇f_magnitude == 0.0 || f_magnitude == 0.0
         step, acc = _compute_step_acc_default(m, x)
     else
         step, acc = _compute_step_acc(m, ∇f_magnitude, eps(f_magnitude))
     end
-    return _limit_step(m, x, step, acc, max_range)
+    return _limit_step(m, x, step, acc)
 end
 
 function _estimate_magnitudes(
     m::FiniteDifferenceMethod{P,Q},
     f::TF,
-    x::T,
-    max_range::Real=Inf
+    x::T
 ) where {P,Q,TF<:Function,T<:AbstractFloat}
-    step = first(estimate_step(m, f, x, max_range=max_range))
+    step = first(estimate_step(m, f, x))
     fs = _evals(m, f, x, step)
     # Estimate magnitude of `∇f` in a neighbourhood of `x`.
     ∇fs = SVector{3}(
@@ -390,10 +378,7 @@ function _estimate_magnitudes(
     return ∇f_magnitude, f_magnitude
 end
 
-function _compute_step_acc_default(
-    m::FiniteDifferenceMethod,
-    x::T
-) where {T<:AbstractFloat}
+function _compute_step_acc_default(m::FiniteDifferenceMethod, x::T) where {T<:AbstractFloat}
     # Compute a default step size using a heuristic and [`DEFAULT_CONDITION`](@ref).
     return _compute_step_acc(m, m.condition, eps(T))
 end
@@ -416,11 +401,10 @@ function _limit_step(
     m::FiniteDifferenceMethod,
     x::T,
     step::Real,
-    acc::Real,
-    max_range::Real
+    acc::Real
 ) where {T<:AbstractFloat}
     # First, limit the step size based on the maximum range.
-    step_max = max_range / maximum(abs.(m.grid))
+    step_max = m.max_range / maximum(abs.(m.grid))
     if step > step_max
         step = step_max
         acc = NaN
@@ -445,6 +429,7 @@ for direction in [:forward, :central, :backward]
             adapt::Int=1,
             condition::Real=DEFAULT_CONDITION,
             factor::Real=DEFAULT_FACTOR,
+            max_range::Real=Inf,
             geom::Bool=false
         )
             _check_p_q(p, q)
@@ -460,6 +445,7 @@ for direction in [:forward, :central, :backward]
                     adapt=adapt - 1,
                     condition=condition,
                     factor=factor,
+                    max_range=max_range,
                     geom=geom
                 )
                 return AdaptedFiniteDifferenceMethod{p, q, typeof(bound_estimator)}(
@@ -468,6 +454,7 @@ for direction in [:forward, :central, :backward]
                     coefs_nbhd,
                     Float64(condition),
                     Float64(factor),
+                    Float64(max_range),
                     ∇f_magnitude_mult,
                     f_error_mult,
                     bound_estimator
@@ -479,6 +466,7 @@ for direction in [:forward, :central, :backward]
                     coefs_nbhd,
                     Float64(condition),
                     Float64(factor),
+                    Float64(max_range),
                     ∇f_magnitude_mult,
                     f_error_mult
                 )
@@ -492,6 +480,7 @@ for direction in [:forward, :central, :backward]
         adapt::Int=1,
         condition::Real=DEFAULT_CONDITION,
         factor::Real=DEFAULT_FACTOR,
+        max_range::Real=Inf,
         geom::Bool=false
     )
 
@@ -507,6 +496,8 @@ Contruct a finite difference method at a $($(Meta.quot(direction))) grid of `p` 
     this procedure `adapt` times.
 - `condition::Real`: Condition number. See [`DEFAULT_CONDITION`](@ref).
 - `factor::Real`: Factor number. See [`DEFAULT_FACTOR`](@ref).
+- `max_range::Real=Inf`: Maximum distance that a function is evaluated from the input at
+    which the derivative is estimated.
 - `geom::Bool`: Use geometrically spaced points instead of linearly spaced points.
 
 # Returns
