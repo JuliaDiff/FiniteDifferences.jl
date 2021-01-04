@@ -77,9 +77,7 @@ evaluations. This method does dynamically adapt its step size.
     perform adaptation for this finite difference method.
 """
 struct AdaptedFiniteDifferenceMethod{
-    P,
-    Q,
-    E<:FiniteDifferenceMethod
+    P, Q, E<:FiniteDifferenceMethod
 } <: FiniteDifferenceMethod{P,Q}
     grid::SVector{P,Int}
     coefs::SVector{P,Float64}
