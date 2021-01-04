@@ -77,9 +77,7 @@ evaluations. This method does dynamically adapt its step size.
     perform adaptation for this finite difference method.
 """
 struct AdaptedFiniteDifferenceMethod{
-    P,
-    Q,
-    E<:FiniteDifferenceMethod
+    P, Q, E<:FiniteDifferenceMethod
 } <: FiniteDifferenceMethod{P,Q}
     grid::SVector{P,Int}
     coefs::SVector{P,Float64}
@@ -122,7 +120,7 @@ function FiniteDifferenceMethod(
     q::Int;
     condition::Real=DEFAULT_CONDITION,
     factor::Real=DEFAULT_FACTOR,
-    max_range::Real=Inf
+    max_range::Real=Inf,
 )
     p = length(grid)
     grid = SVector{p}(grid)  # Internally, we work with static vectors.
@@ -216,9 +214,7 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 ```
 """
 function (m::FiniteDifferenceMethod{P,Q})(
-    f::TF,
-    x::Real,
-    step::Real
+    f::TF, x::Real, step::Real,
 ) where {P,Q,TF<:Function}
     # Assume that converting to float is desired.
     x = float(x)

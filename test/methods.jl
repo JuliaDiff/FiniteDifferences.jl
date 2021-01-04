@@ -20,8 +20,8 @@
         # all methods and data types.
         @testset "foo=$(foo.f), method=$m, type=$(T)" for foo in foos, m in methods, T in types
             @testset "method-order=$order" for order in [1, 2, 3, 4, 5]
-                @test m(order, 0, adapt=2)(foo.f, T(1)) isa T
-                @test m(order, 0, adapt=2)(foo.f, T(1)) == T(foo.f(1))
+                @test m(order, 0; adapt=2)(foo.f, T(1)) isa T
+                @test m(order, 0; adapt=2)(foo.f, T(1)) == T(foo.f(1))
             end
 
             @test m(10, 1)(foo.f, T(1)) isa T
@@ -99,7 +99,7 @@
         @test FiniteDifferences._is_symmetric(SVector{5}(2, 1, 0, -1, -2), negate_half=true)
         @test FiniteDifferences._is_symmetric(SVector{5}(2, 1, 4, -1, -2), negate_half=true)
         @test !FiniteDifferences._is_symmetric(
-            SVector{5}(2, 1, 4, -1, -2),
+            SVector{5}(2, 1, 4, -1, -2);
             negate_half=true,
             centre_zero=true
         )
