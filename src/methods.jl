@@ -213,7 +213,7 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 -1.7741363933510002e-13
 ```
 """
-function (m::FiniteDifferenceMethod{P, Q})(
+function (m::FiniteDifferenceMethod{P,Q})(
     f::TF,
     x::Real,
     step::Real
@@ -240,7 +240,7 @@ function _eval_method(
     x::T,
     step::Real,
     coefs::SVector{P,Float64}
-) where {P, Q, TF, T<:AbstractFloat}
+) where {P,Q,TF,T<:AbstractFloat}
     coefs = T.(coefs)
     return sum(fs .* coefs) ./ T(step)^Q
 end
@@ -360,9 +360,9 @@ function estimate_step(
         m.bound_estimator,
         f,
         x,
-        max_range=max_range
+        max_range
     )
-    if ∇f_magnitude == 0 || f_magnitude == 0
+    if ∇f_magnitude == 0.0 || f_magnitude == 0.0
         step, acc = _compute_step_acc_default(m, x)
     else
         step, acc = _compute_step_acc(m, ∇f_magnitude, eps(f_magnitude))
@@ -373,10 +373,10 @@ end
 function _estimate_magnitudes(
     m::FiniteDifferenceMethod{P,Q},
     f::TF,
-    x::T;
+    x::T,
     max_range::Real=Inf
 ) where {P,Q,TF<:Function,T<:AbstractFloat}
-    step = T(first(estimate_step(m, f, x, max_range=max_range)))
+    step = first(estimate_step(m, f, x, max_range=max_range))
     fs = _evals(m, f, x, step)
     # Estimate magnitude of `∇f` in a neighbourhood of `x`.
     ∇fs = SVector{3}(
