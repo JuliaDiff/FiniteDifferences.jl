@@ -122,7 +122,7 @@ function FiniteDifferenceMethod(
     q::Int;
     condition::Real=DEFAULT_CONDITION,
     factor::Real=DEFAULT_FACTOR,
-    max_range::Real=Inf
+    max_range::Real=Inf,
 )
     p = length(grid)
     grid = SVector{p}(grid)  # Internally, we work with static vectors.
