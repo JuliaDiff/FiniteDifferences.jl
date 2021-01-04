@@ -99,7 +99,7 @@
         @test FiniteDifferences._is_symmetric(SVector{5}(2, 1, 0, -1, -2), negate_half=true)
         @test FiniteDifferences._is_symmetric(SVector{5}(2, 1, 4, -1, -2), negate_half=true)
         @test !FiniteDifferences._is_symmetric(
-            SVector{5}(2, 1, 4, -1, -2),
+            SVector{5}(2, 1, 4, -1, -2);
             negate_half=true,
             centre_zero=true
         )
