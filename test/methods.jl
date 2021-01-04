@@ -62,7 +62,7 @@
     @testset "Accuracy at high orders and high adaptation (issue #64)" begin
         # Regression test against issues with precision during computation of coefficients.
         @test central_fdm(9, 5, adapt=4)(exp, 1.0) ≈ exp(1) atol=2e-7
-        @test central_fdm(15, 5, adapt=2)(exp, 1.0) ≈ exp(1) atol=1e-11
+        @test central_fdm(15, 5, adapt=2)(exp, 1.0) ≈ exp(1) atol=1e-10
         poly(x) = 4x^3 + 3x^2 + 2x + 1
         @test central_fdm(9, 3, adapt=4)(poly, 1.0) ≈ 24 atol=1e-11
     end
