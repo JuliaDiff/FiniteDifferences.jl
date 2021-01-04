@@ -5,6 +5,7 @@ module FiniteDifferences
     using Printf
     using Random
     using Richardson
+    using StaticArrays
 
     export to_vec, grad, jacobian, jvp, j′vp
 
