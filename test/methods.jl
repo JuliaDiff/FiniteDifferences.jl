@@ -58,7 +58,7 @@
     @testset "Accuracy at high orders and high adaptation (issue #64)" begin
         # Regression test against issues with precision during computation of coefficients.
         @test central_fdm(9, 5, adapt=4)(exp, 1.0) ≈ exp(1) atol=2e-7
-        @test central_fdm(15, 5, adapt=2)(exp, 1.0) ≈ exp(1) atol=5e-12
+        @test central_fdm(15, 5, adapt=2)(exp, 1.0) ≈ exp(1) atol=1e-11
         poly(x) = 4x^3 + 3x^2 + 2x + 1
         @test central_fdm(9, 3, adapt=4)(poly, 1.0) ≈ 24 atol=1e-11
     end
@@ -127,7 +127,7 @@
 
     @testset "Derivative of cosc at 0 (issue #124)" begin
         @test central_fdm(5, 1)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=1e-13
-        @test central_fdm(10, 1, adapt=3)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=1e-15
+        @test central_fdm(10, 1, adapt=3)(cosc, 0) ≈ -(pi ^ 2) / 3 atol=1e-14
     end
 
     @testset "Derivative of a constant (issue #125)" begin
