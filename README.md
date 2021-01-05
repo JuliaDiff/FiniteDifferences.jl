@@ -38,6 +38,25 @@ julia> central_fdm(5, 1)(sin, 1) - cos(1)
 -2.4313884239290928e-14
 ```
 
+Finite difference methods are optimised to minimise allocations:
+
+```julia
+julia> m = central_fdm(5, 1);
+
+julia> @benchmark $m(sin, 1)
+BenchmarkTools.Trial:
+  memory estimate:  0 bytes
+  allocs estimate:  0
+  --------------
+  minimum time:     486.621 ns (0.00% GC)
+  median time:      507.677 ns (0.00% GC)
+  mean time:        539.806 ns (0.00% GC)
+  maximum time:     1.352 μs (0.00% GC)
+  --------------
+  samples:          10000
+  evals/sample:     195
+```
+
 Compute the second derivative of `sin` with a 5th order central method:
 
 ```julia
