@@ -49,7 +49,8 @@
             (f=sin, x=1, d=cos(1), atol=5e-13, atol_central=5e-14),
             (f=cos, x=1, d=-sin(1), atol=5e-13, atol_central=5e-14),
             (f=sinc, x=0, d=0, atol=5e-12, atol_central=5e-14),
-            (f=cosc, x=0, d=-(pi ^ 2) / 3, atol=5e-10, atol_central=5e-11)
+            # `cosc` is hard. There is a separate test for `cosc` below.
+            (f=cosc, x=0, d=-(pi ^ 2) / 3, atol=5e-9, atol_central=5e-10)
         ]
         @testset "f=$(f.f), method=$m" for f in fs, m in methods
             atol = m == central_fdm ? f.atol_central : f.atol
