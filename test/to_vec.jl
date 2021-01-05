@@ -40,8 +40,7 @@ function test_to_vec(x::T; check_inferred = true) where {T}
 end
 
 @testset "to_vec" begin
-    # @testset "$T" for T in (Float32, ComplexF32, Float64, ComplexF64)
-    @testset "$T" for T in (Float32,)
+    @testset "$T" for T in (Float32, ComplexF32, Float64, ComplexF64)
         if T == Float64
             test_to_vec(1.0)
             test_to_vec(1)
