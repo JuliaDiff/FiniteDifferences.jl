@@ -40,23 +40,22 @@
 
         # `f`s, `x`s, the derivatives of `f` at `x`, and a factor that loosens tolerances.
         fs = [
-            (f=x -> 0, x=0, d=0, factor=1),
-            (f=x -> x, x=0, d=1, factor=1),
-            (f=exp, x=0, d=1, factor=1),
-            (f=sin, x=0, d=1, factor=1),
-            (f=cos, x=0, d=0, factor=1),
-            (f=sinc, x=0, d=0, factor=1),
-            (f=cosc, x=0, d=-(pi ^ 2) / 3, factor=10)
+            (f=x -> 0, x=0, d=0, atol=0, atol_central=0),
+            (f=x -> x, x=0, d=1, atol=5e-15, atol_central=5e-16),
+            (f=exp, x=0, d=1, atol=5e-13, atol_central=5e-14),
+            (f=sin, x=0, d=1, atol=1e-14, atol_central=5e-16),
+            (f=cos, x=0, d=0, atol=5e-14, atol_central=5e-14),
+            (f=exp, x=1, d=exp(1), atol=5e-12, atol_central=5e-13),
+            (f=sin, x=1, d=cos(1), atol=5e-13, atol_central=5e-14),
+            (f=cos, x=1, d=-sin(1), atol=5e-13, atol_central=5e-14),
+            (f=sinc, x=0, d=0, atol=5e-12, atol_central=5e-14),
+            (f=cosc, x=0, d=-(pi ^ 2) / 3, atol=1e-14, atol_central=5e-14)
         ]
         @testset "f=$(f.f), method=$m" for f in fs, m in methods
-            @test m(4, 1)(f.f, f.x) ≈ f.d rtol=0 atol=5e-8 * f.factor
-            @test m(5, 1)(f.f, f.x) ≈ f.d rtol=0 atol=1e-8 * f.factor
-            @test m(6, 1)(f.f, f.x) ≈ f.d rtol=0 atol=1e-9 * f.factor
-            @test m(7, 1)(f.f, f.x) ≈ f.d rtol=0 atol=5e-10 * f.factor
-            @test m(8, 1)(f.f, f.x) ≈ f.d rtol=0 atol=1e-10 * f.factor
-            @test m(9, 1)(f.f, f.x) ≈ f.d rtol=0 atol=5e-11 * f.factor
-            @test m(10, 1)(f.f, f.x) ≈ f.d rtol=0 atol=1e-11 * f.factor
-            @test m(11, 1)(f.f, f.x) ≈ f.d rtol=0 atol=5e-12 * f.factor
+            atol = m == central_fdm ? f.atol_central : f.atol
+            @test m(6, 1)(f.f, f.x) ≈ f.d rtol=0 atol=atol
+            @test m(7, 1)(f.f, f.x) ≈ f.d rtol=0 atol=atol
+            m == central_fdm && @test m(14, 1)(f.f, f.x) ≈ f.d atol=5e-15
         end
     end
 
