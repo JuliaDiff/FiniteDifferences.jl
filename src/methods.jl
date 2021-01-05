@@ -224,10 +224,7 @@ function (m::FiniteDifferenceMethod{P,Q})(
 end
 
 function _eval_function(
-    m::FiniteDifferenceMethod,
-    f::TF,
-    x::T,
-    step::Real
+    m::FiniteDifferenceMethod, f::TF, x::T, step::Real,
 ) where {TF<:Function,T<:AbstractFloat}
     return f.(x .+ T(step) .* m.grid)
 end
@@ -237,7 +234,7 @@ function _compute_estimate(
     fs::SVector{P,TF},
     x::T,
     step::Real,
-    coefs::SVector{P,Float64}
+    coefs::SVector{P,Float64},
 ) where {P,Q,TF,T<:AbstractFloat}
     # If we substitute `T.(coefs)` in the expression below, then allocations occur. We
     # therefore perform the broadcasting first.
@@ -305,7 +302,7 @@ end
 function Base.show(
     io::IO,
     m::MIME"text/plain",
-    x::FiniteDifferenceMethod{P, Q}
+    x::FiniteDifferenceMethod{P, Q},
 ) where {P, Q}
     @printf io "FiniteDifferenceMethod:\n"
     @printf io "  order of method:       %d\n" P
@@ -334,17 +331,13 @@ estimate of the derivative.
     error of the finite difference estimate.
 """
 function estimate_step(
-    m::UnadaptedFiniteDifferenceMethod,
-    f::TF,
-    x::T
+    m::UnadaptedFiniteDifferenceMethod, f::TF, x::T,
 ) where {TF<:Function,T<:AbstractFloat}
     step, acc = _compute_step_acc_default(m, x)
     return _limit_step(m, x, step, acc)
 end
 function estimate_step(
-    m::AdaptedFiniteDifferenceMethod{P,Q},
-    f::TF,
-    x::T
+    m::AdaptedFiniteDifferenceMethod{P,Q}, f::TF, x::T,
 ) where {P,Q,TF<:Function,T<:AbstractFloat}
     ∇f_magnitude, f_magnitude = _estimate_magnitudes(m.bound_estimator, f, x)
     if ∇f_magnitude == 0.0 || f_magnitude == 0.0
@@ -356,9 +349,7 @@ function estimate_step(
 end
 
 function _estimate_magnitudes(
-    m::FiniteDifferenceMethod{P,Q},
-    f::TF,
-    x::T
+    m::FiniteDifferenceMethod{P,Q}, f::TF, x::T,
 ) where {P,Q,TF<:Function,T<:AbstractFloat}
     step = first(estimate_step(m, f, x))
     fs = _eval_function(m, f, x, step)
@@ -380,9 +371,7 @@ function _compute_step_acc_default(m::FiniteDifferenceMethod, x::T) where {T<:Ab
 end
 
 function _compute_step_acc(
-    m::FiniteDifferenceMethod{P,Q},
-    ∇f_magnitude::Real,
-    f_error::Real
+    m::FiniteDifferenceMethod{P,Q}, ∇f_magnitude::Real, f_error::Real,
 ) where {P,Q}
     # Set the step size by minimising an upper bound on the error of the estimate.
     C₁ = f_error * m.f_error_mult * m.factor
@@ -394,10 +383,7 @@ function _compute_step_acc(
 end
 
 function _limit_step(
-    m::FiniteDifferenceMethod,
-    x::T,
-    step::Real,
-    acc::Real
+    m::FiniteDifferenceMethod, x::T, step::Real, acc::Real,
 ) where {T<:AbstractFloat}
     # First, limit the step size based on the maximum range.
     step_max = m.max_range / maximum(abs.(m.grid))
@@ -419,7 +405,8 @@ end
 for direction in [:forward, :central, :backward]
     fdm_fun = Symbol(direction, "_fdm")
     grid_fun = Symbol("_", direction, "_grid")
-    @eval begin function $fdm_fun(
+    @eval begin
+        function $fdm_fun(
             p::Int,
             q::Int;
             adapt::Int=1,
