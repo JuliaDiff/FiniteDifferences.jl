@@ -92,7 +92,7 @@ end
 
 """
     FiniteDifferenceMethod(
-        grid::Vector{Int},
+        grid::AbstractVector{Int},
         q::Int;
         condition::Real=DEFAULT_CONDITION,
         factor::Real=DEFAULT_FACTOR,
