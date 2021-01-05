@@ -135,7 +135,7 @@ function FiniteDifferenceMethod(
         f_error_mult
     )
 end
-function FiniteDifferenceMethod(grid::Vector{Int}, q::Int; kw_args...)
+function FiniteDifferenceMethod(grid::AbstractVector{Int}, q::Int; kw_args...)
     return FiniteDifferenceMethod(SVector{length(grid)}(grid), q; kw_args...)
 end
 
