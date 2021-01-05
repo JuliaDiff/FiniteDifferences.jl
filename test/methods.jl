@@ -57,7 +57,7 @@
             @test m(6, 1)(f.f, f.x) ≈ f.d rtol=0 atol=atol
             @test m(7, 1)(f.f, f.x) ≈ f.d rtol=0 atol=atol
             if m == central_fdm
-                if f == cosc
+                if f.f == cosc
                     # `cosc` is hard.
                     @test m(14, 1)(f.f, f.x) ≈ f.d atol=1e-13
                 else
