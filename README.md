@@ -21,7 +21,7 @@ At some point in the future they might merge, or one might depend on the other.
 Right now here are the differences:
 
  - FiniteDifferences.jl supports basically any type, where as FiniteDiff.jl supports only array-ish types
- - FiniteDifferences.jl supports higher order approximation
+ - FiniteDifferences.jl supports higher order approximation and step size adaptation
  - FiniteDiff.jl is carefully optimized to minimize allocations
  - FiniteDiff.jl supports coloring vectors for efficient calculation of sparse Jacobians
 
@@ -191,7 +191,7 @@ FiniteDifferenceMethod:
   coefficients:          [-0.35714285714285715, 0.3, 0.05714285714285714]
 
 julia> method(sin, 1) - cos(1)
--8.423706177040913e-11
+-3.701483564100272e-13
 ```
 
 ## Multivariate Derivatives
@@ -200,10 +200,10 @@ Consider a quadratic function:
 
 ```julia
 julia> a = randn(3, 3); a = a * a'
-3×3 Array{Float64,2}:
-  8.0663   -1.12965   1.68556
- -1.12965   3.55005  -3.10405
-  1.68556  -3.10405   3.77251
+3×3 Matrix{Float64}:
+  4.31995    -2.80614   0.0829128
+ -2.80614     3.91982   0.764388
+  0.0829128   0.764388  1.18055
 
 julia> f(x) = 0.5 * x' * a * x
 ```
@@ -211,37 +211,43 @@ julia> f(x) = 0.5 * x' * a * x
 Compute the gradient:
 
 ```julia
+julia> x = randn(3)
+3-element Vector{Float64}:
+ -0.18563161988700727
+ -0.4659836395595666
+  2.304584409826511
+
 julia> grad(central_fdm(5, 1), f, x)[1] - a * x
-3-element Array{Float64,1}:
- -1.2612133559741778e-12
- -3.526068326209497e-13
- -2.3305801732931286e-12
+3-element Vector{Float64}:
+  4.1744385725905886e-14
+ -6.611378111642807e-14
+ -8.615330671091215e-14
 ```
 
 Compute the Jacobian:
 
 ```julia
 julia> jacobian(central_fdm(5, 1), f, x)[1] - (a * x)'
-1×3 Array{Float64,2}:
- -1.26121e-12  -3.52607e-13  -2.33058e-12
+1×3 Matrix{Float64}:
+ 4.17444e-14  -6.61138e-14  -8.61533e-14
 ```
 
 The Jacobian can also be computed for non-scalar functions:
 
 ```julia
 julia> a = randn(3, 3)
-3×3 Array{Float64,2}:
- -0.343783   1.5708     0.723289
- -0.425706  -0.478881  -0.306881
-  1.27326   -0.171606   2.23671
+3×3 Matrix{Float64}:
+  0.844846   1.04772    1.0173
+ -0.867721   0.154146  -0.938077
+  1.34078   -0.630105  -1.13287
 
 julia> f(x) = a * x
 
 julia> jacobian(central_fdm(5, 1), f, x)[1] - a
-3×3 Array{Float64,2}:
- -2.81331e-13   2.77556e-13  1.28342e-13
- -3.34732e-14  -6.05072e-15  6.05072e-15
- -2.24709e-13   1.88821e-13  1.06581e-14
+3×3 Matrix{Float64}:
+  2.91989e-14   1.77636e-15   4.996e-14
+ -5.55112e-15  -7.63278e-15   2.4758e-14
+  4.66294e-15  -2.05391e-14  -1.04361e-14
 ```
 
 To compute Jacobian--vector products, use `jvp` and `j′vp`:
@@ -254,14 +260,14 @@ julia> v = randn(3)
  -1.4288108966380777
 
 julia> jvp(central_fdm(5, 1), f, (x, v)) - a * v
-3-element Array{Float64,1}:
- -1.3233858453531866e-13
-  9.547918011776346e-15
-  3.632649736573512e-13
+3-element Vector{Float64}:
+ -7.993605777301127e-15
+ -8.881784197001252e-16
+ -3.22519788653608e-14
 
 julia> j′vp(central_fdm(5, 1), f, x, v)[1] - a'x
- 3-element Array{Float64,1}:
-  3.5704772471945034e-13
-  4.04121180963557e-13
-  1.2807532812075806e-12
+3-element Vector{Float64}:
+ -2.1316282072803006e-14
+  2.4646951146678475e-14
+  6.661338147750939e-15
 ```
