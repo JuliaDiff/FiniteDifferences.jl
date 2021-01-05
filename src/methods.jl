@@ -116,17 +116,15 @@ Construct a finite difference method.
 - `FiniteDifferenceMethod`: Specified finite difference method.
 """
 function FiniteDifferenceMethod(
-    grid::Vector{Int},
+    grid::SVector{P,Int},
     q::Int;
     condition::Real=DEFAULT_CONDITION,
     factor::Real=DEFAULT_FACTOR,
     max_range::Real=Inf,
-)
-    p = length(grid)
-    grid = SVector{p}(grid)  # Internally, we work with static vectors.
-    _check_p_q(p, q)
+) where P
+    _check_p_q(P, q)
     coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult = _coefs_mults(grid, q)
-    return UnadaptedFiniteDifferenceMethod{p,q}(
+    return UnadaptedFiniteDifferenceMethod{P,q}(
         grid,
         coefs,
         coefs_neighbourhood,
@@ -136,6 +134,9 @@ function FiniteDifferenceMethod(
         ∇f_magnitude_mult,
         f_error_mult
     )
+end
+function FiniteDifferenceMethod(grid::Vector{Int}, q::Int; kw_args...)
+    return FiniteDifferenceMethod(SVector{length(grid)}(grid), q; kw_args...)
 end
 
 """
