@@ -94,8 +94,8 @@ function to_vec(X::Transpose)
 end
 
 function to_vec(x::Transpose{<:Any, <:AbstractVector})
-    x_vec, back = to_vec(parent(x))
-    Transpose_from_vec(x_vec) = Transpose(back(x_vec))
+    x_vec, back = to_vec(Matrix(x))
+    Transpose_from_vec(x_vec) = Transpose(vec(back(x_vec)))
     return x_vec, Transpose_from_vec
 end
 
@@ -108,8 +108,8 @@ function to_vec(X::Adjoint)
 end
 
 function to_vec(x::Adjoint{<:Any, <:AbstractVector})
-    x_vec, back = to_vec(parent(x))
-    Adjoint_from_vec(x_vec) = Adjoint(back(x_vec))
+    x_vec, back = to_vec(Matrix(x))
+    Adjoint_from_vec(x_vec) = Adjoint(conj!(vec(back(x_vec))))
     return x_vec, Adjoint_from_vec
 end
 
