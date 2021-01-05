@@ -172,15 +172,21 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 (0.001065235154086019, 1.9541865128909085e-13)
 ```
 """
-function (m::FiniteDifferenceMethod)(f::TF, x::Real) where TF<:Function
-    # Assume that converting to float is desired.
-    x = float(x)
-    step = first(estimate_step(m, f, x))
-    return m(f, x, step)
-end
-function (m::FiniteDifferenceMethod{P,0})(f::TF, x::Real) where {P,TF<:Function}
-    # The automatic step size calculation fails if `Q == 0`, so handle that edge case.
-    return f(x)
+# We loop over all concrete subtypes of `FiniteDifferenceMethod` for 1.0 compatibility.
+for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
+    @eval begin
+        function (m::$T)(f::TF, x::Real) where TF<:Function
+            # Assume that converting to float is desired.
+            x = float(x)
+            step = first(estimate_step(m, f, x))
+            return m(f, x, step)
+        end
+        function (m::$T{P,0})(f::TF, x::Real) where {P,TF<:Function}
+            # The automatic step size calculation fails if `Q == 0`, so handle that edge
+            # case.
+            return f(x)
+        end
+    end
 end
 
 """
@@ -214,13 +220,16 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 -1.7741363933510002e-13
 ```
 """
-function (m::FiniteDifferenceMethod{P,Q})(
-    f::TF, x::Real, step::Real,
-) where {P,Q,TF<:Function}
-    # Assume that converting to float is desired.
-    x = float(x)
-    fs = _eval_function(m, f, x, step)
-    return _compute_estimate(m, fs, x, step, m.coefs)
+# We loop over all concrete subtypes of `FiniteDifferenceMethod` for 1.0 compatibility.
+for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
+    @eval begin
+        function (m::$T{P,Q})(f::TF, x::Real, step::Real) where {P,Q,TF<:Function}
+            # Assume that converting to float is desired.
+            x = float(x)
+            fs = _eval_function(m, f, x, step)
+            return _compute_estimate(m, fs, x, step, m.coefs)
+        end
+    end
 end
 
 function _eval_function(
