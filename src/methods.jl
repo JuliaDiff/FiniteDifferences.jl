@@ -219,11 +219,11 @@ function (m::FiniteDifferenceMethod{P,Q})(
 ) where {P,Q,TF<:Function}
     # Assume that converting to float is desired.
     x = float(x)
-    fs = _evals(m, f, x, step)
-    return _eval_method(m, fs, x, step, m.coefs)
+    fs = _eval_function(m, f, x, step)
+    return _compute_estimate(m, fs, x, step, m.coefs)
 end
 
-function _evals(
+function _eval_function(
     m::FiniteDifferenceMethod,
     f::TF,
     x::T,
@@ -232,7 +232,7 @@ function _evals(
     return f.(x .+ T(step) .* m.grid)
 end
 
-function _eval_method(
+function _compute_estimate(
     m::FiniteDifferenceMethod{P,Q},
     fs::SVector{P,TF},
     x::T,
@@ -361,12 +361,12 @@ function _estimate_magnitudes(
     x::T
 ) where {P,Q,TF<:Function,T<:AbstractFloat}
     step = first(estimate_step(m, f, x))
-    fs = _evals(m, f, x, step)
+    fs = _eval_function(m, f, x, step)
     # Estimate magnitude of `∇f` in a neighbourhood of `x`.
     ∇fs = SVector{3}(
-        _eval_method(m, fs, x, step, m.coefs_neighbourhood[1]),
-        _eval_method(m, fs, x, step, m.coefs_neighbourhood[2]),
-        _eval_method(m, fs, x, step, m.coefs_neighbourhood[3])
+        _compute_estimate(m, fs, x, step, m.coefs_neighbourhood[1]),
+        _compute_estimate(m, fs, x, step, m.coefs_neighbourhood[2]),
+        _compute_estimate(m, fs, x, step, m.coefs_neighbourhood[3])
     )
     ∇f_magnitude = maximum(maximum.(abs, ∇fs))
     # Estimate magnitude of `f` in a neighbourhood of `x`.
