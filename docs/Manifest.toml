@@ -36,10 +36,10 @@ deps = ["ArgTools", "LibCURL"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 
 [[FiniteDifferences]]
-deps = ["ChainRulesCore", "LinearAlgebra", "Printf", "Random", "Richardson"]
-git-tree-sha1 = "e4e4bfc56a703113ba1692e8e9c719ddbb46f47d"
+deps = ["ChainRulesCore", "LinearAlgebra", "Printf", "Random", "Richardson", "StaticArrays"]
+path = ".."
 uuid = "26cc04aa-876d-5657-8c51-4c34ba976000"
-version = "0.11.6"
+version = "0.11.5"
 
 [[IOCapture]]
 deps = ["Logging"]
@@ -134,6 +134,16 @@ uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 [[SparseArrays]]
 deps = ["LinearAlgebra", "Random"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+
+[[StaticArrays]]
+deps = ["LinearAlgebra", "Random", "Statistics"]
+git-tree-sha1 = "9da72ed50e94dbff92036da395275ed114e04d49"
+uuid = "90137ffa-7385-5640-81b9-e52037218182"
+version = "1.0.1"
+
+[[Statistics]]
+deps = ["LinearAlgebra", "SparseArrays"]
+uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [[TOML]]
 deps = ["Dates"]
