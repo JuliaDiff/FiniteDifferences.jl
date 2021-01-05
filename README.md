@@ -29,8 +29,7 @@ Right now here are the differences:
 #### FDM.jl
 This package was formerly called FDM.jl. We recommend users of FDM.jl [update to FiniteDifferences.jl](https://github.com/JuliaDiff/FiniteDifferences.jl/issues/37).
 
-
-## Example: Scalar Derivatives
+## Scalar Derivatives
 
 Compute the first derivative of `sin` with a 5th order central method:
 
@@ -43,13 +42,126 @@ Compute the second derivative of `sin` with a 5th order central method:
 
 ```julia
 julia> central_fdm(5, 2)(sin, 1) + sin(1)
--4.367495254342657e-11
+-8.767431225464861e-11
+```
+
+To obtain better accuracy, you can increase the order of the method:
+
+```julia
+julia> central_fdm(12, 2)(sin, 1) + sin(1)
+5.240252676230739e-14
 ```
 
 The functions `forward_fdm` and `backward_fdm` can be used to construct
 forward differences and backward differences respectively.
 
-Alternatively, you can construct a finite difference method on a custom grid:
+### Dealing with Singularities
+
+The function `log(x)` is only defined for `x > 0`.
+If we try to use `central_fdm` to estimate the derivative of `log` near `x = 0`,
+then we run into `DomainError`s, because `central_fdm` happens evaluates `log`
+at some `x < 0`.
+
+```julia
+julia> central_fdm(5, 1)(log, 1e-3)
+ERROR: DomainError with -0.02069596546590111
+```
+
+To deal with this situation, you have two options.
+
+The first option is to use `forward_fdm`, which only evaluates `log` at inputs
+greater or equal to `x`:
+
+```julia
+julia> forward_fdm(5, 1)(log, 1e-3) - 1000
+-3.741856744454708e-7
+```
+
+This works fine, but the downside is that you're restricted to a one-sided
+methods (`forward_fdm`), which tend to perform worse than central methods
+(`central_fdm`).
+
+The second option is to limit the distance tat the finite difference method is
+allowed to evaluate `log` away from `x`. Since `x = 1e-3`, a reasonable value
+for this limit is `9e-4`:
+
+```julia
+julia> central_fdm(5, 1, max_range=9e-4)(log, 1e-3) - 1000
+-4.027924660476856e-10
+```
+
+Another commonly encountered example is `logdet`, which is only defined
+for positive-definite matrices.
+Here you can use a forward method in combination with a positive-definite
+deviation from `x`:
+
+```julia
+julia> x = diagm([1.0, 2.0, 3.0]); v = Matrix(1.0I, 3, 3);
+
+julia> forward_fdm(5, 1)(ε -> logdet(x .+ ε .* v), 0) - sum(1 ./ diag(x))
+-4.222400207254395e-12
+```
+
+A range-limited central method is also possible:
+
+```julia
+julia> central_fdm(5, 1, max_range=9e-1)(ε -> logdet(x .+ ε .* v), 0) - sum(1 ./ diag(x))
+-1.283417816466681e-13
+```
+
+### Richardson Extrapolation
+
+The finite difference methods defined in this package can be extrapolated using
+[Richardson extrapolation](https://github.com/JuliaMath/Richardson.jl).
+This can offer superior numerical accuracy:
+Richardson extrapolation attempts polynomial extrapolation of the finite
+difference estimate as a function of the step size until a convergence criterion
+is reached.
+
+```julia
+julia> extrapolate_fdm(central_fdm(2, 1), sin, 1)[1] - cos(1)
+1.6653345369377348e-14
+```
+
+Similarly, you can estimate higher order derivatives:
+
+```julia
+julia> extrapolate_fdm(central_fdm(5, 4), sin, 1)[1] - sin(1)
+-1.626274487942503e-5
+```
+
+In this case, the accuracy can be improved by lowering (making closer to `1`)
+the [contraction rate](https://github.com/JuliaMath/Richardson.jl#usage):
+
+```julia
+julia> extrapolate_fdm(central_fdm(5, 4), sin, 1, contract=0.8)[1] - sin(1)
+2.0725743343774639e-10
+```
+
+This performs similarly to a `10`th order central method:
+
+```julia
+julia> central_fdm(10, 4)(sin, 1) - sin(1)
+-1.0301381969668455e-10
+```
+
+If you really want, you can even extrapolate the `10`th order central method,
+but that provides no further gains:
+
+```julia
+julia> extrapolate_fdm(central_fdm(10, 4), sin, 1, contract=0.8)[1] - sin(1)
+5.673617131662922e-10
+```
+
+In this case, the central method can be pushed to a high order to obtain
+improved accuracy:
+
+```julia
+julia> central_fdm(20, 4)(sin, 1) - sin(1)
+-5.2513549064769904e-14
+```
+
+### A Finite Difference Method on a Custom Grid
 
 ```julia
 julia> method = FiniteDifferenceMethod([-2, 0, 5], 1)
@@ -63,17 +175,7 @@ julia> method(sin, 1) - cos(1)
 -8.423706177040913e-11
 ```
 
-Compute a directional derivative:
-
-```julia
-julia> f(x) = sum(x)
-f (generic function with 1 method)
-
-julia> central_fdm(5, 1)(ε -> f([1, 1, 1] .+ ε .* [1, 2, 3]), 0) - 6
--6.217248937900877e-15
-```
-
-## Example: Multivariate Derivatives
+## Multivariate Derivatives
 
 Consider a quadratic function:
 
@@ -124,7 +226,7 @@ julia> jacobian(central_fdm(5, 1), f, x)[1] - a
 ```
 
 To compute Jacobian--vector products, use `jvp` and `j′vp`:
- 
+
 ```julia
 julia> v = randn(3)
 3-element Array{Float64,1}:
