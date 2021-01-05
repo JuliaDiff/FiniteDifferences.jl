@@ -96,11 +96,11 @@ julia> forward_fdm(5, 1)(log, 1e-3) - 1000
 -3.741856744454708e-7
 ```
 
-This works fine, but the downside is that you're restricted to a one-sided
+This works fine, but the downside is that you're restricted to one-sided
 methods (`forward_fdm`), which tend to perform worse than central methods
 (`central_fdm`).
 
-The second option is to limit the distance tat the finite difference method is
+The second option is to limit the distance that the finite difference method is
 allowed to evaluate `log` away from `x`. Since `x = 1e-3`, a reasonable value
 for this limit is `9e-4`:
 
