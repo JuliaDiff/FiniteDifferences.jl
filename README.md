@@ -78,7 +78,7 @@ forward differences and backward differences respectively.
 
 The function `log(x)` is only defined for `x > 0`.
 If we try to use `central_fdm` to estimate the derivative of `log` near `x = 0`,
-then we run into `DomainError`s, because `central_fdm` happens evaluates `log`
+then we run into `DomainError`s, because `central_fdm` happens to evaluate `log`
 at some `x < 0`.
 
 ```julia
