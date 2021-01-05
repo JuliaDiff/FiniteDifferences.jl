@@ -128,9 +128,9 @@ function FiniteDifferenceMethod(
         grid,
         coefs,
         coefs_neighbourhood,
-        Float64(condition),
-        Float64(factor),
-        Float64(max_range),
+        condition,
+        factor,
+        max_range,
         ∇f_magnitude_mult,
         f_error_mult
     )
@@ -250,13 +250,9 @@ function _check_p_q(p::Integer, q::Integer)
     q >= 0 || throw(DomainError(q, "order of derivative (`q`) must be non-negative"))
     q < p || throw(DomainError(
         (q, p),
-        "order of the method (q) must be strictly greater than that of the derivative (p)",
+        "order of the method (`p`) must be strictly greater than that of the derivative " *
+        "(`q`)",
     ))
-    # Check whether the method can be computed. We require the factorial of the method order
-    # to be computable with regular `Int`s, but `factorial` will after 20, so 20 is the
-    # largest we can allow.
-    p > 20 && throw(DomainError(p, "order of the method (`p`) is too large to be computed"))
-    return
 end
 
 function _coefs(grid, p, q)
@@ -265,7 +261,7 @@ function _coefs(grid, p, q)
     # rational math.
     C = [Rational{BigInt}(g^i) for i in 0:(p - 1), g in grid]
     x = zeros(Rational{BigInt}, p)
-    x[q + 1] = factorial(q)
+    x[q + 1] = factorial(big(q))
     return SVector{p}(Float64.(C \ x))
 end
 
@@ -300,7 +296,7 @@ function _coefs_mults(grid::SVector{P, Int}, q::Integer) where P
             )
         end
         # Compute multipliers.
-        ∇f_magnitude_mult = sum(abs.(coefs .* grid .^ P)) / factorial(P)
+        ∇f_magnitude_mult = sum(abs.(coefs .* grid .^ P)) / factorial(big(P))
         f_error_mult = sum(abs.(coefs))
         return coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult
     end
@@ -452,9 +448,9 @@ for direction in [:forward, :central, :backward]
                     grid,
                     coefs,
                     coefs_nbhd,
-                    Float64(condition),
-                    Float64(factor),
-                    Float64(max_range),
+                    condition,
+                    factor,
+                    max_range,
                     ∇f_magnitude_mult,
                     f_error_mult,
                     bound_estimator
@@ -464,9 +460,9 @@ for direction in [:forward, :central, :backward]
                     grid,
                     coefs,
                     coefs_nbhd,
-                    Float64(condition),
-                    Float64(factor),
-                    Float64(max_range),
+                    condition,
+                    factor,
+                    max_range,
                     ∇f_magnitude_mult,
                     f_error_mult
                 )
