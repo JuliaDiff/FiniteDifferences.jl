@@ -41,17 +41,17 @@
         # `f`s, `x`s, the derivatives of `f` at `x`, and a factor that loosens tolerances.
         fs = [
             # See #124.
-            (f=x -> 0, x=0, d=0, atol=0, atol_central=0),
-            (f=x -> x, x=0, d=1, atol=5e-15, atol_central=5e-16),
-            (f=exp, x=0, d=1, atol=5e-13, atol_central=5e-14),
-            (f=sin, x=0, d=1, atol=1e-14, atol_central=5e-16),
-            (f=cos, x=0, d=0, atol=5e-14, atol_central=5e-14),
-            (f=exp, x=1, d=exp(1), atol=5e-12, atol_central=5e-13),
-            (f=sin, x=1, d=cos(1), atol=5e-13, atol_central=5e-14),
-            (f=cos, x=1, d=-sin(1), atol=5e-13, atol_central=5e-14),
-            (f=sinc, x=0, d=0, atol=5e-12, atol_central=5e-14),
+            (f=x -> 0, x=0, d=0,           atol=0,     atol_central=0),
+            (f=x -> x, x=0, d=1,           atol=5e-15, atol_central=5e-16),
+            (f=exp, x=0, d=1,              atol=5e-13, atol_central=5e-14),
+            (f=sin, x=0, d=1,              atol=1e-14, atol_central=5e-16),
+            (f=cos, x=0, d=0,              atol=5e-14, atol_central=5e-14),
+            (f=exp, x=1, d=exp(1),         atol=5e-12, atol_central=5e-13),
+            (f=sin, x=1, d=cos(1),         atol=5e-13, atol_central=5e-14),
+            (f=cos, x=1, d=-sin(1),        atol=5e-13, atol_central=5e-14),
+            (f=sinc, x=0, d=0,             atol=5e-12, atol_central=5e-14),
             # See #125. The tolerances are lower because `cosc` is hard.
-            (f=cosc, x=0, d=-(pi ^ 2) / 3, atol=5e-9, atol_central=5e-10)
+            (f=cosc, x=0, d=-(pi ^ 2) / 3, atol=5e-9,  atol_central=5e-10)
         ]
         @testset "f=$(f.f), method=$m" for f in fs, m in methods
             atol = m == central_fdm ? f.atol_central : f.atol
