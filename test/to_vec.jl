@@ -81,6 +81,14 @@ end
             test_to_vec(Op(randn(T, 4, 4)))
             test_to_vec(Op(randn(T, 6)))
             test_to_vec(Op(randn(T, 2, 5)))
+
+            # Ensure that if an `AbstractVector` is `Adjoint`ed, then the reconstructed
+            # version also contains an `AbstractVector`, rather than an `AbstractMatrix`
+            # whose 2nd dimension is of size 1.
+            @testset "Vector" begin
+                x_vec, back = to_vec(Op(randn(T, 5)))
+                @test parent(back(x_vec)) isa AbstractVector
+            end
         end
 
         @testset "PermutedDimsArray" begin

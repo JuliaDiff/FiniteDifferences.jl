@@ -93,11 +93,23 @@ function to_vec(X::Transpose)
     return x_vec, Transpose_from_vec
 end
 
+function to_vec(x::Transpose{<:Any, <:AbstractVector})
+    x_vec, back = to_vec(Matrix(x))
+    Transpose_from_vec(x_vec) = Transpose(vec(back(x_vec)))
+    return x_vec, Transpose_from_vec
+end
+
 function to_vec(X::Adjoint)
     x_vec, back = to_vec(Matrix(X))
     function Adjoint_from_vec(x_vec)
         return Adjoint(conj!(permutedims(back(x_vec))))
     end
+    return x_vec, Adjoint_from_vec
+end
+
+function to_vec(x::Adjoint{<:Any, <:AbstractVector})
+    x_vec, back = to_vec(Matrix(x))
+    Adjoint_from_vec(x_vec) = Adjoint(conj!(vec(back(x_vec))))
     return x_vec, Adjoint_from_vec
 end
 
