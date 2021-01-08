@@ -60,14 +60,14 @@ BenchmarkTools.Trial:
 Compute the second derivative of `sin` with a 5th order central method:
 
 ```julia
-julia> central_fdm(5, 2)(sin, 1) + sin(1)
+julia> central_fdm(5, 2)(sin, 1) - (-sin(1))
 -8.767431225464861e-11
 ```
 
 To obtain better accuracy, you can increase the order of the method:
 
 ```julia
-julia> central_fdm(12, 2)(sin, 1) + sin(1)
+julia> central_fdm(12, 2)(sin, 1) - (-sin(1))
 5.240252676230739e-14
 ```
 
