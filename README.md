@@ -149,8 +149,9 @@ julia> extrapolate_fdm(central_fdm(5, 4), sin, 1)[1] - sin(1)
 -1.626274487942503e-5
 ```
 
-In this case, the accuracy can be improved by lowering (making closer to `1`)
-the [contraction rate](https://github.com/JuliaMath/Richardson.jl#usage):
+In this case, the accuracy can be improved by making the
+[contraction rate](https://github.com/JuliaMath/Richardson.jl#usage) closer to
+`1`:
 
 ```julia
 julia> extrapolate_fdm(central_fdm(5, 4), sin, 1, contract=0.8)[1] - sin(1)
