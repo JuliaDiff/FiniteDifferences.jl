@@ -74,7 +74,7 @@
 
     @testset "Test allocations" begin
         m = central_fdm(5, 2, adapt=2)
-        @test @benchmark($m(sin, 1); samples=1, evals=1).allocs == 0
+        @test @ballocated($m(sin, 1)) == 0
     end
 
     # Integration test to ensure that Integer-output functions can be tested.
