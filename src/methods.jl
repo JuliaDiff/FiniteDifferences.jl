@@ -271,7 +271,7 @@ function _coefs(grid, p, q)
 end
 
 const _COEFFS_MULTS_CACHE = Dict{
-    Tuple{SVector,Integer},
+    Tuple{SVector,Integer},  #keys: (grid, q)
     Tuple{SVector,Tuple{Vararg{SVector}},Float64,Float64}
 }()
 
