@@ -172,7 +172,7 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 (0.001065235154086019, 1.9541865128909085e-13)
 ```
 """
-# We loop over all concrete subtypes of `FiniteDifferenceMethod` for 1.0 compatibility.
+# We loop over all concrete subtypes of `FiniteDifferenceMethod` for Julia v1.0 compatibility.
 for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
     @eval begin
         function (m::$T)(f::TF, x::Real) where TF<:Function
