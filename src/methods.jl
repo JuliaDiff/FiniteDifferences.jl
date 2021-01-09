@@ -224,8 +224,7 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
     @eval begin
         function (m::$T{P,Q})(f::TF, x::Real, step::Real) where {P,Q,TF<:Function}
-            # Assume that converting to float is desired.
-            x = float(x)
+            x = float(x)  # Assume that converting to float is desired, if not already
             fs = _eval_function(m, f, x, step)
             return _compute_estimate(m, fs, x, step, m.coefs)
         end
