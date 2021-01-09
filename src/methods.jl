@@ -176,7 +176,7 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
     @eval begin
         function (m::$T)(f::TF, x::Real) where TF<:Function
-            x = float(x)  # Assume that converting to float is desired, if not already
+            x = float(x)  # Assume that converting to float is desired, if it isn't already.
             step = first(estimate_step(m, f, x))
             return m(f, x, step)
         end
@@ -223,7 +223,7 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
     @eval begin
         function (m::$T{P,Q})(f::TF, x::Real, step::Real) where {P,Q,TF<:Function}
-            x = float(x)  # Assume that converting to float is desired, if not already
+            x = float(x)  # Assume that converting to float is desired, if it isn't already.
             fs = _eval_function(m, f, x, step)
             return _compute_estimate(m, fs, x, step, m.coefs)
         end
@@ -244,7 +244,8 @@ function _compute_estimate(
     coefs::SVector{P,Float64},
 ) where {P,Q,TF,T<:AbstractFloat}
     # If we substitute `T.(coefs)` in the expression below, then allocations occur. We
-    # therefore perform the broadcasting first.
+    # therefore perform the broadcasting first. See
+    # https://github.com/JuliaLang/julia/issues/39151.
     coefs = T.(coefs)
     return sum(fs .* coefs) ./ T(step)^Q
 end
