@@ -337,7 +337,8 @@ estimate of the derivative.
 
 # Returns
 - `Tuple{<:AbstractFloat, <:AbstractFloat}`: Estimated step size and an estimate of the
-    error of the finite difference estimate.
+    error of the finite difference estimate. The error will be `NaN` if the method failed
+    to estimate the error.
 """
 function estimate_step(
     m::UnadaptedFiniteDifferenceMethod, f::TF, x::T,
