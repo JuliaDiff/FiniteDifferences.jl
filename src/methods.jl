@@ -272,7 +272,8 @@ end
 
 const _COEFFS_MULTS_CACHE = Dict{
     Tuple{SVector,Integer},  #keys: (grid, q)
-    Tuple{SVector,Tuple{Vararg{SVector}},Float64,Float64}
+    # values: (coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult)
+    Tuple{SVector,Tuple{Vararg{SVector}},Float64,Float64}  
 }()
 
 # Compute coefficients for the method and cache the result.
