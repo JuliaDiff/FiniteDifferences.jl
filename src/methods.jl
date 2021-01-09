@@ -176,8 +176,7 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
     @eval begin
         function (m::$T)(f::TF, x::Real) where TF<:Function
-            # Assume that converting to float is desired.
-            x = float(x)
+            x = float(x)  # Assume that converting to float is desired, if not already
             step = first(estimate_step(m, f, x))
             return m(f, x, step)
         end
