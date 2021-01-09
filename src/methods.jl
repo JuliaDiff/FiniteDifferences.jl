@@ -259,8 +259,8 @@ function _compute_estimate(
     # If we substitute `T.(coefs)` in the expression below, then allocations occur. We
     # therefore perform the broadcasting first. See
     # https://github.com/JuliaLang/julia/issues/39151.
-    coefs = T.(coefs)
-    return sum(fs .* coefs) ./ T(step)^Q
+    _coefs = T.(coefs)
+    return sum(fs .* _coefs) ./ T(step)^Q
 end
 
 # Check the method and derivative orders for consistency.
