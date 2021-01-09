@@ -53,9 +53,7 @@ end
 
 """
     AdaptedFiniteDifferenceMethod{
-        P,
-        Q,
-        E<:FiniteDifferenceMethod
+        P, Q, E<:FiniteDifferenceMethod
     } <: FiniteDifferenceMethod{P,Q}
 
 A finite difference method that estimates a `Q`th order derivative from `P` function
