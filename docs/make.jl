@@ -5,7 +5,8 @@ repo_root = dirname(dirname(@__FILE__))
 cp(
     joinpath(repo_root, "README.md"),
     joinpath(repo_root, "docs", "src", "index.md");
-    # `index.md` will already exist, so we set `force=true` to overwrite it.
+    # `index.md` may already exist if `make.jl` was run previously, so we set `force=true`
+    # to overwrite it.
     force=true
 )
 
