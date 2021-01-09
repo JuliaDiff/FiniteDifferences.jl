@@ -59,7 +59,22 @@ end
     } <: FiniteDifferenceMethod{P,Q}
 
 A finite difference method that estimates a `Q`th order derivative from `P` function
-evaluations. This method does dynamically adapt its step size.
+evaluations.
+
+This method dynamically adapts its step size. The adaptation works by explicitly estimating
+the truncation error and round-off error, and choosing the step size to optimally balance
+those. The truncation error is given by the magnitude of the `P`th order derivative, which
+will be estimated with another finite difference method (`E`). This finite difference
+method, `bound_estimator`, will be tasked with estimating the `P`th order derivative in a
+_neighbourhood_, not just at some `x`. To do this, it will use a careful reweighting of the
+function evaluations to estimate the `P`th order derivative at, in the case of a central
+method, `x - h`, `x`, and `x + h`, where `h` is the step size. The coeffients for this
+estimate, the _neighbourhood estimate_, are given by the three sets of coeffients in
+`bound_estimator.coefs_neighbourhood`. The round-off error is estimated by the round-off
+error of the function evaluations performed by `bound_estimator`. The trunction error is
+amplified by `condition`, and the round-off error is amplified by `factor`. The quantities
+`∇f_magnitude_mult` and `f_error_mult` are precomputed quantities that facilitate the
+step size adaptation procedure.
 
 # Fields
 - `grid::SVector{P,Int}`: Multiples of the step size that the function will be evaluated at.
