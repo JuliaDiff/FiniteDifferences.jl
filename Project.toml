@@ -1,6 +1,6 @@
 name = "FiniteDifferences"
 uuid = "26cc04aa-876d-5657-8c51-4c34ba976000"
-version = "0.11.7"
+version = "0.12.0"
 
 [deps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
@@ -8,6 +8,7 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Richardson = "708f8203-808e-40c0-ba2d-98a6953ed40d"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 ChainRulesCore = "0.9"
@@ -15,9 +16,9 @@ Richardson = "1.2"
 julia = "1"
 
 [extras]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Random", "StaticArrays", "Test"]
+test = ["Random", "Test", "BenchmarkTools"]

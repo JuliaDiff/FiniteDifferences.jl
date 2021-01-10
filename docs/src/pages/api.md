@@ -2,14 +2,16 @@
 
 ```@docs
 FiniteDifferenceMethod
-FiniteDifferenceMethod(::AbstractVector, ::Int; ::Int)
 FiniteDifferences.estimate_step
-forward_fdm
 central_fdm
+forward_fdm
 backward_fdm
 extrapolate_fdm
 assert_approx_equal
+FiniteDifferences.UnadaptedFiniteDifferenceMethod
+FiniteDifferences.AdaptedFiniteDifferenceMethod
 FiniteDifferences.DEFAULT_CONDITION
+FiniteDifferences.DEFAULT_FACTOR
 ```
 
 ## Gradients
