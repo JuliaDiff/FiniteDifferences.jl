@@ -26,5 +26,7 @@ jobs:
           repository: JuliaDiff/ChainRules.jl
           path: "ChainRules.jl"
       - name: Run the tests
-        run: julia --project="ChainRules.jl" -e "using Pkg; Pkg.develop(PackageSpec(path=\"./\")); Pkg.update(); Pkg.test()"
+        run: |
+          julia -e "p = \"ChainRules.jl/Project.toml\"; toml = TOML.parsefile(p); delete!(toml[\"compat\"], \"FiniteDifferences\"); open(io -> TOML.print(io, toml), p, \"w\")"
+          julia --project="ChainRules.jl" -e "using Pkg; Pkg.develop(PackageSpec(path=\"./\")); Pkg.update(); Pkg.test()"
         shell: bash
