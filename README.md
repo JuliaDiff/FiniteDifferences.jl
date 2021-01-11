@@ -25,9 +25,16 @@ Right now here are the differences:
  - FiniteDiff.jl supports caching and in-place computation
  - FiniteDiff.jl supports coloring vectors for efficient calculation of sparse Jacobians
 
-
 #### FDM.jl
 This package was formerly called FDM.jl. We recommend users of FDM.jl [update to FiniteDifferences.jl](https://github.com/JuliaDiff/FiniteDifferences.jl/issues/37).
+
+#### Contents
+
+* [Scalar Derivatives](#scalar-derivatives)
+    - [Dealing with Singularities](#dealing-with-singularities)
+    - [Richardson Extrapolation](#richardson-extrapolation)
+    - [A Finite Difference Method on a Custom Grid](#a-finite-difference-method-on-a-custom-grid)
+* [Multivariate Derivatives](#multivariate-derivatives)
 
 ## Scalar Derivatives
 
