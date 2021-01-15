@@ -175,8 +175,8 @@ end
         @test_throws MethodError from_vec(randn(10))
     end
 
-    @testset "fallback" begin # TODO shouldn't the testset above fail?
-        nested = Nested(ThreeFields(1, [2, 2.0], "Three"), Singleton())
-        test_to_vec(nested; check_inferred=false) # TODO: change this
+    @testset "fallback" begin
+        nested = Nested(ThreeFields(1.0, 2.0, "Three"), Singleton())
+        test_to_vec(nested; check_inferred=false) # map
     end
 end

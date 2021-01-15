@@ -188,7 +188,6 @@ function FiniteDifferences.to_vec(x::Composite{P}) where{P}
     return x_vec, Composite_from_vec
 end
 
-
 function FiniteDifferences.to_vec(x::AbstractZero)
     function AbstractZero_from_vec(x_vec::Vector)
         return x
