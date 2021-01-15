@@ -25,6 +25,12 @@ struct ThreeFields
     c
 end
 
+# For testing nested fallback for structs
+struct Singleton end
+struct Nested
+    x::ThreeFields
+    y::Singleton
+end
 
 Base.size(x::FillVector) = (x.len,)
 Base.getindex(x::FillVector, n::Int) = x.x
@@ -167,5 +173,10 @@ end
         x = FillVector(5.0, 10)
         x_vec, from_vec = to_vec(x)
         @test_throws MethodError from_vec(randn(10))
+    end
+
+    @testset "fallback" begin # TODO shouldn't the testset above fail?
+        nested = Nested(ThreeFields(1, [2, 2.0], "Three"), Singleton())
+        test_to_vec(nested; check_inferred=false) # TODO: change this
     end
 end
