@@ -21,6 +21,25 @@ end
 # Base case -- if x is already a Vector{<:Real} there's no conversion necessary.
 to_vec(x::Vector{<:Real}) = (x, identity)
 
+# Fallback method for `to_vec`. Won't always do what you wanted, but should be fine a decent
+# chunk of the time.
+function to_vec(x::T) where {T}
+    Base.isstructtype(T) || throw(error("Expected a struct type"))
+    isempty(fieldnames(T)) && return (Bool[], _ -> x) # Singleton types
+
+    val_vecs_and_backs = map(name -> to_vec(getfield(x, name)), fieldnames(T))
+    vals = first.(val_vecs_and_backs)
+    backs = last.(val_vecs_and_backs)
+
+    v, vals_from_vec = to_vec(vals)
+    function structtype_from_vec(v::Vector{<:Real})
+        val_vecs = vals_from_vec(v)
+        vals = map((b, v) -> b(v), backs, val_vecs)
+        return T(vals...)
+    end
+    return v, structtype_from_vec
+end
+
 function to_vec(x::AbstractVector)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
@@ -168,7 +187,6 @@ function FiniteDifferences.to_vec(x::Composite{P}) where{P}
     end
     return x_vec, Composite_from_vec
 end
-
 
 function FiniteDifferences.to_vec(x::AbstractZero)
     function AbstractZero_from_vec(x_vec::Vector)
