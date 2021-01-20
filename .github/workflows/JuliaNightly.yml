@@ -16,15 +16,16 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - 'nightly'
+          - "nightly"
         os:
           - ubuntu-latest
           - macOS-latest
           - windows-latest
         arch:
           - x64
-        # 32-bit Julia binaries are not available on macOS
+          - x86
         exclude:
+          # 32-bit Julia binaries are not available on macOS
           - os: macOS-latest
             arch: x86
     steps:
@@ -32,16 +33,17 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
-      - uses: actions/cache@v1
+          arich: ${{ matrix.arch }}
+      - uses: actions/cache@v2
         env:
           cache-name: cache-artifacts
         with:
           path: ~/.julia/artifacts
-          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
+          key: ${{ runner.os }}-${{ matrix.arch }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
           restore-keys: |
-            ${{ runner.os }}-test-${{ env.cache-name }}-
-            ${{ runner.os }}-test-
+            ${{ runner.os }}-${{ matrix.arch }}-test-${{ env.cache-name }}-
+            ${{ runner.os }}-${{ matrix.arch }}-test-
+            ${{ runner.os }}-${{ matrix.arch }}-
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
