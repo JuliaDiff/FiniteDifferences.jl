@@ -5,7 +5,7 @@
 [![codecov.io](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl/coverage.svg?branch=master)](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl?branch=master)
 [![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/F/FiniteDifferences.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
 
-[![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliadiff.github.io/FiniteDifferences.jl/latest/)
+[![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliadiff.org/FiniteDifferences.jl/latest/)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 [![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
 
