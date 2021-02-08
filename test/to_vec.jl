@@ -18,6 +18,9 @@ struct FillVector <: AbstractVector{Float64}
     len::Int
 end
 
+Base.size(x::FillVector) = (x.len,)
+Base.getindex(x::FillVector, n::Int) = x.x
+
 # For testing Composite{ThreeFields}
 struct ThreeFields
     a
@@ -32,8 +35,14 @@ struct Nested
     y::Singleton
 end
 
-Base.size(x::FillVector) = (x.len,)
-Base.getindex(x::FillVector, n::Int) = x.x
+# for testing wrapped arrays
+struct WrappedArray{T, V<:AbstractMatrix{T}} <: AbstractMatrix{T}
+    a::V
+end
+
+Base.size(w::WrappedArray) = size(w.a)
+Base.getindex(w::WrappedArray, i, j) = getindex(w.a, i, j)
+Base.convert(::Type{WrappedArray{T, Array{T, N}}}, a::Array{T, N}) where {T, N} = WrappedArray(a)
 
 function test_to_vec(x::T; check_inferred = true) where {T}
     check_inferred && @inferred to_vec(x)
@@ -178,5 +187,10 @@ end
     @testset "fallback" begin
         nested = Nested(ThreeFields(1.0, 2.0, "Three"), Singleton())
         test_to_vec(nested; check_inferred=false) # map
+    end
+
+    @testset "WrappedArray" begin
+        wa = WrappedArray(rand(2, 3))
+        test_to_vec(wa)
     end
 end
