@@ -54,7 +54,7 @@ function to_vec(x::AbstractVector)
 end
 
 function to_vec(x::AbstractArray)
-    x_vec, from_vec = to_vec(vec(x))
+    x_vec, from_vec = to_vec(collect(vec(x)))
 
     function Array_from_vec(x_vec)
         return oftype(x, reshape(from_vec(x_vec), size(x)))
