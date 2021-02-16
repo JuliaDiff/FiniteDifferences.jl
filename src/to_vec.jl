@@ -97,7 +97,7 @@ function to_vec(x::T) where {T<:LinearAlgebra.HermOrSym}
 end
 
 function to_vec(X::Diagonal)
-    x_vec, back = to_vec(Matrix(X))
+    x_vec, back = to_vec(diag(X))
     function Diagonal_from_vec(x_vec)
         return Diagonal(back(x_vec))
     end
