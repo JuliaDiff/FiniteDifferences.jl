@@ -109,7 +109,7 @@ end
 
         @testset "Tuples" begin
             test_to_vec((5, 4))
-            test_to_vec((5, randn(T, 5)); check_inferred = VERSION ≥ v"1.2")
+            test_to_vec((5, randn(T, 5)); check_inferred = VERSION ≥ v"1.2" && VERSION < v"1.6") # remove 1.6 once https://github.com/JuliaLang/julia/issues/40277
             test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1); check_inferred = false)
             test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5); check_inferred = VERSION ≥ v"1.2")
             test_to_vec(((6, 5), 3, randn(T, 3, 2, 0, 1)); check_inferred = false)
