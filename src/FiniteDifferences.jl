@@ -7,7 +7,7 @@ using Random
 using Richardson
 using StaticArrays
 
-export to_vec, grad, jacobian, jvp, j′vp
+export to_vec, grad, jacobian, jvp, j′vp, rand_tangent
 
 include("rand_tangent.jl")
 include("difference.jl")
