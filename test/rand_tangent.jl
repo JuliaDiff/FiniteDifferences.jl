@@ -15,6 +15,7 @@ using FiniteDifferences: rand_tangent
         # Numbers.
         (5.0, Float64),
         (5.0 + 0.4im, Complex{Float64}),
+        (big(5.0), BigFloat),
 
         # StridedArrays.
         (randn(Float32, 3), Vector{Float32}),
