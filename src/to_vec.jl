@@ -40,7 +40,7 @@ function to_vec(x::T) where {T}
     return v, structtype_from_vec
 end
 
-function to_vec(x::StridedVector)
+function to_vec(x::Union{SubArray, Base.ReshapedArray, StridedVector})
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
     function Vector_from_vec(x_vec)
@@ -53,7 +53,7 @@ function to_vec(x::StridedVector)
     return x_vec, Vector_from_vec
 end
 
-function to_vec(x::Union{SubArray, StridedArray})
+function to_vec(x::Union{SubArray, Base.ReshapedArray, StridedArray})
     x_vec, from_vec = to_vec(vec(x))
 
     function Array_from_vec(x_vec)
