@@ -11,12 +11,14 @@ end
 Base.:(==)(x::DummyType, y::DummyType) = x.X == y.X
 Base.length(x::DummyType) = size(x.X, 1)
 
-# A dummy FillVector. This is a type for which the fallback implementation of
-# `to_vec` should fail loudly.
+# A dummy FillVector
 struct FillVector <: AbstractVector{Float64}
     x::Float64
     len::Int
 end
+
+Base.size(x::FillVector) = (x.len,)
+Base.getindex(x::FillVector, n::Int) = x.x
 
 # For testing Composite{ThreeFields}
 struct ThreeFields
@@ -31,9 +33,6 @@ struct Nested
     x::ThreeFields
     y::Singleton
 end
-
-Base.size(x::FillVector) = (x.len,)
-Base.getindex(x::FillVector, n::Int) = x.x
 
 function test_to_vec(x::T; check_inferred = true) where {T}
     check_inferred && @inferred to_vec(x)
@@ -173,9 +172,7 @@ end
     end
 
     @testset "FillVector" begin
-        x = FillVector(5.0, 10)
-        x_vec, from_vec = to_vec(x)
-        @test_throws MethodError from_vec(randn(10))
+        test_to_vec(FillVector(5.0, 10))
     end
 
     @testset "fallback" begin
