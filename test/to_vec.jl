@@ -66,8 +66,8 @@ end
         test_to_vec(UpperTriangular(randn(T, 13, 13)))
         test_to_vec(Diagonal(randn(T, 7)))
         test_to_vec(DummyType(randn(T, 2, 9)))
-        test_to_vec(SVector{2, T}(1.0, 2.0))
-        test_to_vec(SMatrix{2, 2, T}(1.0, 2.0, 3.0, 4.0))
+        test_to_vec(SVector{2, T}(1.0, 2.0); check_inferred = false)
+        test_to_vec(SMatrix{2, 2, T}(1.0, 2.0, 3.0, 4.0); check_inferred = false)
         test_to_vec(@view randn(T, 10)[1:4])  # SubArray -- Vector
         test_to_vec(@view randn(T, 10, 2)[1:4, :])  # SubArray -- Matrix
         test_to_vec(Base.ReshapedArray(rand(T, 3, 3), (9,), ()))
@@ -172,7 +172,7 @@ end
     end
 
     @testset "FillVector" begin
-        test_to_vec(FillVector(5.0, 10))
+        test_to_vec(FillVector(5.0, 10); check_inferred=false)
     end
 
     @testset "fallback" begin
