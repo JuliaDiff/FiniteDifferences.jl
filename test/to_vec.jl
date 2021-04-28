@@ -34,6 +34,16 @@ struct Nested
     y::Singleton
 end
 
+# For testing generic subtypes of AbstractArray
+struct WrapperArray{T, N, A<:AbstractArray{T, N}} <: AbstractArray{T, N}
+    data::A
+end
+function WrapperArray(a::AbstractArray{T, N}) where {T, N}
+    return WrapperArray{T, N, AbstractArray{T, N}}(a)
+end
+Base.size(a::WrapperArray) = size(a.data)
+Base.getindex(a::WrapperArray, inds...) = getindex(a.data, inds...)
+
 function test_to_vec(x::T; check_inferred=true) where {T}
     check_inferred && @inferred to_vec(x)
     x_vec, back = to_vec(x)
@@ -181,15 +191,6 @@ end
     end
 
     @testset "WrapperArray" begin
-        struct WrapperArray{T, N, A<:AbstractArray{T, N}} <: AbstractArray{T, N}
-            data::A
-        end
-        function WrapperArray(a::AbstractArray{T, N}) where {T, N}
-            return WrapperArray{T, N, AbstractArray{T, N}}(a)
-        end
-        Base.size(a::WrapperArray) = size(a.data)
-        Base.getindex(a::WrapperArray, inds...) = getindex(a.data, inds...)
-
         wa = WrapperArray(rand(4, 5))
         test_to_vec(wa; check_inferred=false)
     end
