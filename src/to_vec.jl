@@ -63,8 +63,9 @@ function to_vec(x::DenseArray)
     return x_vec, Array_from_vec
 end
 
-
 # Some specific subtypes of AbstractArray.
+to_vec(x::SubArray) = to_vec(copy(x))
+
 function to_vec(x::Base.ReshapedArray{<:Any, 1})
     x_vec, from_vec = to_vec(parent(x))
     function ReshapedArray_from_vec(x_vec)
@@ -73,12 +74,6 @@ function to_vec(x::Base.ReshapedArray{<:Any, 1})
     end
 
     return x_vec, ReshapedArray_from_vec
-end
-
-function to_vec(x::SubArray)
-    x_vec, from_vec = to_vec(x.parent)
-    SubArray_from_vec(x_vec) = view(from_vec(x_vec), x.indices...)
-    return x_vec, SubArray_from_vec
 end
 
 function to_vec(x::T) where {T<:LinearAlgebra.AbstractTriangular}
