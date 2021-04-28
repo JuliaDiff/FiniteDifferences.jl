@@ -34,13 +34,13 @@ function to_vec(x::T) where {T}
     v, vals_from_vec = to_vec(vals)
     function structtype_from_vec(v::Vector{<:Real})
         val_vecs = vals_from_vec(v)
-        vals = map((b, v) -> b(v), backs, val_vecs)
-        return T(vals...)
+        values = map((b, v) -> b(v), backs, val_vecs)
+        return T(values...)
     end
     return v, structtype_from_vec
 end
 
-function to_vec(x::AbstractVector)
+function to_vec(x::DenseVector)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
     function Vector_from_vec(x_vec)
@@ -53,7 +53,7 @@ function to_vec(x::AbstractVector)
     return x_vec, Vector_from_vec
 end
 
-function to_vec(x::AbstractArray)
+function to_vec(x::DenseArray)
     x_vec, from_vec = to_vec(vec(x))
 
     function Array_from_vec(x_vec)
@@ -62,7 +62,6 @@ function to_vec(x::AbstractArray)
 
     return x_vec, Array_from_vec
 end
-
 
 # Some specific subtypes of AbstractArray.
 function to_vec(x::Base.ReshapedArray{<:Any, 1})
