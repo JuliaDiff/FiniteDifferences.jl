@@ -40,7 +40,7 @@ function to_vec(x::T) where {T}
     return v, structtype_from_vec
 end
 
-function to_vec(x::Union{SubArray, Base.ReshapedArray, StridedVector})
+function to_vec(x::DenseVector)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
     function Vector_from_vec(x_vec)
@@ -53,7 +53,7 @@ function to_vec(x::Union{SubArray, Base.ReshapedArray, StridedVector})
     return x_vec, Vector_from_vec
 end
 
-function to_vec(x::Union{SubArray, Base.ReshapedArray, StridedArray})
+function to_vec(x::DenseArray)
     x_vec, from_vec = to_vec(vec(x))
 
     function Array_from_vec(x_vec)
@@ -75,10 +75,11 @@ function to_vec(x::Base.ReshapedArray{<:Any, 1})
     return x_vec, ReshapedArray_from_vec
 end
 
-# To return a SubArray we would endup needing to copy the `parent` of `x` in `from_vec`
-# which doesn't seem particularly useful. So we just convert the view into a copy.
-# we might be able to do something more performant but this seems good for now.
-to_vec(x::Base.SubArray) = to_vec(copy(x))
+function to_vec(x::SubArray)
+    x_vec, from_vec = to_vec(x.parent)
+    SubArray_from_vec(x_vec) = view(from_vec(x_vec), x.indices...)
+    return x_vec, SubArray_from_vec
+end
 
 function to_vec(x::T) where {T<:LinearAlgebra.AbstractTriangular}
     x_vec, back = to_vec(Matrix(x))
