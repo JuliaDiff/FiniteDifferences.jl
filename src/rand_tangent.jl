@@ -33,7 +33,12 @@ function rand_tangent(rng::AbstractRNG, x::T) where {T}
         tangents = map(field_names) do field_name
             rand_tangent(rng, getfield(x, field_name))
         end
-        return Composite{T}(; NamedTuple{field_names}(tangents)...)
+        if all(tangent isa DoesNotExist for tangent in tangents)
+            # if none of my fields can be perturbed then I can't be perturbed
+            return DoesNotExist()
+        else
+            Composite{T}(; NamedTuple{field_names}(tangents)...)
+        end
     else
         return NO_FIELDS
     end
