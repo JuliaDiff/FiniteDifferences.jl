@@ -118,9 +118,9 @@ end
 
         @testset "Tuples" begin
             test_to_vec((5, 4))
-            test_to_vec((5, randn(T, 5)); check_inferred = VERSION ≥ v"1.2")
+            test_to_vec((5, randn(T, 5)); check_inferred = VERSION ≥ v"1.2") # broken on Julia 1.6.0, fixed on 1.6.1 
             test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1); check_inferred=false)
-            test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5); check_inferred = VERSION ≥ v"1.2")
+            test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5); check_inferred = VERSION ≥ v"1.2") # broken on Julia 1.6.0, fixed on 1.6.1 
             test_to_vec(((6, 5), 3, randn(T, 3, 2, 0, 1)); check_inferred=false)
             test_to_vec((DummyType(randn(T, 2, 7)), DummyType(randn(T, 3, 9))))
             test_to_vec((DummyType(randn(T, 3, 2)), randn(T, 11, 8)))
@@ -166,7 +166,7 @@ end
 
             @testset "Struct" begin
                 test_to_vec(Composite{ThreeFields}(; a=10.0, b=20.0, c=30.0))
-                test_to_vec(Composite{ThreeFields}(; a=10.0, b=20.0,))
+                test_to_vec(Composite{ThreeFields}(; a=10.0, b=20.0,)) # broken on Julia 1.6.0, fixed on 1.6.1 
                 test_to_vec(Composite{ThreeFields}(; a=10.0, c=30.0))
                 test_to_vec(Composite{ThreeFields}(; c=30.0, a=10.0, b=20.0))
             end
