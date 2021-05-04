@@ -13,7 +13,8 @@ rand_tangent(rng::AbstractRNG, x::Integer) = DoesNotExist()
 
 rand_tangent(rng::AbstractRNG, x::T) where {T<:Number} = randn(rng, T)
 
-# ref: https://github.com/JuliaLang/julia/issues/17629
+# TODO: right now Julia don't allow `randn(rng, BigFloat)` 
+# see: https://github.com/JuliaLang/julia/issues/17629
 rand_tangent(rng::AbstractRNG, ::BigFloat) = big(randn(rng))
 
 rand_tangent(rng::AbstractRNG, x::StridedArray) = rand_tangent.(Ref(rng), x)
