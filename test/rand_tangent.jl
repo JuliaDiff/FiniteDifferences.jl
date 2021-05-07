@@ -33,9 +33,13 @@ using FiniteDifferences: rand_tangent
         ((a=5.0, b=1), Composite{NamedTuple{(:a, :b), Tuple{Float64, Int}}}),
 
         # structs.
-        (sin, typeof(NO_FIELDS)),
         (Foo(5.0, 4, rand(rng, 3)), Composite{Foo}),
         (Foo(4.0, 3, Foo(5.0, 2, 4)), Composite{Foo}),
+        (sin, typeof(NO_FIELDS)),
+        # all fields DoesNotExist implies DoesNotExist
+        (Pair(:a, "b"), DoesNotExist),
+        (1:10, DoesNotExist),
+        (1:2:10, DoesNotExist),
 
         # LinearAlgebra types (also just structs).
         (
