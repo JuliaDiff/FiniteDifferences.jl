@@ -173,7 +173,7 @@ end
         end
 
         @testset "AbstractZero" begin
-            test_to_vec(Zero())
+            test_to_vec(ZeroTangent())
             test_to_vec(NoTangent())
         end
     end
