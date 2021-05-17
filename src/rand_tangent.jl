@@ -20,11 +20,11 @@ rand_tangent(rng::AbstractRNG, ::BigFloat) = big(randn(rng))
 rand_tangent(rng::AbstractRNG, x::StridedArray) = rand_tangent.(Ref(rng), x)
 
 function rand_tangent(rng::AbstractRNG, x::T) where {T<:Tuple}
-    return Composite{T}(rand_tangent.(Ref(rng), x)...)
+    return Tangent{T}(rand_tangent.(Ref(rng), x)...)
 end
 
 function rand_tangent(rng::AbstractRNG, xs::T) where {T<:NamedTuple}
-    return Composite{T}(; map(x -> rand_tangent(rng, x), xs)...)
+    return Tangent{T}(; map(x -> rand_tangent(rng, x), xs)...)
 end
 
 function rand_tangent(rng::AbstractRNG, x::T) where {T}
@@ -41,7 +41,7 @@ function rand_tangent(rng::AbstractRNG, x::T) where {T}
             # if none of my fields can be perturbed then I can't be perturbed
             return NoTangent()
         else
-            Composite{T}(; NamedTuple{field_names}(tangents)...)
+            Tangent{T}(; NamedTuple{field_names}(tangents)...)
         end
     else
         return NO_FIELDS

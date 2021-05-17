@@ -21,11 +21,11 @@ difference(ε::Real, y::T, x::T) where {T<:Number} = (y - x) / ε
 difference(ε::Real, y::T, x::T) where {T<:StridedArray} = difference.(ε, y, x)
 
 function difference(ε::Real, y::T, x::T) where {T<:Tuple}
-    return Composite{T}(difference.(ε, y, x)...)
+    return Tangent{T}(difference.(ε, y, x)...)
 end
 
 function difference(ε::Real, ys::T, xs::T) where {T<:NamedTuple}
-    return Composite{T}(; map((y, x) -> difference(ε, y, x), ys, xs)...)
+    return Tangent{T}(; map((y, x) -> difference(ε, y, x), ys, xs)...)
 end
 
 function difference(ε::Real, y::T, x::T) where {T}
@@ -38,7 +38,7 @@ function difference(ε::Real, y::T, x::T) where {T}
         tangents = map(field_names) do field_name
             difference(ε, getfield(y, field_name), getfield(x, field_name))
         end
-        return Composite{T}(; NamedTuple{field_names}(tangents)...)
+        return Tangent{T}(; NamedTuple{field_names}(tangents)...)
     else
         return NO_FIELDS
     end

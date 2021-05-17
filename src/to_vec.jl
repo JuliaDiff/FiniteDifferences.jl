@@ -176,15 +176,15 @@ end
 
 
 # ChainRulesCore Differentials
-function FiniteDifferences.to_vec(x::Composite{P}) where{P}
+function FiniteDifferences.to_vec(x::Tangent{P}) where{P}
     x_canon = canonicalize(x)  # to be safe, fill in every field and put in primal order.
     x_inner = ChainRulesCore.backing(x_canon)
     x_vec, back_inner = FiniteDifferences.to_vec(x_inner)
-    function Composite_from_vec(y_vec)
+    function Tangent_from_vec(y_vec)
         y_back = back_inner(y_vec)
-        return Composite{P, typeof(y_back)}(y_back)
+        return Tangent{P, typeof(y_back)}(y_back)
     end
-    return x_vec, Composite_from_vec
+    return x_vec, Tangent_from_vec
 end
 
 function FiniteDifferences.to_vec(x::AbstractZero)
