@@ -11,10 +11,10 @@ If `(y - x) / ε` is defined, then this operation is equivalent to doing that. F
 where these operations aren't defined, `difference` can still be defined without commiting
 type piracy while `-` and `/` cannot.
 """
-difference(::Real, ::T, ::T) where {T<:Symbol} = DoesNotExist()
-difference(::Real, ::T, ::T) where {T<:AbstractChar} = DoesNotExist()
-difference(::Real, ::T, ::T) where {T<:AbstractString} = DoesNotExist()
-difference(::Real, ::T, ::T) where {T<:Integer} = DoesNotExist()
+difference(::Real, ::T, ::T) where {T<:Symbol} = NoTangent()
+difference(::Real, ::T, ::T) where {T<:AbstractChar} = NoTangent()
+difference(::Real, ::T, ::T) where {T<:AbstractString} = NoTangent()
+difference(::Real, ::T, ::T) where {T<:Integer} = NoTangent()
 
 difference(ε::Real, y::T, x::T) where {T<:Number} = (y - x) / ε
 

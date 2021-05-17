@@ -174,7 +174,7 @@ end
 
         @testset "AbstractZero" begin
             test_to_vec(Zero())
-            test_to_vec(DoesNotExist())
+            test_to_vec(NoTangent())
         end
     end
 

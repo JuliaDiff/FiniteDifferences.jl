@@ -5,11 +5,11 @@ Returns a randomly generated tangent vector appropriate for the primal value `x`
 """
 rand_tangent(x) = rand_tangent(Random.GLOBAL_RNG, x)
 
-rand_tangent(rng::AbstractRNG, x::Symbol) = DoesNotExist()
-rand_tangent(rng::AbstractRNG, x::AbstractChar) = DoesNotExist()
-rand_tangent(rng::AbstractRNG, x::AbstractString) = DoesNotExist()
+rand_tangent(rng::AbstractRNG, x::Symbol) = NoTangent()
+rand_tangent(rng::AbstractRNG, x::AbstractChar) = NoTangent()
+rand_tangent(rng::AbstractRNG, x::AbstractString) = NoTangent()
 
-rand_tangent(rng::AbstractRNG, x::Integer) = DoesNotExist()
+rand_tangent(rng::AbstractRNG, x::Integer) = NoTangent()
 
 rand_tangent(rng::AbstractRNG, x::T) where {T<:Number} = randn(rng, T)
 
@@ -37,9 +37,9 @@ function rand_tangent(rng::AbstractRNG, x::T) where {T}
         tangents = map(field_names) do field_name
             rand_tangent(rng, getfield(x, field_name))
         end
-        if all(tangent isa DoesNotExist for tangent in tangents)
+        if all(tangent isa NoTangent for tangent in tangents)
             # if none of my fields can be perturbed then I can't be perturbed
-            return DoesNotExist()
+            return NoTangent()
         else
             Composite{T}(; NamedTuple{field_names}(tangents)...)
         end
