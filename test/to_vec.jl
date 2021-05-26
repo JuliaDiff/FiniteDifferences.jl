@@ -20,7 +20,7 @@ end
 Base.size(x::FillVector) = (x.len,)
 Base.getindex(x::FillVector, n::Int) = x.x
 
-# For testing Composite{ThreeFields}
+# For testing Tangent{ThreeFields}
 struct ThreeFields
     a
     b
@@ -142,39 +142,39 @@ end
     end
 
     @testset "ChainRulesCore Differentials" begin
-        @testset "Composite{Tuple}" begin
+        @testset "Tangent{Tuple}" begin
             @testset "basic" begin
                 x_tup = (1.0, 2.0, 3.0)
-                x_comp = Composite{typeof(x_tup)}(x_tup...)
+                x_comp = Tangent{typeof(x_tup)}(x_tup...)
                 test_to_vec(x_comp)
             end
 
             @testset "nested" begin
                 x_inner = (2, 3)
                 x_outer = (1, x_inner)
-                x_comp = Composite{typeof(x_outer)}(1, Composite{typeof(x_inner)}(2, 3))
+                x_comp = Tangent{typeof(x_outer)}(1, Tangent{typeof(x_inner)}(2, 3))
                 test_to_vec(x_comp; check_inferred=false)
             end
         end
 
-        @testset "Composite Struct" begin
+        @testset "Tangent Struct" begin
             @testset "NamedTuple basic" begin
                 nt = (; a=1.0, b=20.0)
-                comp = Composite{typeof(nt)}(; nt...)
+                comp = Tangent{typeof(nt)}(; nt...)
                 test_to_vec(comp)
             end
 
             @testset "Struct" begin
-                test_to_vec(Composite{ThreeFields}(; a=10.0, b=20.0, c=30.0))
-                test_to_vec(Composite{ThreeFields}(; a=10.0, b=20.0,)) # broken on Julia 1.6.0, fixed on 1.6.1 
-                test_to_vec(Composite{ThreeFields}(; a=10.0, c=30.0))
-                test_to_vec(Composite{ThreeFields}(; c=30.0, a=10.0, b=20.0))
+                test_to_vec(Tangent{ThreeFields}(; a=10.0, b=20.0, c=30.0))
+                test_to_vec(Tangent{ThreeFields}(; a=10.0, b=20.0,)) # broken on Julia 1.6.0, fixed on 1.6.1 
+                test_to_vec(Tangent{ThreeFields}(; a=10.0, c=30.0))
+                test_to_vec(Tangent{ThreeFields}(; c=30.0, a=10.0, b=20.0))
             end
         end
 
         @testset "AbstractZero" begin
-            test_to_vec(Zero())
-            test_to_vec(DoesNotExist())
+            test_to_vec(ZeroTangent())
+            test_to_vec(NoTangent())
         end
     end
 

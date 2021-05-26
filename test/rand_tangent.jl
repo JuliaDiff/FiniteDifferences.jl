@@ -6,11 +6,11 @@ using FiniteDifferences: rand_tangent
     @testset "Primal: $(typeof(x)), Tangent: $T_tangent" for (x, T_tangent) in [
 
         # Things without sensible tangents.
-        ("hi", DoesNotExist),
-        ('a', DoesNotExist),
-        (:a, DoesNotExist),
-        (true, DoesNotExist),
-        (4, DoesNotExist),
+        ("hi", NoTangent),
+        ('a', NoTangent),
+        (:a, NoTangent),
+        (true, NoTangent),
+        (4, NoTangent),
 
         # Numbers.
         (5.0, Float64),
@@ -25,54 +25,54 @@ using FiniteDifferences: rand_tangent
         ([randn(5, 4), 4.0], Vector{Any}),
 
         # Tuples.
-        ((4.0, ), Composite{Tuple{Float64}}),
-        ((5.0, randn(3)), Composite{Tuple{Float64, Vector{Float64}}}),
+        ((4.0, ), Tangent{Tuple{Float64}}),
+        ((5.0, randn(3)), Tangent{Tuple{Float64, Vector{Float64}}}),
 
         # NamedTuples.
-        ((a=4.0, ), Composite{NamedTuple{(:a,), Tuple{Float64}}}),
-        ((a=5.0, b=1), Composite{NamedTuple{(:a, :b), Tuple{Float64, Int}}}),
+        ((a=4.0, ), Tangent{NamedTuple{(:a,), Tuple{Float64}}}),
+        ((a=5.0, b=1), Tangent{NamedTuple{(:a, :b), Tuple{Float64, Int}}}),
 
         # structs.
-        (Foo(5.0, 4, rand(rng, 3)), Composite{Foo}),
-        (Foo(4.0, 3, Foo(5.0, 2, 4)), Composite{Foo}),
+        (Foo(5.0, 4, rand(rng, 3)), Tangent{Foo}),
+        (Foo(4.0, 3, Foo(5.0, 2, 4)), Tangent{Foo}),
         (sin, typeof(NO_FIELDS)),
-        # all fields DoesNotExist implies DoesNotExist
-        (Pair(:a, "b"), DoesNotExist),
-        (1:10, DoesNotExist),
-        (1:2:10, DoesNotExist),
+        # all fields NoTangent implies NoTangent
+        (Pair(:a, "b"), NoTangent),
+        (1:10, NoTangent),
+        (1:2:10, NoTangent),
 
         # LinearAlgebra types (also just structs).
         (
             UpperTriangular(randn(3, 3)),
-            Composite{UpperTriangular{Float64, Matrix{Float64}}},
+            Tangent{UpperTriangular{Float64, Matrix{Float64}}},
         ),
         (
             Diagonal(randn(2)),
-            Composite{Diagonal{Float64, Vector{Float64}}},
+            Tangent{Diagonal{Float64, Vector{Float64}}},
         ),
         (
             SVector{2, Float64}(1.0, 2.0),
-            Composite{typeof(SVector{2, Float64}(1.0, 2.0))},
+            Tangent{typeof(SVector{2, Float64}(1.0, 2.0))},
         ),
         (
             SMatrix{2, 2, ComplexF64}(1.0, 2.0, 3.0, 4.0),
-            Composite{typeof(SMatrix{2, 2, ComplexF64}(1.0, 2.0, 3.0, 4.0))},
+            Tangent{typeof(SMatrix{2, 2, ComplexF64}(1.0, 2.0, 3.0, 4.0))},
         ),
         (
             Symmetric(randn(2, 2)),
-            Composite{Symmetric{Float64, Matrix{Float64}}},
+            Tangent{Symmetric{Float64, Matrix{Float64}}},
         ),
         (
             Hermitian(randn(ComplexF64, 1, 1)),
-            Composite{Hermitian{ComplexF64, Matrix{ComplexF64}}},
+            Tangent{Hermitian{ComplexF64, Matrix{ComplexF64}}},
         ),
         (
             Adjoint(randn(ComplexF64, 3, 3)),
-            Composite{Adjoint{ComplexF64, Matrix{ComplexF64}}},
+            Tangent{Adjoint{ComplexF64, Matrix{ComplexF64}}},
         ),
         (
             Transpose(randn(3)),
-            Composite{Transpose{Float64, Vector{Float64}}},
+            Tangent{Transpose{Float64, Vector{Float64}}},
         ),
     ]
         @test rand_tangent(rng, x) isa T_tangent

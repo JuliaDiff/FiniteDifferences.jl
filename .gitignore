@@ -2,6 +2,7 @@
 *.jl.*.cov
 *.jl.mem
 /Manifest.toml
+dev/
 
 # Docs:
 docs/build/
