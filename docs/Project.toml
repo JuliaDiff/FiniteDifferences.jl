@@ -4,4 +4,3 @@ FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
 
 [compat]
 Documenter = "0.25"
-FiniteDifferences = "0.12.7"
