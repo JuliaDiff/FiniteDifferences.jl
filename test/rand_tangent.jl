@@ -24,6 +24,11 @@ using FiniteDifferences: rand_tangent
         (randn(Complex{Float32}, 5, 4), Matrix{Complex{Float32}}),
         ([randn(5, 4), 4.0], Vector{Any}),
 
+        # Wrapper Arrays
+        (randn(5, 4)', Adjoint{Float64, Matrix{Float64}},
+        (transpose(randn(5, 4)), Transpose{Float64, Matrix{Float64}},
+
+
         # Tuples.
         ((4.0, ), Tangent{Tuple{Float64}}),
         ((5.0, randn(3)), Tangent{Tuple{Float64, Vector{Float64}}}),
