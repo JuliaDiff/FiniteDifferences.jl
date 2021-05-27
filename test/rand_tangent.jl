@@ -35,7 +35,7 @@ using FiniteDifferences: rand_tangent
         # structs.
         (Foo(5.0, 4, rand(rng, 3)), Tangent{Foo}),
         (Foo(4.0, 3, Foo(5.0, 2, 4)), Tangent{Foo}),
-        (sin, typeof(NO_FIELDS)),
+        (sin, NoTangent),
         # all fields NoTangent implies NoTangent
         (Pair(:a, "b"), NoTangent),
         (1:10, NoTangent),

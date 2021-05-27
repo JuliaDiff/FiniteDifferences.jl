@@ -40,6 +40,6 @@ function difference(ε::Real, y::T, x::T) where {T}
         end
         return Tangent{T}(; NamedTuple{field_names}(tangents)...)
     else
-        return NO_FIELDS
+        return NoTangent()
     end
 end

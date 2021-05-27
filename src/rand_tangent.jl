@@ -44,6 +44,6 @@ function rand_tangent(rng::AbstractRNG, x::T) where {T}
             Tangent{T}(; NamedTuple{field_names}(tangents)...)
         end
     else
-        return NO_FIELDS
+        return NoTangent()
     end
 end
