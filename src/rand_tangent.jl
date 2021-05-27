@@ -19,7 +19,7 @@ rand_tangent(rng::AbstractRNG, ::BigFloat) = big(randn(rng))
 
 rand_tangent(rng::AbstractRNG, x::StridedArray) = rand_tangent.(Ref(rng), x)
 rand_tangent(rng::AbstractRNG, x::Adjoint) = adjoint(rand_tangent(rng, parent(x)))
-rand_tangent(rng::AbstractRNG, x::Tangent) = tangent(rand_tangent(rng, parent(x)))
+rand_tangent(rng::AbstractRNG, x::Transpose) = transpose(rand_tangent(rng, parent(x)))
 
 function rand_tangent(rng::AbstractRNG, x::T) where {T<:Tuple}
     return Tangent{T}(rand_tangent.(Ref(rng), x)...)
