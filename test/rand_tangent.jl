@@ -71,20 +71,19 @@ using FiniteDifferences: rand_tangent
             Hermitian(randn(ComplexF64, 1, 1)),
             Tangent{Hermitian{ComplexF64, Matrix{ComplexF64}}},
         ),
-        (
-            Adjoint(randn(ComplexF64, 3, 3)),
-            Tangent{Adjoint{ComplexF64, Matrix{ComplexF64}}},
-        ),
-        (
-            Transpose(randn(3)),
-            Tangent{Transpose{Float64, Vector{Float64}}},
-        ),
     ]
         @test rand_tangent(rng, x) isa T_tangent
         @test rand_tangent(x) isa T_tangent
-        @test x + rand_tangent(rng, x) isa typeof(x)
     end
 
-    # Ensure struct fallback errors for non-struct types.
-    @test_throws ArgumentError invoke(rand_tangent, Tuple{AbstractRNG, Any}, rng, 5.0)
+    @testset "erroring cases" begin
+        # Ensure struct fallback errors for non-struct types.
+        @test_throws ArgumentError invoke(rand_tangent, Tuple{AbstractRNG, Any}, rng, 5.0)
+    end
+
+    @testset "compsition of addition" begin
+        x = Foo(1.5, 2, Foo(1.1, 3, [1.7, 1.4, 0.9]))
+        @test x + rand_tangent(x) isa typeof(x)
+        @test x + (rand_tangent(x) + rand_tangent(x)) isa typeof(x)
+    end
 end
