@@ -1,13 +1,5 @@
 using FiniteDifferences: rand_tangent, difference
 
-function test_difference(ε::Real, x, dx)
-    y = x + ε * dx
-    dx_diff = difference(ε, y, x)
-    # TODO: `@test isapprox(dx, dx_diff)` once `isapprox` is defined appropriately
-    # see https://github.com/JuliaDiff/ChainRulesCore.jl/issues/184
-    @test typeof(dx) == typeof(dx_diff)
-end
-
 @testset "difference" begin
 
     @testset "Primal: $(typeof(x))" for (ε, x) in [
@@ -56,7 +48,17 @@ end
         (randn(), Adjoint(randn(ComplexF64, 3, 3))),
         (randn(), Transpose(randn(3))),
     ]
-        test_difference(ε, x, rand_tangent(x))
+        # Construct a value that should be equal to the difference and check that it is
+        dx = rand_tangent(x)
+        y = x + ε * dx
+        dx_diff = difference(ε, y, x)
+
+        if x isa AbstractArray{<:Number} || x isa Number
+            @test x + dx ≈ x + dx_diff
+        else
+            #  hard to check value if don't overload `≈` so for now we  just check type
+            @test typeof(dx) == typeof(dx_diff)
+        end
     end
 
     # Ensure struct fallback errors for non-struct types.
