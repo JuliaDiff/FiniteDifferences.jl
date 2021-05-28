@@ -18,7 +18,10 @@ difference(::Real, ::T, ::T) where {T<:Integer} = NoTangent()
 
 difference(ε::Real, y::T, x::T) where {T<:Number} = (y - x) / ε
 
-difference(ε::Real, y::T, x::T) where {T<:StridedArray} = difference.(ε, y, x)
+# we are a bit more relaced for AbstractArrays as they naturally represent a vector space
+difference(ε::Real, y::AbstractArray, x) = difference.(ε, y, x)
+# resolve ambiguity
+difference(ε::Real, y::T, x::T) where {T<:AbstractArray} = difference.(ε, y, x)
 
 function difference(ε::Real, y::T, x::T) where {T<:Tuple}
     return Tangent{T}(difference.(ε, y, x)...)
