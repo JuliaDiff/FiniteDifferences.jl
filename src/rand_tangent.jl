@@ -16,17 +16,15 @@ rand_tangent(rng::AbstractRNG, x::Integer) = NoTangent()
 # Try and make nice numbers with short decimal representations for good error messages
 # while also not biasing the sample space too much
 function rand_tangent(rng::AbstractRNG, x::T) where {T<:Number}
-    return round(8randn(rng, T), sigdigits=6, base=2)
+    return round(8randn(rng, T), sigdigits=5, base=2)
 end
 rand_tangent(rng::AbstractRNG, x::Float64) = rand(rng, -9:0.01:9)
 function rand_tangent(rng::AbstractRNG, x::ComplexF64)
     return ComplexF64(rand(rng, -9:0.1:9), rand(rng, -9:0.1:9))
 end
 
-
-# TODO: right now Julia don't allow `randn(rng, BigFloat)`
-# see: https://github.com/JuliaLang/julia/issues/17629
-rand_tangent(rng::AbstractRNG, ::BigFloat) = big(rand_tangent(rng, Float64))
+#BigFloat/MPFR is finicky about short numbers, this doesn't always work as well as it should
+rand_tangent(rng::AbstractRNG, ::BigFloat) = round(big(8randn(rng)), sigdigits=5, base=2)
 
 rand_tangent(rng::AbstractRNG, x::StridedArray) = rand_tangent.(Ref(rng), x)
 rand_tangent(rng::AbstractRNG, x::Adjoint) = adjoint(rand_tangent(rng, parent(x)))
