@@ -16,7 +16,8 @@ rand_tangent(rng::AbstractRNG, x::Integer) = NoTangent()
 # Try and make nice numbers with short decimal representations for good error messages
 # while also not biasing the sample space too much
 function rand_tangent(rng::AbstractRNG, x::T) where {T<:Number}
-    return round(8randn(rng, T), sigdigits=5, base=2)
+    # multiply by 9 to give a bigger range of values tested: no so tightly clustered around 0.
+    return round(9 * randn(rng, T), sigdigits=5, base=2)
 end
 rand_tangent(rng::AbstractRNG, x::Float64) = rand(rng, -9:0.01:9)
 function rand_tangent(rng::AbstractRNG, x::ComplexF64)
@@ -24,7 +25,9 @@ function rand_tangent(rng::AbstractRNG, x::ComplexF64)
 end
 
 #BigFloat/MPFR is finicky about short numbers, this doesn't always work as well as it should
-rand_tangent(rng::AbstractRNG, ::BigFloat) = round(big(8randn(rng)), sigdigits=5, base=2)
+
+# multiply by 9 to give a bigger range of values tested: no so tightly clustered around 0.
+rand_tangent(rng::AbstractRNG, ::BigFloat) = round(big(9 * randn(rng)), sigdigits=5, base=2)
 
 rand_tangent(rng::AbstractRNG, x::StridedArray) = rand_tangent.(Ref(rng), x)
 rand_tangent(rng::AbstractRNG, x::Adjoint) = adjoint(rand_tangent(rng, parent(x)))
