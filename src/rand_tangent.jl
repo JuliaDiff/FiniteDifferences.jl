@@ -33,17 +33,13 @@ function rand_tangent(rng::AbstractRNG, x::T) where {T}
     end
 
     field_names = fieldnames(T)
-    if length(field_names) > 0
-        tangents = map(field_names) do field_name
-            rand_tangent(rng, getfield(x, field_name))
-        end
-        if all(tangent isa NoTangent for tangent in tangents)
-            # if none of my fields can be perturbed then I can't be perturbed
-            return NoTangent()
-        else
-            Tangent{T}(; NamedTuple{field_names}(tangents)...)
-        end
-    else
+    tangents = map(field_names) do field_name
+        rand_tangent(rng, getfield(x, field_name))
+    end
+    if all(tangent isa NoTangent for tangent in tangents)
+        # if none of my fields can be perturbed then I can't be perturbed
         return NoTangent()
+    else
+        Tangent{T}(; NamedTuple{field_names}(tangents)...)
     end
 end
