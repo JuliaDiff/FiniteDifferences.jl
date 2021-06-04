@@ -14,6 +14,8 @@ struct Foo
    c::Any
 end
 
+Random.seed!(1)
+
 @testset "FiniteDifferences" begin
     include("rand_tangent.jl")
     include("methods.jl")
