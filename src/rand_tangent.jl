@@ -59,3 +59,4 @@ function rand_tangent(rng::AbstractRNG, x::T) where {T}
 end
 
 rand_tangent(rng::AbstractRNG, ::Type) = NoTangent()
+rand_tangent(rng::AbstractRNG, ::Module) = NoTangent()
