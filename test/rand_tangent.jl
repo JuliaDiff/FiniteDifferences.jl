@@ -11,8 +11,15 @@ using FiniteDifferences: rand_tangent
         (:a, NoTangent),
         (true, NoTangent),
         (4, NoTangent),
-        (FiniteDifferences, NoTangent),
-        (Foo, NoTangent),
+        (FiniteDifferences, NoTangent),  # Module object
+        # Types (not instances of type)
+        (Foo, NoTangent),  
+        (Union{Int, Foo}, NoTangent),
+        (Union{Int, Foo}, NoTangent),
+        (Vector, NoTangent),
+        (Vector{Float64}, NoTangent),
+        (Integer, NoTangent),
+        (Type{<:Real}, NoTangent),
 
         # Numbers.
         (5.0, Float64),
