@@ -11,6 +11,8 @@ using FiniteDifferences: rand_tangent
         (:a, NoTangent),
         (true, NoTangent),
         (4, NoTangent),
+        (FiniteDifferences, NoTangent),
+        (Foo, NoTangent),
 
         # Numbers.
         (5.0, Float64),
