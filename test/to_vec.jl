@@ -176,6 +176,10 @@ end
             test_to_vec(ZeroTangent())
             test_to_vec(NoTangent())
         end
+
+        @testset "Thunks" begin
+            test_to_vec(@thunk(3.2+4.3))
+        end
     end
 
     @testset "FillVector" begin
