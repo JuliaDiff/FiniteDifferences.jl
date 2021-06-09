@@ -193,9 +193,3 @@ function FiniteDifferences.to_vec(x::AbstractZero)
     end
     return Bool[], AbstractZero_from_vec
 end
-
-function FiniteDifferences.to_vec(t::Thunk)
-    v, back = to_vec(unthunk(t))
-    Thunk_from_vec = v -> @thunk(back(v))
-    return v, Thunk_from_vec
-end
