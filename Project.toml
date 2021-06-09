@@ -1,6 +1,6 @@
 name = "FiniteDifferences"
 uuid = "26cc04aa-876d-5657-8c51-4c34ba976000"
-version = "0.12.12"
+version = "0.12.13"
 
 [deps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
@@ -11,7 +11,7 @@ Richardson = "708f8203-808e-40c0-ba2d-98a6953ed40d"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
-ChainRulesCore = "0.9.44, 0.10"
+ChainRulesCore = "0.10.3"
 Richardson = "1.2"
 StaticArrays = "0.12, 1.0"
 julia = "1"
