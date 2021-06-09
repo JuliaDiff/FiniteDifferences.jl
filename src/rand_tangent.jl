@@ -57,6 +57,3 @@ function rand_tangent(rng::AbstractRNG, x::T) where {T}
         Tangent{T}(; NamedTuple{field_names}(tangents)...)
     end
 end
-
-rand_tangent(rng::AbstractRNG, ::Type) = NoTangent()
-rand_tangent(rng::AbstractRNG, ::Module) = NoTangent()

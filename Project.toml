@@ -1,6 +1,6 @@
 name = "FiniteDifferences"
 uuid = "26cc04aa-876d-5657-8c51-4c34ba976000"
-version = "0.12.12"
+version = "0.12.11"
 
 [deps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
