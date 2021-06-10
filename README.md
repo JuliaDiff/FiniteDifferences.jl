@@ -33,6 +33,7 @@ This package was formerly called FDM.jl. We recommend users of FDM.jl [update to
 
 * [Scalar Derivatives](#scalar-derivatives)
     - [Dealing with Singularities](#dealing-with-singularities)
+    - [Dealing with Numerical Noise](#dealing-with-numerical-noise)
     - [Richardson Extrapolation](#richardson-extrapolation)
     - [A Finite Difference Method on a Custom Grid](#a-finite-difference-method-on-a-custom-grid)
 * [Multivariate Derivatives](#multivariate-derivatives)
@@ -135,6 +136,38 @@ A range-limited central method is also possible:
 julia> central_fdm(5, 1, max_range=9e-1)(ε -> logdet(x .+ ε .* v), 0) - sum(1 ./ diag(x))
 -1.283417816466681e-13
 ```
+
+### Dealing with Numerical Noise
+
+It could be the case that the function `f` you'd like compute the derivative of
+suffers from numerical noise.
+For example, `f(x)` could be computed through some iterative procedure with some
+error tolerance `ε`.
+In such cases, finite difference estimates can fail catastrophically.
+To illustrate this, consider `sin_noisy(x) = sin(x) * (1 + 1e-6 * randn())`.
+Then
+
+```julia
+julia> central_fdm(5, 1)(sin_noisy, 1) - cos(1)
+-0.027016678790599657
+```
+
+which is a terrible performance.
+To deal with this, you can set the keyword argument `factor`, which specifies
+the level of numerical noise on the function evaluations relative to the
+machine epsilon.
+In this example, the relative error on the function evaluations
+is `2e-6` (`1e-6 * randn()` roughly produces a number in `[-2e-6, 2e-6]`)
+and the machine epsilon is `eps(Float64) ≈ 2.22e-16`, so
+`factor = 2e-6 / 2e-16 = 1e10` should be appropriate:
+
+```julia
+julia> central_fdm(5, 1; factor=1e10)(sin_noisy, 1) - cos(1)
+-1.9243663490486895e-6
+```
+
+As a rule of thumb, if you're dealing with numerical noise and `Float64`s,
+`factor = 1e6` is not a bad first attempt.
 
 ### Richardson Extrapolation
 
