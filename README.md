@@ -155,9 +155,10 @@ julia> central_fdm(5, 1)(sin_noisy, 1) - cos(1)
 which is a terrible performance.
 To deal with this, you can set the keyword argument `factor`, which specifies
 numerical noise on the function evaluation relative to the machine epsilon.
-In this example, the noise lies in `[-2, 2]` (roughly) and the machine epsilon
-is `eps(Float64) ≈ 2.22e-16`, so `factor = 2e-6 / 2e-16 = 1e10` should be
-appropriate:
+In this example, the relative error on the function evaluation
+is `2e-6` (`1e-6 * randn()` roughly produces a number in `[-2e-6, 2e-6]`)
+and the machine epsilon is `eps(Float64) ≈ 2.22e-16`, so
+`factor = 2e-6 / 2e-16 = 1e10` should be appropriate:
 
 ```julia
 julia> central_fdm(5, 1; factor=1e10)(sin_noisy, 1) - cos(1)
