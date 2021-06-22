@@ -96,11 +96,10 @@ function to_vec(x::T) where {T<:LinearAlgebra.HermOrSym}
 end
 
 function to_vec(X::Diagonal)
-    x_vec, back = to_vec(Matrix(X))
     function Diagonal_from_vec(x_vec)
-        return Diagonal(back(x_vec))
+        return Diagonal(x_vec)
     end
-    return x_vec, Diagonal_from_vec
+    return diag(X), Diagonal_from_vec
 end
 
 function to_vec(X::Transpose)
