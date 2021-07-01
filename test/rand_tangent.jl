@@ -27,6 +27,8 @@ using FiniteDifferences: rand_tangent
         (big(5.0), BigFloat),
 
         # StridedArrays.
+        (fill(randn(Float32)), Array{Float32, 0}),
+        (fill(randn(Float64)), Array{Float64, 0}),
         (randn(Float32, 3), Vector{Float32}),
         (randn(Complex{Float64}, 2), Vector{Complex{Float64}}),
         (randn(5, 4), Matrix{Float64}),
