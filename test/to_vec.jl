@@ -44,6 +44,18 @@ end
 Base.size(a::WrapperArray) = size(a.data)
 Base.getindex(a::WrapperArray, inds...) = getindex(a.data, inds...)
 
+# can not construct it from: cca = CustomConstructorArray(rand(2, 2))
+# T = typeof(cca) # CustomConstructorArray{Float64, 2, Matrix{Float64}}
+# T(rand(2, 3)) # errors
+struct CustomConstructorArray{T, N, A<:AbstractArray{T, N}} <: AbstractArray{T, N}
+    data::A
+    function CustomConstructorArray(data::A) where {T, N, A<:AbstractArray{T, N}}
+        return new{T, N, A}(data)
+    end
+end
+Base.size(a::CustomConstructorArray) = size(a.data)
+Base.getindex(a::CustomConstructorArray, inds...) = getindex(a.data, inds...)
+
 function test_to_vec(x::T; check_inferred=true) where {T}
     check_inferred && @inferred to_vec(x)
     x_vec, back = to_vec(x)
@@ -194,5 +206,10 @@ end
     @testset "WrapperArray" begin
         wa = WrapperArray(rand(4, 5))
         test_to_vec(wa; check_inferred=false)
+    end
+
+    @testset "CustomConstructorArray" begin
+        cca = CustomConstructorArray(rand(2, 3))
+        test_to_vec(cca; check_inferred=false)
     end
 end
