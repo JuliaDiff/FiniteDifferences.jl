@@ -21,6 +21,13 @@ end
 # Base case -- if x is already a Vector{<:Real} there's no conversion necessary.
 to_vec(x::Vector{<:Real}) = (x, identity)
 
+# get around the outer constructors
+macro _force_construct(T, argsplat_ex)
+    @assert argsplat_ex.head == :(...)
+    args = first(argsplat_ex.args)
+    return esc(Expr(:splatnew, T, args))
+end
+
 # Fallback method for `to_vec`. Won't always do what you wanted, but should be fine a decent
 # chunk of the time.
 function to_vec(x::T) where {T}
@@ -36,9 +43,9 @@ function to_vec(x::T) where {T}
         val_vecs = vals_from_vec(v)
         values = map((b, v) -> b(v), backs, val_vecs)
         try
-            return T(values...)
+            T(values...)
         catch MethodError
-            return T.name.wrapper(values...)
+            return @_force_construct(T, values...)
         end
     end
     return v, structtype_from_vec
