@@ -35,7 +35,11 @@ function to_vec(x::T) where {T}
     function structtype_from_vec(v::Vector{<:Real})
         val_vecs = vals_from_vec(v)
         values = map((b, v) -> b(v), backs, val_vecs)
-        return T(values...)
+        try
+            return T(values...)
+        catch MethodError
+            return T.name.wrapper(values...)
+        end
     end
     return v, structtype_from_vec
 end
