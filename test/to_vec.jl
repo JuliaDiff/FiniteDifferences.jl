@@ -120,7 +120,7 @@ end
             for dims in [(5, 5), (4, 6), (7, 3)]
                 M = randn(T, dims...)
                 P = M * M' + I  # Positive definite matrix
-                test_to_vec(svd(M); check_inferred = false)
+                test_to_vec(svd(M); check_inferred = true)
                 test_to_vec(qr(M))
                 test_to_vec(cholesky(P))
             end

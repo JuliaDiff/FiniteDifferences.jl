@@ -142,11 +142,14 @@ end
 
 # Factorizations
 
-function to_vec(x::SVD)
-    x_vec, back = to_vec([x.U, x.S, x.Vt])
+function to_vec(x::F) where {F <: SVD}
+    # Convert the vector S to a matrix so we can work with a vector of matrices
+    # only and inferrence work
+    v = [x.U, reshape(x.S, length(x.S), 1), x.Vt]
+    x_vec, back = to_vec(v)
     function SVD_from_vec(v)
-        U, S, Vt = back(v)
-        return SVD(U, S, Vt)
+        U, Smat, Vt = back(v)
+        return F(U, vec(Smat), Vt)
     end
     return x_vec, SVD_from_vec
 end
