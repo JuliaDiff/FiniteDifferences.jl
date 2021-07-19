@@ -22,11 +22,14 @@ end
 to_vec(x::Vector{<:Real}) = (x, identity)
 
 # get around the constructors and make the type directly
-@generated function _force_construct(T, args...)
-    return if VERSION >= v"1.3"
-        Expr(:splatnew, :T, :args)
-    else
-        Expr(:new, :T, Any[:(args[$i]) for i in 1:length(args)]...)
+# Note this is moderately evil accessing julia's internals
+if VERSION >= v"1.3"
+    @generated function _force_construct(T, args...)
+        return Expr(:splatnew, :T, :args)
+    end
+else
+    @generated function _force_construct(T, args...)
+        return Expr(:new, :T, Any[:(args[$i]) for i in 1:length(args)]...)
     end
 end
 
