@@ -21,12 +21,8 @@ end
 # Base case -- if x is already a Vector{<:Real} there's no conversion necessary.
 to_vec(x::Vector{<:Real}) = (x, identity)
 
-# get around the outer constructors
-macro _force_construct(T, argsplat_ex)
-    @assert argsplat_ex.head == :(...)
-    args = first(argsplat_ex.args)
-    return esc(Expr(:splatnew, T, args))
-end
+# get around the constructors and make the type directly
+@generated _force_construct(T, args...) = Expr(:new, :T, Any[:(args[$i]) for i in 1:length(args)]...)
 
 # Fallback method for `to_vec`. Won't always do what you wanted, but should be fine a decent
 # chunk of the time.
@@ -45,7 +41,7 @@ function to_vec(x::T) where {T}
         try
             T(values...)
         catch MethodError
-            return @_force_construct(T, values...)
+            return _force_construct(T, values...)
         end
     end
     return v, structtype_from_vec
