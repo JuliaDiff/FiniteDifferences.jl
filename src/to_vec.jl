@@ -22,7 +22,13 @@ end
 to_vec(x::Vector{<:Real}) = (x, identity)
 
 # get around the constructors and make the type directly
-@generated _force_construct(T, args...) = Expr(:new, :T, Any[:(args[$i]) for i in 1:length(args)]...)
+@generated function _force_construct(T, args...)
+    return if VERSION >= 1.3
+        Expr(:splatnew, :T, :args)
+    else
+        Expr(:new, :T, Any[:(args[$i]) for i in 1:length(args)]...)
+    end
+end
 
 # Fallback method for `to_vec`. Won't always do what you wanted, but should be fine a decent
 # chunk of the time.
