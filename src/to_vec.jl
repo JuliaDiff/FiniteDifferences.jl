@@ -140,6 +140,34 @@ function to_vec(X::T) where {T<:PermutedDimsArray}
     return x_vec, PermutedDimsArray_from_vec
 end
 
+# Factorizations
+
+function to_vec(x::SVD)
+    x_vec, back = to_vec([x.U, x.S, x.Vt])
+    function SVD_from_vec(v)
+        U, S, Vt = back(v)
+        return SVD(U, S, Vt)
+    end
+    return x_vec, SVD_from_vec
+end
+
+function to_vec(x::Cholesky)
+    x_vec, back = to_vec(x.factors)
+    function Cholesky_from_vec(v)
+        return Cholesky(back(v), x.uplo, x.info)
+    end
+    return x_vec, Cholesky_from_vec
+end
+
+function to_vec(x::S) where {S <: Union{LinearAlgebra.QRCompactWYQ, LinearAlgebra.QRCompactWY}}
+    x_vec, back = to_vec([x.factors, x.T])
+    function QRCompact_from_vec(v)
+        factors, T = back(v)
+        return S(factors, T)
+    end
+    return x_vec, QRCompact_from_vec
+end
+
 # Non-array data structures
 
 function to_vec(x::Tuple)

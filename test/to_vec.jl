@@ -116,6 +116,16 @@ end
             )
         end
 
+        @testset "Factorizations" begin
+            for dims in [(5, 5), (4, 6), (7, 3)]
+                M = randn(T, dims...)
+                P = M * M' + I  # Positive definite matrix
+                test_to_vec(svd(M); check_inferred = false)
+                test_to_vec(qr(M))
+                test_to_vec(cholesky(P))
+            end
+        end
+
         @testset "Tuples" begin
             test_to_vec((5, 4))
             test_to_vec((5, randn(T, 5)); check_inferred = VERSION ≥ v"1.2") # broken on Julia 1.6.0, fixed on 1.6.1 
