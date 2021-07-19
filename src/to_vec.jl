@@ -23,7 +23,7 @@ to_vec(x::Vector{<:Real}) = (x, identity)
 
 # get around the constructors and make the type directly
 @generated function _force_construct(T, args...)
-    return if VERSION >= 1.3
+    return if VERSION >= v"1.3"
         Expr(:splatnew, :T, :args)
     else
         Expr(:new, :T, Any[:(args[$i]) for i in 1:length(args)]...)
