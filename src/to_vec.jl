@@ -162,11 +162,24 @@ function to_vec(x::Cholesky)
     return x_vec, Cholesky_from_vec
 end
 
-function to_vec(x::S) where {S <: Union{LinearAlgebra.QRCompactWYQ, LinearAlgebra.QRCompactWY}}
-    x_vec, back = to_vec([x.factors, x.T])
+function to_vec(x::S) where {U, S <: Union{LinearAlgebra.QRCompactWYQ{U}, LinearAlgebra.QRCompactWY{U}}}
+    # x.T is composed of upper triangular blocks. The subdiagonals elements
+    # of the blocks are abitrary. We make sure to set all of them to zero
+    # to avoid NaN.
+    blocksize, cols = size(x.T)
+    T = zeros(U, blocksize, cols)
+
+    for i in 0:div(cols - 1, blocksize)
+        used_cols = i * blocksize
+        n = min(blocksize, cols - used_cols)
+        T[1:n, (1:n) .+ used_cols] = UpperTriangular(view(x.T, 1:n, (1:n) .+ used_cols))
+    end
+
+    x_vec, back = to_vec([x.factors, T])
+
     function QRCompact_from_vec(v)
-        factors, T = back(v)
-        return S(factors, T)
+        factors, Tback = back(v)
+        return S(factors, Tback)
     end
     return x_vec, QRCompact_from_vec
 end

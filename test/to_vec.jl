@@ -49,6 +49,7 @@ function test_to_vec(x::T; check_inferred=true) where {T}
     x_vec, back = to_vec(x)
     @test x_vec isa Vector
     @test all(s -> s isa Real, x_vec)
+    @test all(!isnan, x_vec)
     check_inferred && @inferred back(x_vec)
     @test x == back(x_vec)
     return nothing
@@ -117,12 +118,27 @@ end
         end
 
         @testset "Factorizations" begin
-            for dims in [(5, 5), (4, 6), (7, 3)]
+            # (100, 100) is needed to test for the NaNs that can appear in the
+            # qr(M).T matrix
+            for dims in [(5, 5), (4, 6), (7, 3), (100, 100)]
                 M = randn(T, dims...)
                 P = M * M' + I  # Positive definite matrix
-                test_to_vec(svd(M); check_inferred = true)
-                test_to_vec(qr(M))
+                test_to_vec(svd(M))
                 test_to_vec(cholesky(P))
+
+                # Special treatment for QR since it is represented by a matrix
+                # with some arbirtrary values.
+                F = qr(M)
+                @inferred to_vec(F)
+                F_vec, back = to_vec(F)
+                @test F_vec isa Vector
+                @test all(s -> s isa Real, F_vec)
+                @test all(!isnan, F_vec)
+                @inferred back(F_vec)
+                F_back = back(F_vec)
+                @test F.Q == F.Q
+                @test F.R == F.R
+                @test F_vec == first(to_vec(F))
             end
         end
 
