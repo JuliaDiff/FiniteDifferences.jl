@@ -17,7 +17,7 @@ end
 Random.seed!(1)
 
 @testset "FiniteDifferences" begin
-    include("rand_tangent.jl")
+    include("deprecated.jl")
     include("methods.jl")
     include("numerics.jl")
     include("to_vec.jl")
