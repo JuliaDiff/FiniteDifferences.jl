@@ -1,4 +1,9 @@
-
+# Test struct for `rand_tangent` and `difference`.
+struct Foo
+    a::Float64
+    b::Int
+    c::Any
+ end
 rand_tangent(args...) = @test_deprecated FiniteDifferences.rand_tangent(args...)
 
 @testset "rand_tangent" begin
