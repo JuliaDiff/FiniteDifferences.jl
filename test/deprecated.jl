@@ -1,6 +1,14 @@
-using FiniteDifferences: rand_tangent
+# Test struct for `rand_tangent` and `difference`.
+struct Foo
+    a::Float64
+    b::Int
+    c::Any
+ end
 
-@testset "generate_tangent" begin
+# to avoid deprecation spam (and actually test deprecations) we will define a wrapper `rand_tangent` function for testing
+rand_tangent(args...) = @test_deprecated FiniteDifferences.rand_tangent(args...)
+
+@testset "rand_tangent" begin
     rng = MersenneTwister(123456)
 
     @testset "Primal: $(typeof(x)), Tangent: $T_tangent" for (x, T_tangent) in [
@@ -89,7 +97,9 @@ using FiniteDifferences: rand_tangent
 
     @testset "erroring cases" begin
         # Ensure struct fallback errors for non-struct types.
-        @test_throws ArgumentError invoke(rand_tangent, Tuple{AbstractRNG, Any}, rng, 5.0)
+        @test_throws ArgumentError invoke(
+            FiniteDifferences.rand_tangent, Tuple{AbstractRNG, Any}, rng, 5.0
+        )
     end
 
     @testset "compsition of addition" begin
