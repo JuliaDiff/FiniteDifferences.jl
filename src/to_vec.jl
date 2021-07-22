@@ -181,6 +181,7 @@ function to_vec(x::S) where {U, S <: Union{LinearAlgebra.QRCompactWYQ{U}, Linear
         factors, Tback = back(v)
         return S(factors, Tback)
     end
+
     return x_vec, QRCompact_from_vec
 end
 

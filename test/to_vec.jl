@@ -136,9 +136,25 @@ end
                 @test all(!isnan, F_vec)
                 @inferred back(F_vec)
                 F_back = back(F_vec)
-                @test F.Q == F.Q
-                @test F.R == F.R
-                @test F_vec == first(to_vec(F))
+                @test F_back.Q == F.Q
+                @test F_back.R == F.R
+
+                # Make sure the result is consistent despite the arbitrary
+                # values in F.T.
+                @test first(to_vec(F)) == first(to_vec(F))
+
+                # Test F.Q as well since it has a special type. Since it is
+                # represented by the same T and factors matrices than F
+                # it needs the same special treatment.
+                Q = F.Q
+                @inferred to_vec(Q)
+                Q_vec, back = to_vec(Q)
+                @test Q_vec isa Vector
+                @test all(s -> s isa Real, Q_vec)
+                @test all(!isnan, Q_vec)
+                @inferred back(Q_vec)
+                Q_back = back(Q_vec)
+                @test Q_back == Q
             end
         end
 
