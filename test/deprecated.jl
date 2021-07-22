@@ -4,6 +4,8 @@ struct Foo
     b::Int
     c::Any
  end
+
+# to avoid deprecation spam (and actually test deprecations) we will define a wrapper `rand_tangent` function for testing
 rand_tangent(args...) = @test_deprecated FiniteDifferences.rand_tangent(args...)
 
 @testset "rand_tangent" begin
