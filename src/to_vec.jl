@@ -156,6 +156,51 @@ function to_vec(X::T) where {T<:PermutedDimsArray}
     return x_vec, PermutedDimsArray_from_vec
 end
 
+# Factorizations
+
+function to_vec(x::F) where {F <: SVD}
+    # Convert the vector S to a matrix so we can work with a vector of matrices
+    # only and inferrence work
+    v = [x.U, reshape(x.S, length(x.S), 1), x.Vt]
+    x_vec, back = to_vec(v)
+    function SVD_from_vec(v)
+        U, Smat, Vt = back(v)
+        return F(U, vec(Smat), Vt)
+    end
+    return x_vec, SVD_from_vec
+end
+
+function to_vec(x::Cholesky)
+    x_vec, back = to_vec(x.factors)
+    function Cholesky_from_vec(v)
+        return Cholesky(back(v), x.uplo, x.info)
+    end
+    return x_vec, Cholesky_from_vec
+end
+
+function to_vec(x::S) where {U, S <: Union{LinearAlgebra.QRCompactWYQ{U}, LinearAlgebra.QRCompactWY{U}}}
+    # x.T is composed of upper triangular blocks. The subdiagonals elements
+    # of the blocks are abitrary. We make sure to set all of them to zero
+    # to avoid NaN.
+    blocksize, cols = size(x.T)
+    T = zeros(U, blocksize, cols)
+
+    for i in 0:div(cols - 1, blocksize)
+        used_cols = i * blocksize
+        n = min(blocksize, cols - used_cols)
+        T[1:n, (1:n) .+ used_cols] = UpperTriangular(view(x.T, 1:n, (1:n) .+ used_cols))
+    end
+
+    x_vec, back = to_vec([x.factors, T])
+
+    function QRCompact_from_vec(v)
+        factors, Tback = back(v)
+        return S(factors, Tback)
+    end
+
+    return x_vec, QRCompact_from_vec
+end
+
 # Non-array data structures
 
 function to_vec(x::Tuple)
