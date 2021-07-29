@@ -120,7 +120,7 @@ end
         @testset "Factorizations" begin
             # (100, 100) is needed to test for the NaNs that can appear in the
             # qr(M).T matrix
-            for dims in [(5, 5), (4, 6), (7, 3), (100, 100)]
+            for dims in [(7, 3), (100, 100)]
                 M = randn(T, dims...)
                 P = M * M' + I  # Positive definite matrix
                 test_to_vec(svd(M))
