@@ -68,6 +68,14 @@ function test_to_vec(x::T; check_inferred=true) where {T}
 end
 
 @testset "to_vec" begin
+
+    @testset "Integer" begin
+        # Under ChainRules semantics, Integers cannot be perturbed. `to_vec` is primarily a
+        # tool designed to work with ChainRules, so we employ the same semantics here.
+        test_to_vec(5)
+        @test length(to_vec(5)[1]) == 0
+    end
+
     @testset "$T" for T in (Float32, ComplexF32, Float64, ComplexF64)
         if T == Float64
             test_to_vec(1.0)
@@ -171,6 +179,7 @@ end
         end
 
         @testset "Tuples" begin
+            test_to_vec(())
             test_to_vec((5, 4))
             test_to_vec((5, randn(T, 5)); check_inferred = VERSION ≥ v"1.2") # broken on Julia 1.6.0, fixed on 1.6.1 
             test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1); check_inferred=false)
