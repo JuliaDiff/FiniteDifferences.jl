@@ -54,7 +54,7 @@ is defined. Each 2-`Tuple` in `xẋs` contains the value `x` and its tangent `x�
 """
 function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
     x_vec, vec_to_x = to_vec(x)
-    y, vec_to_y = to_vec(f(x))
+    _, vec_to_y = to_vec(f(x))
     return _int2zero(vec_to_y(_jvp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1])))
 end
 function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
