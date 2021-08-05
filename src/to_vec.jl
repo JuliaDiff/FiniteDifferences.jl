@@ -19,8 +19,8 @@ function to_vec(z::Complex)
 end
 
 function to_vec(x::Integer)
-     Integer_from_vec(v) = x
-     return Bool[], Integer_from_vec
+    Integer_from_vec(v) = x
+    return Bool[], Integer_from_vec
 end
 
 # Base case -- if x is already a Vector{<:Real} there's no conversion necessary.
