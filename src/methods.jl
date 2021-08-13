@@ -149,7 +149,8 @@ function FiniteDifferenceMethod(
     )
 end
 function FiniteDifferenceMethod(grid::AbstractVector{Int}, q::Int; kw_args...)
-    return FiniteDifferenceMethod(SVector{length(grid)}(grid), q; kw_args...)
+    len = Int(length(grid))::Int
+    return FiniteDifferenceMethod(SVector{len, Int}(grid), q; kw_args...)
 end
 
 """
@@ -246,7 +247,8 @@ end
 function _eval_function(
     m::FiniteDifferenceMethod, f::TF, x::T, step::Real,
 ) where {TF<:Function,T<:AbstractFloat}
-    return f.(x .+ T(step) .* m.grid)
+    _step = T(step)
+    return map((x, grid) -> f(muladd(_step, grid, x)), x, m.grid)
 end
 
 function _compute_estimate(
@@ -259,8 +261,8 @@ function _compute_estimate(
     # If we substitute `T.(coefs)` in the expression below, then allocations occur. We
     # therefore perform the broadcasting first. See
     # https://github.com/JuliaLang/julia/issues/39151.
-    _coefs = T.(coefs)
-    return sum(fs .* _coefs) ./ T(step)^Q
+    _coefs = map(T, coefs)
+    return map(/, sum(map(*, fs, _coefs)), T(step)^Q)
 end
 
 # Check the method and derivative orders for consistency.
@@ -277,16 +279,15 @@ function _coefs(grid, p, q)
     # For high precision on the `\`, we use `Rational`, and to prevent overflows we use
     # `BigInt`. At the end we go to `Float64` for fast floating point math, rather than
     # rational math.
-    C = [Rational{BigInt}(g^i) for i in 0:(p - 1), g in grid]
+    C = Rational{BigInt}[g^i for i in 0:(p - 1), g in grid]
     x = zeros(Rational{BigInt}, p)
     x[q + 1] = factorial(big(q))
-    return SVector{p}(Float64.(C \ x))
+    return SVector{p}(map(Float64, C \ x))
 end
 
 const _COEFFS_MULTS_CACHE = Dict{
-    Tuple{SVector,Integer},  # Keys: (grid, q)
-    # Values: (coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult)
-    Tuple{SVector,Tuple{Vararg{SVector}},Float64,Float64}
+    Any,  # Keys: (grid, q)
+    Any,  # Values: (coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult)
 }()
 
 # Compute coefficients for the method and cache the result.
@@ -295,13 +296,13 @@ function _coefs_mults(grid::SVector{P, Int}, q::Integer) where P
         # Compute coefficients for derivative estimate.
         coefs = _coefs(grid, P, q)
         # Compute coefficients for a neighbourhood estimate.
-        if all(grid .>= 0)
+        if all(>=(0), grid)
             coefs_neighbourhood = (
                 _coefs(grid .- 2, P, q),
                 _coefs(grid .- 1, P, q),
                 _coefs(grid, P, q)
             )
-        elseif all(grid .<= 0)
+        elseif all(<=(0), grid)
             coefs_neighbourhood = (
                 _coefs(grid, P, q),
                 _coefs(grid .+ 1, P, q),
@@ -315,10 +316,10 @@ function _coefs_mults(grid::SVector{P, Int}, q::Integer) where P
             )
         end
         # Compute multipliers.
-        ∇f_magnitude_mult = sum(abs.(coefs .* grid .^ P)) / factorial(big(P))
-        f_error_mult = sum(abs.(coefs))
+        ∇f_magnitude_mult = sum(abs.(coefs .* grid .^ P)) / Float64(factorial(big(P)))
+        f_error_mult = sum(abs, coefs)
         return coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult
-    end
+    end::Tuple{SVector{P, Float64}, NTuple{3, SVector{P, Float64}}, Float64, Float64}
 end
 
 function Base.show(

@@ -1,3 +1,5 @@
+@nospecialize
+
 """
     jacobian(fdm, f, x...)
 
@@ -13,7 +15,7 @@ function jacobian(fdm, f, x::Vector{<:Real}; len=nothing)
          :jacobian
     )
     ẏs = map(eachindex(x)) do n
-        return fdm(zero(eltype(x))) do ε
+        return fdm(zero(eltype(x))) do @specialize(ε)
             xn = x[n]
             x[n] = xn + ε
             ret = copy(first(to_vec(f(x))))  # copy required incase `f(x)` returns something that aliases `x`
@@ -21,7 +23,7 @@ function jacobian(fdm, f, x::Vector{<:Real}; len=nothing)
             return ret
         end
     end
-    return (hcat(ẏs...), )
+    return (reduce(hcat, ẏs), )
 end
 
 function jacobian(fdm, f, x; len=nothing)
@@ -31,7 +33,7 @@ end
 
 function jacobian(fdm, f, xs...; len=nothing)
     return ntuple(length(xs)) do k
-        jacobian(fdm, x->f(replace_arg(x, xs, k)...), xs[k]; len=len)[1]
+        jacobian(fdm, @nospecialize(x)->f(replace_arg(x, xs, k)...), xs[k]; len=len)[1]
     end
 end
 
@@ -43,7 +45,7 @@ replace_arg(x, xs::Tuple, k::Int) = ntuple(p -> p == k ? x : xs[p], length(xs))
 Convenience function to compute `jacobian(f, x) * ẋ`.
 """
 function _jvp(fdm, f, x::Vector{<:Real}, ẋ::Vector{<:Real})
-    return fdm(ε -> f(x .+ ε .* ẋ), zero(eltype(x)))
+    return fdm(@nospecialize(ε) -> f(map(muladd, ε, ẋ, x)), zero(eltype(x)))
 end
 
 """
@@ -55,11 +57,11 @@ is defined. Each 2-`Tuple` in `xẋs` contains the value `x` and its tangent `x�
 function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
     x_vec, vec_to_x = to_vec(x)
     _, vec_to_y = to_vec(f(x))
-    return vec_to_y(_jvp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1]))
+    return vec_to_y(_jvp(fdm, @nospecialize(x_vec)->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1]))
 end
 function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
     x, ẋ = collect(zip(xẋs...))
-    return jvp(fdm, xs->f(xs...), (x, ẋ))
+    return jvp(fdm, @nospecialize(xs)->f(xs...), (x, ẋ))
 end
 
 """
@@ -86,3 +88,5 @@ end
 Compute the gradient of `f` for any `xs` for which [`to_vec`](@ref) is defined.
 """
 grad(fdm, f, xs...) = j′vp(fdm, f, 1, xs...)  # `j′vp` with seed of 1
+
+@specialize

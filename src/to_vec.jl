@@ -127,8 +127,8 @@ function to_vec(X::Transpose)
     return x_vec, Transpose_from_vec
 end
 
-function to_vec(x::Transpose{<:Any, <:AbstractVector})
-    x_vec, back = to_vec(Matrix(x))
+function to_vec(x::Transpose{T, <:AbstractVector}) where {T}
+    x_vec, back = to_vec(Matrix{T}(x))
     Transpose_from_vec(x_vec) = Transpose(vec(back(x_vec)))
     return x_vec, Transpose_from_vec
 end
