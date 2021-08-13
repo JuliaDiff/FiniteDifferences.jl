@@ -248,7 +248,7 @@ function _eval_function(
     m::FiniteDifferenceMethod, f::TF, x::T, step::Real,
 ) where {TF<:Function,T<:AbstractFloat}
     _step = T(step)
-    return map((x, grid) -> f(muladd(_step, grid, x)), x, m.grid)
+    return map(grid -> f(muladd(_step, grid, x)), m.grid)
 end
 
 function _compute_estimate(
@@ -262,7 +262,7 @@ function _compute_estimate(
     # therefore perform the broadcasting first. See
     # https://github.com/JuliaLang/julia/issues/39151.
     _coefs = map(T, coefs)
-    return map(/, sum(map(*, fs, _coefs)), T(step)^Q)
+    return sum(map(*, fs, _coefs)) ./ T(step)^Q
 end
 
 # Check the method and derivative orders for consistency.

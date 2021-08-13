@@ -24,6 +24,7 @@ function jacobian(fdm, f, x::Vector{<:Real}; len=nothing)
         end
     end
     return (reduce(hcat, ẏs), )
+    #return (hcat(ẏs...), )
 end
 
 function jacobian(fdm, f, x; len=nothing)
@@ -33,7 +34,7 @@ end
 
 function jacobian(fdm, f, xs...; len=nothing)
     return ntuple(length(xs)) do k
-        jacobian(fdm, @nospecialize(x)->f(replace_arg(x, xs, k)...), xs[k]; len=len)[1]
+        jacobian(fdm, @specialize(x)->f(replace_arg(x, xs, k)...), xs[k]; len=len)[1]
     end
 end
 
@@ -45,7 +46,8 @@ replace_arg(x, xs::Tuple, k::Int) = ntuple(p -> p == k ? x : xs[p], length(xs))
 Convenience function to compute `jacobian(f, x) * ẋ`.
 """
 function _jvp(fdm, f, x::Vector{<:Real}, ẋ::Vector{<:Real})
-    return fdm(@nospecialize(ε) -> f(map(muladd, ε, ẋ, x)), zero(eltype(x)))
+    return fdm(@specialize(ε) -> f(muladd.(ε, ẋ, x)), zero(eltype(x)))
+    #return fdm(@specialize(ε) -> f(x .+ ε .* ẋ), zero(eltype(x)))
 end
 
 """
@@ -57,11 +59,11 @@ is defined. Each 2-`Tuple` in `xẋs` contains the value `x` and its tangent `x�
 function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
     x_vec, vec_to_x = to_vec(x)
     _, vec_to_y = to_vec(f(x))
-    return vec_to_y(_jvp(fdm, @nospecialize(x_vec)->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1]))
+    return vec_to_y(_jvp(fdm, @specialize(x_vec)->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1]))
 end
 function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
     x, ẋ = collect(zip(xẋs...))
-    return jvp(fdm, @nospecialize(xs)->f(xs...), (x, ẋ))
+    return jvp(fdm, Base.splat(f), (x, ẋ))
 end
 
 """
@@ -75,7 +77,7 @@ function j′vp(fdm, f, ȳ, x)
     return (vec_to_x(_j′vp(fdm, first ∘ to_vec ∘ f ∘ vec_to_x, ȳ_vec, x_vec)), )
 end
 
-j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]
+j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, Base.splat(f), ȳ, xs)[1]
 
 function _j′vp(fdm, f, ȳ::Vector{<:Real}, x::Vector{<:Real})
     isempty(x) && return eltype(ȳ)[] # if x is empty, then so is the jacobian and x̄
