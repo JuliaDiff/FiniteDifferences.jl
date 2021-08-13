@@ -189,12 +189,14 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 # We loop over all concrete subtypes of `FiniteDifferenceMethod` for Julia v1.0 compatibility.
 for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
     @eval begin
-        function (m::$T)(f::TF, x::Real) where TF<:Function
+        function (m::$T)(f, x::Real)
+            @nospecialize
             x = float(x)  # Assume that converting to float is desired, if it isn't already.
             step = first(estimate_step(m, f, x))
             return m(f, x, step)
         end
-        function (m::$T{P,0})(f::TF, x::Real) where {P,TF<:Function}
+        function (m::$T{P,0})(f, x::Real) where {P}
+            @nospecialize
             # The automatic step size calculation fails if `Q == 0`, so handle that edge
             # case.
             return f(x)
@@ -236,7 +238,7 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 # We loop over all concrete subtypes of `FiniteDifferenceMethod` for 1.0 compatibility.
 for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
     @eval begin
-        function (m::$T{P,Q})(f::TF, x::Real, step::Real) where {P,Q,TF<:Function}
+        function (m::$T{P,Q})(@nospecialize(f), x::Real, step::Real) where {P,Q}
             x = float(x)  # Assume that converting to float is desired, if it isn't already.
             fs = _eval_function(m, f, x, step)
             return _compute_estimate(m, fs, x, step, m.coefs)
@@ -245,8 +247,8 @@ for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
 end
 
 function _eval_function(
-    m::FiniteDifferenceMethod, f::TF, x::T, step::Real,
-) where {TF<:Function,T<:AbstractFloat}
+    m::FiniteDifferenceMethod, @nospecialize(f), x::T, step::Real,
+) where {T<:AbstractFloat}
     _step = T(step)
     return map(grid -> f(muladd(_step, grid, x)), m.grid)
 end
@@ -355,14 +357,14 @@ estimate of the derivative.
     to estimate the error.
 """
 function estimate_step(
-    m::UnadaptedFiniteDifferenceMethod, f::TF, x::T,
-) where {TF<:Function,T<:AbstractFloat}
+    m::UnadaptedFiniteDifferenceMethod, @nospecialize(f), x::T,
+) where {T<:AbstractFloat}
     step, acc = _compute_step_acc_default(m, x)
     return _limit_step(m, x, step, acc)
 end
 function estimate_step(
-    m::AdaptedFiniteDifferenceMethod{P,Q}, f::TF, x::T,
-) where {P,Q,TF<:Function,T<:AbstractFloat}
+    m::AdaptedFiniteDifferenceMethod{P,Q}, @nospecialize(f), x::T,
+) where {P,Q,T<:AbstractFloat}
     ∇f_magnitude, f_magnitude = _estimate_magnitudes(m.bound_estimator, f, x)
     if ∇f_magnitude == 0.0 || f_magnitude == 0.0
         step, acc = _compute_step_acc_default(m, x)
@@ -373,8 +375,8 @@ function estimate_step(
 end
 
 function _estimate_magnitudes(
-    m::FiniteDifferenceMethod{P,Q}, f::TF, x::T,
-) where {P,Q,TF<:Function,T<:AbstractFloat}
+    m::FiniteDifferenceMethod{P,Q}, @nospecialize(f), x::T,
+) where {P,Q,T<:AbstractFloat}
     step = first(estimate_step(m, f, x))
     fs = _eval_function(m, f, x, step)
     # Estimate magnitude of `∇f` in a neighbourhood of `x`.
@@ -577,7 +579,7 @@ automatically sets `power = 2` if `m` is symmetric and `power = 1`. Moreover, it
 """
 function extrapolate_fdm(
     m::FiniteDifferenceMethod,
-    f::Function,
+    @nospecialize(f::Function),
     x::Real,
     initial_step::Real=10;
     power::Int=1,
