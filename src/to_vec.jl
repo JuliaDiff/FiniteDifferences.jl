@@ -21,6 +21,8 @@ end
 # Base case -- if x is already a Vector{<:Real} there's no conversion necessary.
 to_vec(x::Vector{<:Real}) = (x, identity)
 
+to_vec(x::Char) = (Bool[], _ -> x)
+
 # get around the constructors and make the type directly
 # Note this is moderately evil accessing julia's internals
 if VERSION >= v"1.3"
@@ -33,8 +35,9 @@ else
     end
 end
 
-# Fallback method for `to_vec`. Won't always do what you wanted, but should be fine a decent
-# chunk of the time.
+# Default method for any composite type. This is always going to be correct for
+# composite types with the default inner constructor, but may require tweaking if the
+# inner constructor places additional restrictions on the values that the arguments can be.
 function to_vec(x::T) where {T}
     Base.isstructtype(T) || throw(error("Expected a struct type"))
     isempty(fieldnames(T)) && return (Bool[], _ -> x) # Singleton types
@@ -77,83 +80,6 @@ function to_vec(x::DenseArray)
     end
 
     return x_vec, Array_from_vec
-end
-
-# Some specific subtypes of AbstractArray.
-function to_vec(x::Base.ReshapedArray{<:Any, 1})
-    x_vec, from_vec = to_vec(parent(x))
-    function ReshapedArray_from_vec(x_vec)
-        p = from_vec(x_vec)
-        return Base.ReshapedArray(p, x.dims, x.mi)
-    end
-
-    return x_vec, ReshapedArray_from_vec
-end
-
-# To return a SubArray we would endup needing to copy the `parent` of `x` in `from_vec`
-# which doesn't seem particularly useful. So we just convert the view into a copy.
-# we might be able to do something more performant but this seems good for now.
-to_vec(x::Base.SubArray) = to_vec(copy(x))
-
-function to_vec(x::T) where {T<:LinearAlgebra.AbstractTriangular}
-    x_vec, back = to_vec(Matrix(x))
-    function AbstractTriangular_from_vec(x_vec)
-        return T(reshape(back(x_vec), size(x)))
-    end
-    return x_vec, AbstractTriangular_from_vec
-end
-
-function to_vec(x::T) where {T<:LinearAlgebra.HermOrSym}
-    x_vec, back = to_vec(Matrix(x))
-    function HermOrSym_from_vec(x_vec)
-        return T(back(x_vec), x.uplo)
-    end
-    return x_vec, HermOrSym_from_vec
-end
-
-function to_vec(X::Diagonal)
-    x_vec, back = to_vec(Matrix(X))
-    function Diagonal_from_vec(x_vec)
-        return Diagonal(back(x_vec))
-    end
-    return x_vec, Diagonal_from_vec
-end
-
-function to_vec(X::Transpose)
-    x_vec, back = to_vec(Matrix(X))
-    function Transpose_from_vec(x_vec)
-        return Transpose(permutedims(back(x_vec)))
-    end
-    return x_vec, Transpose_from_vec
-end
-
-function to_vec(x::Transpose{<:Any, <:AbstractVector})
-    x_vec, back = to_vec(Matrix(x))
-    Transpose_from_vec(x_vec) = Transpose(vec(back(x_vec)))
-    return x_vec, Transpose_from_vec
-end
-
-function to_vec(X::Adjoint)
-    x_vec, back = to_vec(Matrix(X))
-    function Adjoint_from_vec(x_vec)
-        return Adjoint(conj!(permutedims(back(x_vec))))
-    end
-    return x_vec, Adjoint_from_vec
-end
-
-function to_vec(x::Adjoint{<:Any, <:AbstractVector})
-    x_vec, back = to_vec(Matrix(x))
-    Adjoint_from_vec(x_vec) = Adjoint(conj!(vec(back(x_vec))))
-    return x_vec, Adjoint_from_vec
-end
-
-function to_vec(X::T) where {T<:PermutedDimsArray}
-    x_vec, back = to_vec(parent(X))
-    function PermutedDimsArray_from_vec(x_vec)
-        X_parent = back(x_vec)
-        return T(X_parent)
-    end
-    return x_vec, PermutedDimsArray_from_vec
 end
 
 # Factorizations
@@ -236,27 +162,119 @@ function to_vec(d::Dict)
 end
 
 
-# ChainRulesCore Differentials
-function FiniteDifferences.to_vec(x::Tangent{P}) where{P}
-    x_canon = canonicalize(x)  # to be safe, fill in every field and put in primal order.
-    x_inner = ChainRulesCore.backing(x_canon)
-    x_vec, back_inner = FiniteDifferences.to_vec(x_inner)
-    function Tangent_from_vec(y_vec)
-        y_back = back_inner(y_vec)
-        return Tangent{P, typeof(y_back)}(y_back)
-    end
-    return x_vec, Tangent_from_vec
+# NOTE: to_vec has some problems at the minute, so the additional code below is code that
+# needs to be written regardless what we do with the rest of the ecosystem.
+
+"""
+    to_vec_Tangent(x)
+
+Transform `x` into a `Vector`, and return the vector, and a closure which builds a
+`Tangent`.
+"""
+function to_vec_Tangent(x::Real)
+    Real_Tangent_from_vec(x_vec) = first(x_vec)
+    return [x], Real_Tangent_from_vec
 end
 
-function FiniteDifferences.to_vec(x::AbstractZero)
-    function AbstractZero_from_vec(x_vec::Vector)
-        return x
-    end
-    return Bool[], AbstractZero_from_vec
+function to_vec_Tangent(z::Complex)
+    Complex_Tangent_from_vec(z_vec) = Complex(z_vec[1], z_vec[2])
+    return [real(z), imag(z)], Complex_Tangent_from_vec
 end
 
-function FiniteDifferences.to_vec(t::Thunk)
-    v, back = to_vec(unthunk(t))
-    Thunk_from_vec = v -> @thunk(back(v))
-    return v, Thunk_from_vec
+# Base case -- if x is already a Vector{<:Real} there's no conversion necessary.
+to_vec_Tangent(x::Vector{<:Real}) = (x, identity)
+
+to_vec_Tangent(x::Char) = (Bool[], _ -> x)
+
+# Any struct ought to be interpretable as a Tangent, regardless inner constructors etc.
+function to_vec_Tangent(x::T) where {T}
+    Base.isstructtype(T) || throw(error("Expected a struct type"))
+    isempty(fieldnames(T)) && return (Bool[], _ -> x) # Singleton types
+
+    val_vecs_and_backs = map(name -> to_vec_Tangent(getfield(x, name)), fieldnames(T))
+    vals = first.(val_vecs_and_backs)
+    backs = last.(val_vecs_and_backs)
+
+    v, Tangents_from_vec = to_vec_Tangent(vals)
+    function structtype_Tangent_from_vec(v::Vector{<:Real})
+        val_vecs = Tangents_from_vec(v)
+        tangents = map((b, v) -> b(v), backs, val_vecs)
+        return Tangent{T}(NamedTuple(zip(fieldnames(T), tangents))...)
+    end
+    return v, structtype_Tangent_from_vec
 end
+
+interpret_as_Tangent(x::Array) = map(interpret_as_Tangent(x))
+
+function to_vec_Tangent(x::Vector)
+    x_vecs_and_backs = map(to_vec_Tangent, x)
+    x_vecs, backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
+    function Vector_Tangent_from_vec(x_vec)
+        sz = cumsum(map(length, x_vecs))
+        x_Vec = [backs[n](x_vec[sz[n] - length(x_vecs[n]) + 1:sz[n]]) for n in eachindex(x)]
+        return x_Vec
+    end
+
+    # handle empty x
+    x_vec = isempty(x_vecs) ? eltype(eltype(x_vecs))[] : reduce(vcat, x_vecs)
+    return x_vec, Vector_Tangent_from_vec
+end
+
+function to_vec_Tangent(x::Array)
+    x_vec, Tangent_from_vec = to_vec_Tangent(vec(x))
+
+    function Array_Tangent_from_vec(x_vec)
+        return collect(reshape(Tangent_from_vec(x_vec), size(x)))
+    end
+
+    return x_vec, Array_Tangent_from_vec
+end
+
+
+# Going to need to do this in order to make equality work properly.
+canonicalise_junk(x::Real) = x
+
+canonicalise_junk(x::Complex) = x
+
+canonicalise_junk(x::DenseArray{<:Real}) = x
+
+canonicalise_junk(x::DenseArray) = map(canonicalise_junk, x)
+
+canonicalise_junk(x::StridedArray{<:Real}) = x
+
+canonicalise_junk(x::StridedArray) = map(canonicalise_junk, x)
+
+canonicalise_junk(x::Char) = x
+
+function canonicalise_junk(x::Tangent{<:Symmetric{<:Real, <:DenseArray{<:Real}}})
+
+end
+
+# It's unclear what the generic solution is here. Whether a generic canonicalisation
+# operation exists is unclear, and whether 
+canonicalise_junk(x::Tangent{<:Symmetric})
+
+# Is there a solution which might circumvent this problem entirely? For example,
+# pre-composing a function which needs testing
+
+
+# Is this a problem at all in practice if we take structural tangents seriously?
+# How is it that one can arrive 
+
+# Assume that a programme can output e.g. two UpperTriangulars with arbitrary lower
+# triangles. How is it possible to compare them? Is there an operation on which we can rely
+# that gives us a canonical way to compare the data structures?
+# Unclear what the correct solution is here...
+
+# 1. is this only a problem with finite differencing?
+# 2. would defensive mutation of the primals make sense here?
+# 3. is there a way to create defensive properties by modifying the forwards pass? e.g.
+#   by making `Array{T, N}(undef, size)` be filled with a canonical value of some kind?
+
+# What if the type author also provides a function called `remove_junk`, or something like
+# that, which promises to return only the bits of the data type which are not junk?
+# `collect` would usually be fine for `AbstractArray`s (I think).
+
+# The basic goal of these operations would be to ensure that a plain struct-like data
+# structure is returned from any given function.
+# The default could be something like

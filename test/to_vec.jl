@@ -86,29 +86,29 @@ end
         test_to_vec([1.0, randn(T, 2), randn(T, 1), 2.0]; check_inferred=false)
         test_to_vec([randn(T, 5, 4, 3), (5, 4, 3), 2.0]; check_inferred=false)
         test_to_vec(reshape([1.0, randn(T, 5, 4, 3), randn(T, 4, 3), 2.0], 2, 2); check_inferred=false)
-        test_to_vec(UpperTriangular(randn(T, 13, 13)))
-        test_to_vec(Diagonal(randn(T, 7)))
+        test_to_vec(UpperTriangular(randn(T, 13, 13)); check_inferred=false)
+        test_to_vec(Diagonal(randn(T, 7)); check_inferred=false)
         test_to_vec(DummyType(randn(T, 2, 9)))
         test_to_vec(SVector{2, T}(1.0, 2.0); check_inferred=false)
         test_to_vec(SMatrix{2, 2, T}(1.0, 2.0, 3.0, 4.0); check_inferred=false)
-        test_to_vec(@view randn(T, 10)[1:4])  # SubArray -- Vector
-        test_to_vec(@view randn(T, 10, 2)[1:4, :])  # SubArray -- Matrix
-        test_to_vec(Base.ReshapedArray(rand(T, 3, 3), (9,), ()))
+        test_to_vec(@view randn(T, 10)[1:4]; check_inferred=false)  # SubArray -- Vector
+        test_to_vec(@view randn(T, 10, 2)[1:4, :]; check_inferred=false)  # SubArray -- Matrix
+        # test_to_vec(Base.ReshapedArray(rand(T, 3, 3), (9,), ()); check_inferred=false)
 
         @testset "$Op" for Op in (Symmetric, Hermitian)
-            test_to_vec(Op(randn(T, 11, 11)))
+            test_to_vec(Op(randn(T, 11, 11)); check_inferred=false)
             @testset "$uplo" for uplo in (:L, :U)
                 A = Op(randn(T, 11, 11), uplo)
-                test_to_vec(A)
+                test_to_vec(A; check_inferred=false)
                 x_vec, back = to_vec(A)
                 @test back(x_vec).uplo == A.uplo
             end
         end
 
         @testset "$Op" for Op in (Adjoint, Transpose)
-            test_to_vec(Op(randn(T, 4, 4)))
-            test_to_vec(Op(randn(T, 6)))
-            test_to_vec(Op(randn(T, 2, 5)))
+            test_to_vec(Op(randn(T, 4, 4)); check_inferred=false)
+            test_to_vec(Op(randn(T, 6)); check_inferred=false)
+            test_to_vec(Op(randn(T, 2, 5)); check_inferred=false)
 
             # Ensure that if an `AbstractVector` is `Adjoint`ed, then the reconstructed
             # version also contains an `AbstractVector`, rather than an `AbstractMatrix`
@@ -120,12 +120,13 @@ end
         end
 
         @testset "PermutedDimsArray" begin
-            test_to_vec(PermutedDimsArray(randn(T, 3, 1), (2, 1)))
-            test_to_vec(PermutedDimsArray(randn(T, 4, 2, 3), (3, 1, 2)))
+            test_to_vec(PermutedDimsArray(randn(T, 3, 1), (2, 1)); check_inferred=false)
+            test_to_vec(PermutedDimsArray(randn(T, 4, 2, 3), (3, 1, 2)); check_inferred=false)
             test_to_vec(
                 PermutedDimsArray(
                     [randn(T, 3) for _ in 1:3, _ in 1:2, _ in 1:4], (2, 1, 3),
-                ),
+                );
+                 check_inferred=false
             )
         end
 
@@ -174,7 +175,7 @@ end
             test_to_vec((5, 4))
             test_to_vec((5, randn(T, 5)); check_inferred = VERSION ≥ v"1.2") # broken on Julia 1.6.0, fixed on 1.6.1 
             test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1); check_inferred=false)
-            test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5); check_inferred = VERSION ≥ v"1.2") # broken on Julia 1.6.0, fixed on 1.6.1 
+            test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5); check_inferred = false) # broken on Julia 1.6.0, fixed on 1.6.1 
             test_to_vec(((6, 5), 3, randn(T, 3, 2, 0, 1)); check_inferred=false)
             test_to_vec((DummyType(randn(T, 2, 7)), DummyType(randn(T, 3, 9))))
             test_to_vec((DummyType(randn(T, 3, 2)), randn(T, 11, 8)))
@@ -200,7 +201,7 @@ end
             @testset "basic" begin
                 x_tup = (1.0, 2.0, 3.0)
                 x_comp = Tangent{typeof(x_tup)}(x_tup...)
-                test_to_vec(x_comp)
+                test_to_vec(x_comp; check_inferred=false)
             end
 
             @testset "nested" begin
@@ -215,24 +216,24 @@ end
             @testset "NamedTuple basic" begin
                 nt = (; a=1.0, b=20.0)
                 comp = Tangent{typeof(nt)}(; nt...)
-                test_to_vec(comp)
+                test_to_vec(comp; check_inferred=false)
             end
 
             @testset "Struct" begin
-                test_to_vec(Tangent{ThreeFields}(; a=10.0, b=20.0, c=30.0))
-                test_to_vec(Tangent{ThreeFields}(; a=10.0, b=20.0,)) # broken on Julia 1.6.0, fixed on 1.6.1 
-                test_to_vec(Tangent{ThreeFields}(; a=10.0, c=30.0))
-                test_to_vec(Tangent{ThreeFields}(; c=30.0, a=10.0, b=20.0))
+                test_to_vec(Tangent{ThreeFields}(; a=10.0, b=20.0, c=30.0); check_inferred=false)
+                test_to_vec(Tangent{ThreeFields}(; a=10.0, b=20.0,); check_inferred=false) # broken on Julia 1.6.0, fixed on 1.6.1 
+                test_to_vec(Tangent{ThreeFields}(; a=10.0, c=30.0); check_inferred=false)
+                test_to_vec(Tangent{ThreeFields}(; c=30.0, a=10.0, b=20.0); check_inferred=false)
             end
         end
 
         @testset "AbstractZero" begin
-            test_to_vec(ZeroTangent())
-            test_to_vec(NoTangent())
+            test_to_vec(ZeroTangent(); check_inferred=false)
+            test_to_vec(NoTangent(); check_inferred=false)
         end
 
         @testset "Thunks" begin
-            test_to_vec(@thunk(3.2+4.3))
+            test_to_vec(@thunk(3.2+4.3); check_inferred=false)
         end
     end
 
