@@ -68,6 +68,14 @@ function test_to_vec(x::T; check_inferred=true) where {T}
 end
 
 @testset "to_vec" begin
+
+    # Integers are non-differentiable. to_vec should only preserve the differentiable bits
+    # of a type so that they can be appropriately perturbed.
+    @testset "Int" begin
+        @test isempty(to_vec(4)[1])
+        test_to_vec(5)
+    end
+
     @testset "$T" for T in (Float32, ComplexF32, Float64, ComplexF64)
         if T == Float64
             test_to_vec(1.0)

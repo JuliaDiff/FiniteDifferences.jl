@@ -85,4 +85,4 @@ end
 
 Compute the gradient of `f` for any `xs` for which [`to_vec`](@ref) is defined.
 """
-grad(fdm, f, xs...) = j′vp(fdm, f, 1, xs...)  # `j′vp` with seed of 1
+grad(fdm, f, xs...) = j′vp(fdm, f, one(f(xs...)), xs...)  # `j′vp` with seed of 1
