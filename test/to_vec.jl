@@ -196,8 +196,8 @@ end
     end
 
     @testset "DataType" begin
-        test_to_vec(Float64) # isa DataType
-        test_to_vec(Vector) # isa UnionAll
+        test_to_vec(Float64; check_inferred=false) # isa DataType
+        test_to_vec(Vector; check_inferred=false) # isa UnionAll
     end
 
     @testset "ChainRulesCore Differentials" begin
