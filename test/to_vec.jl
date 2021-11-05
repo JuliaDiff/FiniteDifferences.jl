@@ -195,6 +195,11 @@ end
         end
     end
 
+    @testset "DataType" begin
+        test_to_vec(Float64) # isa DataType
+        test_to_vec(Vector) # isa UnionAll
+    end
+
     @testset "ChainRulesCore Differentials" begin
         @testset "Tangent{Tuple}" begin
             @testset "basic" begin

@@ -235,6 +235,13 @@ function to_vec(d::Dict)
     return d_vec, Dict_from_vec
 end
 
+# types
+function FiniteDifferences.to_vec(x::DataType)
+    function DataType_from_vec(x_vec::Vector)
+        return x
+    end
+    return Bool[], DataType_from_vec
+end
 
 # ChainRulesCore Differentials
 function FiniteDifferences.to_vec(x::Tangent{P}) where{P}
