@@ -243,6 +243,14 @@ function FiniteDifferences.to_vec(x::DataType)
     return Bool[], DataType_from_vec
 end
 
+# CartesianIndex
+function FiniteDifferences.to_vec(x::CartesianIndex)
+    function CartesianIndex_from_vec(x_vec::Vector)
+        return x
+    end
+    return Bool[], CartesianIndex_from_vec
+end
+
 # ChainRulesCore Differentials
 function FiniteDifferences.to_vec(x::Tangent{P}) where{P}
     x_canon = canonicalize(x)  # to be safe, fill in every field and put in primal order.
