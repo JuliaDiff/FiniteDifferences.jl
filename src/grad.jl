@@ -55,7 +55,7 @@ is defined. Each 2-`Tuple` in `xẋs` contains the value `x` and its tangent `x�
 function jvp(fdm, f, (x, ẋ)::Tuple{Any, Any})
     x_vec, vec_to_x = to_vec(x)
     _, vec_to_y = to_vec(f(x))
-    return vec_to_y(_jvp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1]))
+    return _int2zero(vec_to_y(_jvp(fdm, x_vec->to_vec(f(vec_to_x(x_vec)))[1], x_vec, to_vec(ẋ)[1])))
 end
 function jvp(fdm, f, xẋs::Tuple{Any, Any}...)
     x, ẋ = collect(zip(xẋs...))
@@ -70,7 +70,7 @@ Compute an adjoint with any types of arguments `x` for which [`to_vec`](@ref) is
 function j′vp(fdm, f, ȳ, x)
     x_vec, vec_to_x = to_vec(x)
     ȳ_vec, _ = to_vec(ȳ)
-    return (vec_to_x(_j′vp(fdm, first ∘ to_vec ∘ f ∘ vec_to_x, ȳ_vec, x_vec)), )
+    return (_int2zero(vec_to_x(_j′vp(fdm, first ∘ to_vec ∘ f ∘ vec_to_x, ȳ_vec, x_vec))), )
 end
 
 j′vp(fdm, f, ȳ, xs...) = j′vp(fdm, xs->f(xs...), ȳ, xs)[1]
@@ -85,4 +85,14 @@ end
 
 Compute the gradient of `f` for any `xs` for which [`to_vec`](@ref) is defined.
 """
-grad(fdm, f, xs...) = j′vp(fdm, f, 1, xs...)  # `j′vp` with seed of 1
+grad(fdm, f, xs...) = j′vp(fdm, f, 1.0, xs...)  # `j′vp` with seed of 1
+
+# This deals with the fact that integers are non perturbable
+# v, b = to_vec(1);
+# v == []
+# b(v) == 1
+# which means that jvp always returns the integer itself, since [] - [] == []
+_int2zero(x) = x
+_int2zero(x::Tuple) = map(_int2zero, x)
+_int2zero(x::NamedTuple) = map(_int2zero, x)
+_int2zero(::Integer) = ZeroTangent()

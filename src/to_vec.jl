@@ -18,6 +18,11 @@ function to_vec(z::Complex)
     return [real(z), imag(z)], Complex_from_vec
 end
 
+function to_vec(x::Integer)
+    Integer_from_vec(v) = x
+    return Bool[], Integer_from_vec
+end
+
 # Base case -- if x is already a Vector{<:Real} there's no conversion necessary.
 to_vec(x::Vector{<:Real}) = (x, identity)
 

@@ -67,8 +67,11 @@ function test_to_vec(x::T; check_inferred=true) where {T}
     return nothing
 end
 
+myrandn(T::Type{<:Number}, args...) = randn(T, args...)
+myrandn(T::Type{<:Integer}, args...) = rand(T[-1, 0, 2], args...)
+
 @testset "to_vec" begin
-    @testset "$T" for T in (Float32, ComplexF32, Float64, ComplexF64)
+    @testset "$T" for T in (Int64, Float32, ComplexF32, Float64, ComplexF64)
         if T == Float64
             test_to_vec(1.0)
             test_to_vec(1)
@@ -79,26 +82,26 @@ end
         test_to_vec(T[])
         test_to_vec(Vector{T}[])
         test_to_vec(Matrix{T}[])
-        test_to_vec(randn(T, 3))
-        test_to_vec(randn(T, 5, 11))
-        test_to_vec(randn(T, 13, 17, 19))
-        test_to_vec(randn(T, 13, 0, 19))
-        test_to_vec([1.0, randn(T, 2), randn(T, 1), 2.0]; check_inferred=false)
-        test_to_vec([randn(T, 5, 4, 3), (5, 4, 3), 2.0]; check_inferred=false)
-        test_to_vec(reshape([1.0, randn(T, 5, 4, 3), randn(T, 4, 3), 2.0], 2, 2); check_inferred=false)
-        test_to_vec(UpperTriangular(randn(T, 13, 13)))
-        test_to_vec(Diagonal(randn(T, 7)))
-        test_to_vec(DummyType(randn(T, 2, 9)))
+        test_to_vec(myrandn(T, 3))
+        test_to_vec(myrandn(T, 5, 11))
+        test_to_vec(myrandn(T, 13, 17, 19))
+        test_to_vec(myrandn(T, 13, 0, 19))
+        test_to_vec([1.0, myrandn(T, 2), myrandn(T, 1), 2.0]; check_inferred=false)
+        test_to_vec([myrandn(T, 5, 4, 3), (5, 4, 3), 2.0]; check_inferred=false)
+        test_to_vec(reshape([1.0, myrandn(T, 5, 4, 3), myrandn(T, 4, 3), 2.0], 2, 2); check_inferred=false)
+        test_to_vec(UpperTriangular(myrandn(T, 13, 13)))
+        test_to_vec(Diagonal(myrandn(T, 7)))
+        test_to_vec(DummyType(myrandn(T, 2, 9)))
         test_to_vec(SVector{2, T}(1.0, 2.0); check_inferred=false)
         test_to_vec(SMatrix{2, 2, T}(1.0, 2.0, 3.0, 4.0); check_inferred=false)
-        test_to_vec(@view randn(T, 10)[1:4])  # SubArray -- Vector
-        test_to_vec(@view randn(T, 10, 2)[1:4, :])  # SubArray -- Matrix
+        test_to_vec(@view myrandn(T, 10)[1:4])  # SubArray -- Vector
+        test_to_vec(@view myrandn(T, 10, 2)[1:4, :])  # SubArray -- Matrix
         test_to_vec(Base.ReshapedArray(rand(T, 3, 3), (9,), ()))
 
         @testset "$Op" for Op in (Symmetric, Hermitian)
-            test_to_vec(Op(randn(T, 11, 11)))
+            test_to_vec(Op(myrandn(T, 11, 11)))
             @testset "$uplo" for uplo in (:L, :U)
-                A = Op(randn(T, 11, 11), uplo)
+                A = Op(myrandn(T, 11, 11), uplo)
                 test_to_vec(A)
                 x_vec, back = to_vec(A)
                 @test back(x_vec).uplo == A.uplo
@@ -106,25 +109,25 @@ end
         end
 
         @testset "$Op" for Op in (Adjoint, Transpose)
-            test_to_vec(Op(randn(T, 4, 4)))
-            test_to_vec(Op(randn(T, 6)))
-            test_to_vec(Op(randn(T, 2, 5)))
+            test_to_vec(Op(myrandn(T, 4, 4)))
+            test_to_vec(Op(myrandn(T, 6)))
+            test_to_vec(Op(myrandn(T, 2, 5)))
 
             # Ensure that if an `AbstractVector` is `Adjoint`ed, then the reconstructed
             # version also contains an `AbstractVector`, rather than an `AbstractMatrix`
             # whose 2nd dimension is of size 1.
             @testset "Vector" begin
-                x_vec, back = to_vec(Op(randn(T, 5)))
+                x_vec, back = to_vec(Op(myrandn(T, 5)))
                 @test parent(back(x_vec)) isa AbstractVector
             end
         end
 
         @testset "PermutedDimsArray" begin
-            test_to_vec(PermutedDimsArray(randn(T, 3, 1), (2, 1)))
-            test_to_vec(PermutedDimsArray(randn(T, 4, 2, 3), (3, 1, 2)))
+            test_to_vec(PermutedDimsArray(myrandn(T, 3, 1), (2, 1)))
+            test_to_vec(PermutedDimsArray(myrandn(T, 4, 2, 3), (3, 1, 2)))
             test_to_vec(
                 PermutedDimsArray(
-                    [randn(T, 3) for _ in 1:3, _ in 1:2, _ in 1:4], (2, 1, 3),
+                    [myrandn(T, 3) for _ in 1:3, _ in 1:2, _ in 1:4], (2, 1, 3),
                 ),
             )
         end
@@ -133,7 +136,7 @@ end
             # (100, 100) is needed to test for the NaNs that can appear in the
             # qr(M).T matrix
             for dims in [(7, 3), (100, 100)]
-                M = randn(T, dims...)
+                M = myrandn(T, dims...)
                 P = M * M' + I  # Positive definite matrix
                 test_to_vec(svd(M))
                 test_to_vec(cholesky(P))
@@ -172,25 +175,25 @@ end
 
         @testset "Tuples" begin
             test_to_vec((5, 4))
-            test_to_vec((5, randn(T, 5)); check_inferred = VERSION ≥ v"1.2") # broken on Julia 1.6.0, fixed on 1.6.1 
-            test_to_vec((randn(T, 4), randn(T, 4, 3, 2), 1); check_inferred=false)
-            test_to_vec((5, randn(T, 4, 3, 2), UpperTriangular(randn(T, 4, 4)), 2.5); check_inferred = VERSION ≥ v"1.2") # broken on Julia 1.6.0, fixed on 1.6.1 
-            test_to_vec(((6, 5), 3, randn(T, 3, 2, 0, 1)); check_inferred=false)
-            test_to_vec((DummyType(randn(T, 2, 7)), DummyType(randn(T, 3, 9))))
-            test_to_vec((DummyType(randn(T, 3, 2)), randn(T, 11, 8)))
+            test_to_vec((5, myrandn(T, 5)); check_inferred = VERSION ≥ v"1.2") # broken on Julia 1.6.0, fixed on 1.6.1 
+            test_to_vec((myrandn(T, 4), myrandn(T, 4, 3, 2), 1); check_inferred=false)
+            test_to_vec((5, myrandn(T, 4, 3, 2), UpperTriangular(myrandn(T, 4, 4)), 2.5); check_inferred = VERSION ≥ v"1.2") # broken on Julia 1.6.0, fixed on 1.6.1 
+            test_to_vec(((6, 5), 3, myrandn(T, 3, 2, 0, 1)); check_inferred=false)
+            test_to_vec((DummyType(myrandn(T, 2, 7)), DummyType(myrandn(T, 3, 9))))
+            test_to_vec((DummyType(myrandn(T, 3, 2)), myrandn(T, 11, 8)))
         end
         @testset "NamedTuple" begin
             if T == Float64
                 test_to_vec((a=5, b=randn(10, 11), c=(5, 4, 3)); check_inferred = VERSION ≥ v"1.2")
             else
-                test_to_vec((a=3 + 2im, b=randn(T, 10, 11), c=(5+im, 2-im, 1+im)); check_inferred = VERSION ≥ v"1.2")
+                test_to_vec((a=3 + 2im, b=myrandn(T, 10, 11), c=(5+im, 2-im, 1+im)); check_inferred = VERSION ≥ v"1.2")
             end
         end
         @testset "Dictionary" begin
             if T == Float64
                 test_to_vec(Dict(:a=>5, :b=>randn(10, 11), :c=>(5, 4, 3)); check_inferred=false)
             else
-                test_to_vec(Dict(:a=>3 + 2im, :b=>randn(T, 10, 11), :c=>(5+im, 2-im, 1+im)); check_inferred=false)
+                test_to_vec(Dict(:a=>3 + 2im, :b=>myrandn(T, 10, 11), :c=>(5+im, 2-im, 1+im)); check_inferred=false)
             end
         end
     end
