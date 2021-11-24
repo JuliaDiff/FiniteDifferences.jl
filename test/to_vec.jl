@@ -201,8 +201,8 @@ end
     end
 
     @testset "CartesianIndex" begin
-        test_to_vec(CartesianIndex(1); check_inferred=false)
-        test_to_vec(CartesianIndex(1, 2); check_inferred=false)
+        test_to_vec(CartesianIndex(1))
+        test_to_vec(CartesianIndex(1, 2))
         @test to_vec(CartesianIndex(1))[1] == []
         @test to_vec(CartesianIndex(1, 3))[1] == []
     end
