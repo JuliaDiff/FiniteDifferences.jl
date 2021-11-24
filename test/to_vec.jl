@@ -200,6 +200,13 @@ end
         test_to_vec(Vector; check_inferred=false) # isa UnionAll
     end
 
+    @testset "CartesianIndex" begin
+        test_to_vec(CartesianIndex(1))
+        test_to_vec(CartesianIndex(1, 2))
+        @test to_vec(CartesianIndex(1))[1] == []
+        @test to_vec(CartesianIndex(1, 3))[1] == []
+    end
+
     @testset "ChainRulesCore Differentials" begin
         @testset "Tangent{Tuple}" begin
             @testset "basic" begin
