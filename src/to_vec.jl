@@ -235,20 +235,15 @@ function to_vec(d::Dict)
     return d_vec, Dict_from_vec
 end
 
-# types
-function FiniteDifferences.to_vec(x::DataType)
-    function DataType_from_vec(x_vec::Vector)
-        return x
+# non-perturbable types
+for T in (:DataType, :CartesianIndex, :AbstractZero)
+    T_from_vec = Symbol(T, :_from_vec)
+    @eval function FiniteDifferences.to_vec(x::$T)
+        function $T_from_vec(x_vec::Vector)
+            return x
+        end
+        return Bool[], $T_from_vec
     end
-    return Bool[], DataType_from_vec
-end
-
-# CartesianIndex
-function FiniteDifferences.to_vec(x::CartesianIndex)
-    function CartesianIndex_from_vec(x_vec::Vector)
-        return x
-    end
-    return Bool[], CartesianIndex_from_vec
 end
 
 # ChainRulesCore Differentials
@@ -261,13 +256,6 @@ function FiniteDifferences.to_vec(x::Tangent{P}) where{P}
         return Tangent{P, typeof(y_back)}(y_back)
     end
     return x_vec, Tangent_from_vec
-end
-
-function FiniteDifferences.to_vec(x::AbstractZero)
-    function AbstractZero_from_vec(x_vec::Vector)
-        return x
-    end
-    return Bool[], AbstractZero_from_vec
 end
 
 function FiniteDifferences.to_vec(t::Thunk)
