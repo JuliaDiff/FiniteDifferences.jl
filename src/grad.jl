@@ -21,7 +21,7 @@ function jacobian(fdm, f, x::Vector{<:Real}; len=nothing)
             return ret
         end
     end
-    return (hcat(ẏs...), )
+    return (reduce(hcat, ẏs), )
 end
 
 function jacobian(fdm, f, x; len=nothing)
