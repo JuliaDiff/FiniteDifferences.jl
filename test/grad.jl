@@ -146,9 +146,10 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
             x, y = randn(rng, T, N), randn(rng, T, M)
             z̄ = randn(rng, T, N + M)
             xy = vcat(x, y)
-            x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)[1]
-            x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))[1]
-            x̄ȳ_multi = j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y)
+            # Type inference: https://github.com/JuliaDiff/FiniteDifferences.jl/issues/199
+            x̄ȳ_manual = @inferred(j′vp(fdm, xy->sin.(xy), z̄, xy))[1]
+            x̄ȳ_auto = @inferred(j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y)))[1]
+            x̄ȳ_multi = @inferred(j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y))
             @test x̄ȳ_manual ≈ vcat(x̄ȳ_auto...)
             @test x̄ȳ_manual ≈ vcat(x̄ȳ_multi...)
         end
