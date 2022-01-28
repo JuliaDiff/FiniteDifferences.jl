@@ -21,6 +21,18 @@ end
 # Base case -- if x is already a Vector{<:Real} there's no conversion necessary.
 to_vec(x::Vector{<:Real}) = (x, identity)
 
+# get around the constructors and make the type directly
+# Note this is moderately evil accessing julia's internals
+if VERSION >= v"1.3"
+    @generated function _force_construct(T, args...)
+        return Expr(:splatnew, :T, :args)
+    end
+else
+    @generated function _force_construct(T, args...)
+        return Expr(:new, :T, Any[:(args[$i]) for i in 1:length(args)]...)
+    end
+end
+
 # Fallback method for `to_vec`. Won't always do what you wanted, but should be fine a decent
 # chunk of the time.
 function to_vec(x::T) where {T}
@@ -35,7 +47,11 @@ function to_vec(x::T) where {T}
     function structtype_from_vec(v::Vector{<:Real})
         val_vecs = vals_from_vec(v)
         values = map((b, v) -> b(v), backs, val_vecs)
-        return T(values...)
+        try
+            T(values...)
+        catch MethodError
+            return _force_construct(T, values...)
+        end
     end
     return v, structtype_from_vec
 end
@@ -140,6 +156,51 @@ function to_vec(X::T) where {T<:PermutedDimsArray}
     return x_vec, PermutedDimsArray_from_vec
 end
 
+# Factorizations
+
+function to_vec(x::F) where {F <: SVD}
+    # Convert the vector S to a matrix so we can work with a vector of matrices
+    # only and inferrence work
+    v = [x.U, reshape(x.S, length(x.S), 1), x.Vt]
+    x_vec, back = to_vec(v)
+    function SVD_from_vec(v)
+        U, Smat, Vt = back(v)
+        return F(U, vec(Smat), Vt)
+    end
+    return x_vec, SVD_from_vec
+end
+
+function to_vec(x::Cholesky)
+    x_vec, back = to_vec(x.factors)
+    function Cholesky_from_vec(v)
+        return Cholesky(back(v), x.uplo, x.info)
+    end
+    return x_vec, Cholesky_from_vec
+end
+
+function to_vec(x::S) where {U, S <: Union{LinearAlgebra.QRCompactWYQ{U}, LinearAlgebra.QRCompactWY{U}}}
+    # x.T is composed of upper triangular blocks. The subdiagonals elements
+    # of the blocks are abitrary. We make sure to set all of them to zero
+    # to avoid NaN.
+    blocksize, cols = size(x.T)
+    T = zeros(U, blocksize, cols)
+
+    for i in 0:div(cols - 1, blocksize)
+        used_cols = i * blocksize
+        n = min(blocksize, cols - used_cols)
+        T[1:n, (1:n) .+ used_cols] = UpperTriangular(view(x.T, 1:n, (1:n) .+ used_cols))
+    end
+
+    x_vec, back = to_vec([x.factors, T])
+
+    function QRCompact_from_vec(v)
+        factors, Tback = back(v)
+        return S(factors, Tback)
+    end
+
+    return x_vec, QRCompact_from_vec
+end
+
 # Non-array data structures
 
 function to_vec(x::Tuple)
@@ -174,6 +235,16 @@ function to_vec(d::Dict)
     return d_vec, Dict_from_vec
 end
 
+# non-perturbable types
+for T in (:DataType, :CartesianIndex, :AbstractZero)
+    T_from_vec = Symbol(T, :_from_vec)
+    @eval function FiniteDifferences.to_vec(x::$T)
+        function $T_from_vec(x_vec::Vector)
+            return x
+        end
+        return Bool[], $T_from_vec
+    end
+end
 
 # ChainRulesCore Differentials
 function FiniteDifferences.to_vec(x::Tangent{P}) where{P}
@@ -187,9 +258,8 @@ function FiniteDifferences.to_vec(x::Tangent{P}) where{P}
     return x_vec, Tangent_from_vec
 end
 
-function FiniteDifferences.to_vec(x::AbstractZero)
-    function AbstractZero_from_vec(x_vec::Vector)
-        return x
-    end
-    return Bool[], AbstractZero_from_vec
+function FiniteDifferences.to_vec(t::Thunk)
+    v, back = to_vec(unthunk(t))
+    Thunk_from_vec = v -> @thunk(back(v))
+    return v, Thunk_from_vec
 end

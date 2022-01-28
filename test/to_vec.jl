@@ -44,11 +44,24 @@ end
 Base.size(a::WrapperArray) = size(a.data)
 Base.getindex(a::WrapperArray, inds...) = getindex(a.data, inds...)
 
+# can not construct it from: cca = CustomConstructorArray(rand(2, 2))
+# T = typeof(cca) # CustomConstructorArray{Float64, 2, Matrix{Float64}}
+# T(rand(2, 3)) # errors
+struct CustomConstructorArray{T, N, A<:AbstractArray{T, N}} <: AbstractArray{T, N}
+    data::A
+    function CustomConstructorArray(data::A) where {T, N, A<:AbstractArray{T, N}}
+        return new{T, N, A}(data)
+    end
+end
+Base.size(a::CustomConstructorArray) = size(a.data)
+Base.getindex(a::CustomConstructorArray, inds...) = getindex(a.data, inds...)
+
 function test_to_vec(x::T; check_inferred=true) where {T}
     check_inferred && @inferred to_vec(x)
     x_vec, back = to_vec(x)
     @test x_vec isa Vector
     @test all(s -> s isa Real, x_vec)
+    @test all(!isnan, x_vec)
     check_inferred && @inferred back(x_vec)
     @test x == back(x_vec)
     return nothing
@@ -116,6 +129,47 @@ end
             )
         end
 
+        @testset "Factorizations" begin
+            # (100, 100) is needed to test for the NaNs that can appear in the
+            # qr(M).T matrix
+            for dims in [(7, 3), (100, 100)]
+                M = randn(T, dims...)
+                P = M * M' + I  # Positive definite matrix
+                test_to_vec(svd(M))
+                test_to_vec(cholesky(P))
+
+                # Special treatment for QR since it is represented by a matrix
+                # with some arbirtrary values.
+                F = qr(M)
+                @inferred to_vec(F)
+                F_vec, back = to_vec(F)
+                @test F_vec isa Vector
+                @test all(s -> s isa Real, F_vec)
+                @test all(!isnan, F_vec)
+                @inferred back(F_vec)
+                F_back = back(F_vec)
+                @test F_back.Q == F.Q
+                @test F_back.R == F.R
+
+                # Make sure the result is consistent despite the arbitrary
+                # values in F.T.
+                @test first(to_vec(F)) == first(to_vec(F))
+
+                # Test F.Q as well since it has a special type. Since it is
+                # represented by the same T and factors matrices than F
+                # it needs the same special treatment.
+                Q = F.Q
+                @inferred to_vec(Q)
+                Q_vec, back = to_vec(Q)
+                @test Q_vec isa Vector
+                @test all(s -> s isa Real, Q_vec)
+                @test all(!isnan, Q_vec)
+                @inferred back(Q_vec)
+                Q_back = back(Q_vec)
+                @test Q_back == Q
+            end
+        end
+
         @testset "Tuples" begin
             test_to_vec((5, 4))
             test_to_vec((5, randn(T, 5)); check_inferred = VERSION ≥ v"1.2") # broken on Julia 1.6.0, fixed on 1.6.1 
@@ -139,6 +193,18 @@ end
                 test_to_vec(Dict(:a=>3 + 2im, :b=>randn(T, 10, 11), :c=>(5+im, 2-im, 1+im)); check_inferred=false)
             end
         end
+    end
+
+    @testset "DataType" begin
+        test_to_vec(Float64; check_inferred=false) # isa DataType
+        test_to_vec(Vector; check_inferred=false) # isa UnionAll
+    end
+
+    @testset "CartesianIndex" begin
+        test_to_vec(CartesianIndex(1))
+        test_to_vec(CartesianIndex(1, 2))
+        @test to_vec(CartesianIndex(1))[1] == []
+        @test to_vec(CartesianIndex(1, 3))[1] == []
     end
 
     @testset "ChainRulesCore Differentials" begin
@@ -176,6 +242,10 @@ end
             test_to_vec(ZeroTangent())
             test_to_vec(NoTangent())
         end
+
+        @testset "Thunks" begin
+            test_to_vec(@thunk(3.2+4.3))
+        end
     end
 
     @testset "FillVector" begin
@@ -190,5 +260,10 @@ end
     @testset "WrapperArray" begin
         wa = WrapperArray(rand(4, 5))
         test_to_vec(wa; check_inferred=false)
+    end
+
+    @testset "CustomConstructorArray" begin
+        cca = CustomConstructorArray(rand(2, 3))
+        test_to_vec(cca; check_inferred=false)
     end
 end

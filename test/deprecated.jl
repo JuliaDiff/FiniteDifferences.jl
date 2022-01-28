@@ -1,6 +1,14 @@
-using FiniteDifferences: rand_tangent
+# Test struct for `rand_tangent` and `difference`.
+struct Foo
+    a::Float64
+    b::Int
+    c::Any
+ end
 
-@testset "generate_tangent" begin
+# to avoid deprecation spam (and actually test deprecations) we will define a wrapper `rand_tangent` function for testing
+rand_tangent(args...) = @test_deprecated FiniteDifferences.rand_tangent(args...)
+
+@testset "rand_tangent" begin
     rng = MersenneTwister(123456)
 
     @testset "Primal: $(typeof(x)), Tangent: $T_tangent" for (x, T_tangent) in [
@@ -11,6 +19,15 @@ using FiniteDifferences: rand_tangent
         (:a, NoTangent),
         (true, NoTangent),
         (4, NoTangent),
+        (FiniteDifferences, NoTangent),  # Module object
+        # Types (not instances of type)
+        (Foo, NoTangent),  
+        (Union{Int, Foo}, NoTangent),
+        (Union{Int, Foo}, NoTangent),
+        (Vector, NoTangent),
+        (Vector{Float64}, NoTangent),
+        (Integer, NoTangent),
+        (Type{<:Real}, NoTangent),
 
         # Numbers.
         (5.0, Float64),
@@ -18,11 +35,18 @@ using FiniteDifferences: rand_tangent
         (big(5.0), BigFloat),
 
         # StridedArrays.
+        (fill(randn(Float32)), Array{Float32, 0}),
+        (fill(randn(Float64)), Array{Float64, 0}),
         (randn(Float32, 3), Vector{Float32}),
         (randn(Complex{Float64}, 2), Vector{Complex{Float64}}),
         (randn(5, 4), Matrix{Float64}),
         (randn(Complex{Float32}, 5, 4), Matrix{Complex{Float32}}),
         ([randn(5, 4), 4.0], Vector{Any}),
+
+        # Wrapper Arrays
+        (randn(5, 4)', Adjoint{Float64, Matrix{Float64}}),
+        (transpose(randn(5, 4)), Transpose{Float64, Matrix{Float64}}),
+
 
         # Tuples.
         ((4.0, ), Tangent{Tuple{Float64}}),
@@ -35,7 +59,7 @@ using FiniteDifferences: rand_tangent
         # structs.
         (Foo(5.0, 4, rand(rng, 3)), Tangent{Foo}),
         (Foo(4.0, 3, Foo(5.0, 2, 4)), Tangent{Foo}),
-        (sin, typeof(NO_FIELDS)),
+        (sin, NoTangent),
         # all fields NoTangent implies NoTangent
         (Pair(:a, "b"), NoTangent),
         (1:10, NoTangent),
@@ -66,20 +90,31 @@ using FiniteDifferences: rand_tangent
             Hermitian(randn(ComplexF64, 1, 1)),
             Tangent{Hermitian{ComplexF64, Matrix{ComplexF64}}},
         ),
-        (
-            Adjoint(randn(ComplexF64, 3, 3)),
-            Tangent{Adjoint{ComplexF64, Matrix{ComplexF64}}},
-        ),
-        (
-            Transpose(randn(3)),
-            Tangent{Transpose{Float64, Vector{Float64}}},
-        ),
     ]
         @test rand_tangent(rng, x) isa T_tangent
         @test rand_tangent(x) isa T_tangent
-        @test x + rand_tangent(rng, x) isa typeof(x)
     end
 
-    # Ensure struct fallback errors for non-struct types.
-    @test_throws ArgumentError invoke(rand_tangent, Tuple{AbstractRNG, Any}, rng, 5.0)
+    @testset "erroring cases" begin
+        # Ensure struct fallback errors for non-struct types.
+        @test_throws ArgumentError invoke(
+            FiniteDifferences.rand_tangent, Tuple{AbstractRNG, Any}, rng, 5.0
+        )
+    end
+
+    @testset "compsition of addition" begin
+        x = Foo(1.5, 2, Foo(1.1, 3, [1.7, 1.4, 0.9]))
+        @test x + rand_tangent(x) isa typeof(x)
+        @test x + (rand_tangent(x) + rand_tangent(x)) isa typeof(x)
+    end
+
+    # Julia 1.6 changed to using Ryu printing algorithm and seems better at printing short
+    VERSION > v"1.6" && @testset "niceness of printing" begin
+        for i in 1:50
+            @test length(string(rand_tangent(1.0))) <= 6
+            @test length(string(rand_tangent(1.0 + 1.0im))) <= 12
+            @test length(string(rand_tangent(1f0))) <= 12
+            @test length(string(rand_tangent(big"1.0"))) <= 12
+        end
+    end
 end
