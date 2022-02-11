@@ -9,8 +9,8 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
             ẋ, ẏ = randn(rng, T, N), randn(rng, T, M)
             xy, ẋẏ = vcat(x, y), vcat(ẋ, ẏ)
             ż_manual = _jvp(fdm, (xy)->sum(sin, xy), xy, ẋẏ)[1]
-            ż_auto = jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ)))
-            ż_multi = jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ))
+            ż_auto = @inferred(jvp(fdm, x->sum(sin, x[1]) + sum(sin, x[2]), ((x, y), (ẋ, ẏ))))
+            ż_multi = @inferred(jvp(fdm, (x, y)->sum(sin, x) + sum(sin, y), (x, ẋ), (y, ẏ)))
             @test ż_manual ≈ ż_auto
             @test ż_manual ≈ ż_multi
         end
@@ -52,7 +52,7 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
         @assert length(ȳ) == length(f(x))
 
         # Check that the jacobian is as expected.
-        J_fdm = jacobian(fdm, f, x)[1]
+        J_fdm = @inferred(jacobian(fdm, f, x))[1]
         @test size(J_fdm) == (length(ȳ), length(x))
         @test J_fdm ≈ J_exact
         @test J_fdm == jacobian(fdm, f, x)[1]
@@ -79,7 +79,8 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
         @test Ac == A
 
         # Prevent regression against https://github.com/JuliaDiff/FiniteDifferences.jl/issues/67
-        J = first(jacobian(fdm, identity, x))
+        # Type inference: https://github.com/JuliaDiff/FiniteDifferences.jl/issues/199
+        J = first(@inferred(jacobian(fdm, identity, x)))
         @test J ≈ one(Matrix{T}(undef, size(J)))
     end
 
@@ -145,9 +146,10 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
             x, y = randn(rng, T, N), randn(rng, T, M)
             z̄ = randn(rng, T, N + M)
             xy = vcat(x, y)
-            x̄ȳ_manual = j′vp(fdm, xy->sin.(xy), z̄, xy)[1]
-            x̄ȳ_auto = j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y))[1]
-            x̄ȳ_multi = j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y)
+            # Type inference: https://github.com/JuliaDiff/FiniteDifferences.jl/issues/199
+            x̄ȳ_manual = @inferred(j′vp(fdm, xy->sin.(xy), z̄, xy))[1]
+            x̄ȳ_auto = @inferred(j′vp(fdm, x->sin.(vcat(x[1], x[2])), z̄, (x, y)))[1]
+            x̄ȳ_multi = @inferred(j′vp(fdm, (x, y)->sin.(vcat(x, y)), z̄, x, y))
             @test x̄ȳ_manual ≈ vcat(x̄ȳ_auto...)
             @test x̄ȳ_manual ≈ vcat(x̄ȳ_multi...)
         end
