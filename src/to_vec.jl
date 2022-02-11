@@ -156,6 +156,30 @@ function to_vec(X::T) where {T<:PermutedDimsArray}
     return x_vec, PermutedDimsArray_from_vec
 end
 
+function to_vec(v::SparseVector)
+    inds, values = findnz(v)
+    sizes = size(v)
+
+    x_vec, back = to_vec(values)
+    function SparseVector_from_vec(x_v)
+        v_values = back(x_v)
+        return sparsevec(inds, v_values, sizes...)
+    end
+    return x_vec, SparseVector_from_vec
+end
+
+function to_vec(m::SparseMatrixCSC)
+    is, js, values = findnz(m)
+    sizes = size(m)
+
+    x_vec, back = to_vec(values)
+    function SparseMatrixCSC_from_vec(x_v)
+        v_values = back(x_v)
+        return sparse(is, js, v_values, sizes...)
+    end
+    return x_vec, SparseMatrixCSC_from_vec
+end
+
 # Factorizations
 
 function to_vec(x::F) where {F <: SVD}

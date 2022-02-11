@@ -5,6 +5,7 @@ using LinearAlgebra
 using Printf
 using Random
 using Richardson
+using SparseArrays
 using StaticArrays
 
 export to_vec, grad, jacobian, jvp, j′vp
