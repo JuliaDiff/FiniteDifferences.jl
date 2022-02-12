@@ -157,25 +157,25 @@ function to_vec(X::T) where {T<:PermutedDimsArray}
 end
 
 function to_vec(v::SparseVector)
-    inds, values = findnz(v)
+    inds, _ = findnz(v)
     sizes = size(v)
 
-    x_vec, back = to_vec(values)
+    x_vec, back = to_vec(collect(v))
     function SparseVector_from_vec(x_v)
         v_values = back(x_v)
-        return sparsevec(inds, v_values, sizes...)
+        return sparsevec(inds, v_values[inds], sizes...)
     end
     return x_vec, SparseVector_from_vec
 end
 
 function to_vec(m::SparseMatrixCSC)
-    is, js, values = findnz(m)
+    is, js, _ = findnz(m)
     sizes = size(m)
 
-    x_vec, back = to_vec(values)
+    x_vec, back = to_vec(collect(m))
     function SparseMatrixCSC_from_vec(x_v)
         v_values = back(x_v)
-        return sparse(is, js, v_values, sizes...)
+        return sparse(is, js, [v_values[i, j] for (i, j) in zip(is, js)], sizes...)
     end
     return x_vec, SparseMatrixCSC_from_vec
 end
