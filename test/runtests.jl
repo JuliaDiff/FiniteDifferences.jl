@@ -4,6 +4,7 @@ using FiniteDifferences
 using LinearAlgebra
 using Printf
 using Random
+using SparseArrays
 using StaticArrays
 using Test
 

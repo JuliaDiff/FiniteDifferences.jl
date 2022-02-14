@@ -129,6 +129,11 @@ end
             )
         end
 
+        @testset "SparseArrays" begin
+            test_to_vec(sparsevec([1 2 0; 0 0 3; 0 4 0.0]))
+            test_to_vec(sparse([1 2 0; 0 0 3; 0 4 0.0]))
+        end
+
         @testset "Factorizations" begin
             # (100, 100) is needed to test for the NaNs that can appear in the
             # qr(M).T matrix
