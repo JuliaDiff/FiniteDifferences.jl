@@ -249,7 +249,9 @@ end
         end
 
         @testset "Thunks" begin
-            test_to_vec(@thunk(3.2+4.3))
+            t = @thunk(3.2+4.3)
+            test_to_vec(t)
+            test_to_vec(InplaceableThunk(Δ -> Δ += t, t))
         end
     end
 
