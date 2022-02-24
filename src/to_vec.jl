@@ -287,3 +287,14 @@ function FiniteDifferences.to_vec(t::Thunk)
     Thunk_from_vec = v -> @thunk(back(v))
     return v, Thunk_from_vec
 end
+
+function FiniteDifferences.to_vec(t::InplaceableThunk)
+    v, back = to_vec(unthunk(t))
+    function InplaceableThunk_from_vec(v)
+        return InplaceableThunk(
+            Δ -> Δ += back(b),
+            @thunk(back(v))
+        )
+    end
+    return v, InplaceableThunk_from_vec
+end
