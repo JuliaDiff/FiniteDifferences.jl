@@ -20,6 +20,7 @@ end
 
 # Base case -- if x is already a Vector{<:Real} there's no conversion necessary.
 to_vec(x::Vector{<:Real}) = (x, identity)
+to_vec(x::Vector{<:Bool}) = invoke(to_vec, Tuple{DenseVector}, x)  # not for bool arrays
 
 # get around the constructors and make the type directly
 # Note this is moderately evil accessing julia's internals
@@ -260,7 +261,7 @@ function to_vec(d::Dict)
 end
 
 # non-perturbable types
-for T in (:DataType, :CartesianIndex, :AbstractZero)
+for T in (:DataType, :CartesianIndex, :AbstractZero, :Bool, :Nothing, :AbstractString, :Symbol)
     T_from_vec = Symbol(T, :_from_vec)
     @eval function FiniteDifferences.to_vec(x::$T)
         function $T_from_vec(x_vec::Vector)

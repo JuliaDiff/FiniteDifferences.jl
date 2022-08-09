@@ -200,16 +200,32 @@ end
         end
     end
 
-    @testset "DataType" begin
-        test_to_vec(Float64; check_inferred=false) # isa DataType
-        test_to_vec(Vector; check_inferred=false) # isa UnionAll
-    end
+    @testset "Nondifferentiable types" begin
+        @testset "DataType" begin
+            test_to_vec(Float64; check_inferred=false) # isa DataType
+            test_to_vec(Vector; check_inferred=false) # isa UnionAll
+        end
 
-    @testset "CartesianIndex" begin
-        test_to_vec(CartesianIndex(1))
-        test_to_vec(CartesianIndex(1, 2))
-        @test to_vec(CartesianIndex(1))[1] == []
-        @test to_vec(CartesianIndex(1, 3))[1] == []
+        @testset "CartesianIndex" begin
+            test_to_vec(CartesianIndex(1))
+            test_to_vec(CartesianIndex(1, 2))
+            @test to_vec(CartesianIndex(1))[1] == []
+            @test to_vec(CartesianIndex(1, 3))[1] == []
+        end
+
+        @testset "Bool" begin
+            test_to_vec(true)
+            @test to_vec(true)[1] == []
+
+            test_to_vec([true, false])
+            @test to_vec([true, false])[1] == []
+        end
+
+        @testset "misc Base types" begin
+            test_to_vec(nothing)
+            test_to_vec("a")
+            test_to_vec(:b)
+        end
     end
 
     @testset "ChainRulesCore Differentials" begin
@@ -260,8 +276,12 @@ end
     end
 
     @testset "fallback" begin
+        test_to_vec(ThreeFields(nothing, 1.5, false), check_inferred=false)
+        @test to_vec(ThreeFields(nothing, 1.5, false))[1] == [1.5]  # drops the two nonpertubable fields
+
         nested = Nested(ThreeFields(1.0, 2.0, "Three"), Singleton())
         test_to_vec(nested; check_inferred=false) # map
+
     end
 
     @testset "WrapperArray" begin
