@@ -557,7 +557,7 @@ end
         power::Int=1,
         breaktol::Real=Inf,
         kw_args...
-    ) where T<:AbstractFloat
+    )
 
 Use Richardson extrapolation to extrapolate a finite difference method.
 
@@ -582,7 +582,7 @@ function extrapolate_fdm(
     power::Int=1,
     breaktol::Real=Inf,
     kw_args...
-) where T<:AbstractFloat
+)
     (power == 1 && _is_symmetric(m)) && (power = 2)
     return extrapolate(
         step -> m(f, x, step),
