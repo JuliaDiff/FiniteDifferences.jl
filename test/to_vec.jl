@@ -153,7 +153,7 @@ end
                 @test all(!isnan, F_vec)
                 @inferred back(F_vec)
                 F_back = back(F_vec)
-                @test F_back.Q == F.Q
+                @test Matrix(F_back.Q) == Matrix(F.Q)
                 @test F_back.R == F.R
 
                 # Make sure the result is consistent despite the arbitrary
@@ -171,7 +171,7 @@ end
                 @test all(!isnan, Q_vec)
                 @inferred back(Q_vec)
                 Q_back = back(Q_vec)
-                @test Q_back == Q
+                @test Matrix(Q_back) == Matrix(Q)
             end
         end
 
