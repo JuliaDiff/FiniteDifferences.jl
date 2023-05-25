@@ -66,6 +66,8 @@ end
     j′vp(fdm, f, ȳ, x...)
 
 Compute an adjoint with any types of arguments `x` for which [`to_vec`](@ref) is defined.
+
+Return tuple of gradients, one for each argument.
 """
 function j′vp(fdm, f, ȳ, x)
     x_vec, vec_to_x = to_vec(x)
@@ -84,5 +86,7 @@ end
     grad(fdm, f, xs...)
 
 Compute the gradient of `f` for any `xs` for which [`to_vec`](@ref) is defined.
+
+Return tuple of gradients, one for each argument.
 """
 grad(fdm, f, xs...) = j′vp(fdm, f, 1, xs...)  # `j′vp` with seed of 1
