@@ -84,6 +84,18 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
         @test J ≈ one(Matrix{T}(undef, size(J)))
     end
 
+    @testset "jacobian that throws errors" begin
+        # https://github.com/JuliaDiff/FiniteDifferences.jl/issues/221
+        x = zeros(5)
+        try
+            jacobian(fdm, error, x)
+        catch err
+            @assert err isa ErrorException
+        end
+        # Make sure state of `x` is restored.
+        @test x == zeros(5)
+    end
+
     @testset "multi vars jacobian/grad" begin
         rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
 
