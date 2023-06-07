@@ -15,10 +15,12 @@ function jacobian(fdm, f, x::Vector{<:Real}; len=nothing)
     ẏs = map(eachindex(x)) do n
         return fdm(zero(eltype(x))) do ε
             xn = x[n]
-            x[n] = xn + ε
-            ret = copy(first(to_vec(f(x))))  # copy required incase `f(x)` returns something that aliases `x`
-            x[n] = xn  # Can't do `x[n] -= ϵ` as floating-point math is not associative
-            return ret
+            try
+                x[n] = xn + ε
+                return copy(first(to_vec(f(x))))  # copy required incase `f(x)` returns something that aliases `x`
+            finally
+                x[n] = xn  # Can't do `x[n] -= ϵ` as floating-point math is not associative
+            end
         end
     end
     return (reduce(hcat, ẏs), )
