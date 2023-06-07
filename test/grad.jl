@@ -86,6 +86,7 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
 
     @testset "jacobian that throws errors" begin
         # https://github.com/JuliaDiff/FiniteDifferences.jl/issues/221
+        fdm = central_fdm(5, 1)
         x = zeros(5)
         try
             jacobian(fdm, error, x)
