@@ -277,7 +277,7 @@ function _coefs(grid, p, q)
     # For high precision on the `\`, we use `Rational`, and to prevent overflows we use
     # `BigInt`. At the end we go to `Float64` for fast floating point math, rather than
     # rational math.
-    C = [Rational{BigInt}(g^i) for i in 0:(p - 1), g in grid]
+    C = [Rational{BigInt}(g)^i for i in 0:(p - 1), g in grid]
     x = zeros(Rational{BigInt}, p)
     x[q + 1] = factorial(big(q))
     return SVector{p}(Float64.(C \ x))
