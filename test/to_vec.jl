@@ -226,11 +226,23 @@ end
                 x_comp = Tangent{typeof(x_outer)}(1, Tangent{typeof(x_inner)}(2, 3))
                 test_to_vec(x_comp; check_inferred=false)
             end
+
+            @testset "empty" begin
+                x_tup = ()
+                x_comp = Tangent{typeof(x_tup)}(x_tup...)
+                test_to_vec(x_comp)
+            end
         end
 
         @testset "Tangent Struct" begin
             @testset "NamedTuple basic" begin
                 nt = (; a=1.0, b=20.0)
+                comp = Tangent{typeof(nt)}(; nt...)
+                test_to_vec(comp)
+            end
+
+            @testset "NamedTuple empty" begin
+                nt = NamedTuple()
                 comp = Tangent{typeof(nt)}(; nt...)
                 test_to_vec(comp)
             end

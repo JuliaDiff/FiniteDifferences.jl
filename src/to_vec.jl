@@ -227,6 +227,14 @@ end
 
 # Non-array data structures
 
+function to_vec(::Tuple{})
+    vec = Bool[]
+    function Tuple_from_vec(_)
+        return ()
+    end
+    return vec, Tuple_from_vec
+end
+
 function to_vec(x::Tuple)
     x_vecs_and_backs = map(to_vec, x)
     x_vecs, x_backs = first.(x_vecs_and_backs), last.(x_vecs_and_backs)
