@@ -162,4 +162,13 @@
             end
         end
     end
+
+    @testset "do not require f::Function" begin
+        struct NotAFunction end # not <: Function on purpose, cf #224
+        (::NotAFunction)(x) = abs2(x)
+        x = 0.7
+        for f in [forward_fdm, central_fdm, backward_fdm]
+            f(5, 1)(NotAFunction(), x) ≈ 2 * x
+        end
+    end
 end
