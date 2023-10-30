@@ -1,3 +1,10 @@
+"""
+Wrapper used in test set “do not require f::Function” below, moved outside so that it
+works on Julia 1.0.
+"""
+struct NotAFunction end # not <: Function on purpose, cf #224
+(::NotAFunction)(x) = abs2(x)
+
 @testset "Methods" begin
     @testset "Correctness" begin
         # Finite difference methods to test.
@@ -160,6 +167,13 @@
                 estimate, _ = extrapolate_fdm(f(4, 3), exp, x, contract=0.8)
                 @test estimate ≈ exp(1.0) atol=1e-7
             end
+        end
+    end
+
+    @testset "do not require f::Function" begin
+        x = 0.7
+        for f in [forward_fdm, central_fdm, backward_fdm]
+            f(5, 1)(NotAFunction(), x) ≈ 2 * x
         end
     end
 end

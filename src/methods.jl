@@ -153,13 +153,13 @@ function FiniteDifferenceMethod(grid::AbstractVector{Int}, q::Int; kw_args...)
 end
 
 """
-    (m::FiniteDifferenceMethod)(f::Function, x::T) where T<:AbstractFloat
+    (m::FiniteDifferenceMethod)(f, x::T) where T<:AbstractFloat
 
 Estimate the derivative of `f` at `x` using the finite differencing method `m` and an
 automatically determined step size.
 
 # Arguments
-- `f::Function`: Function to estimate derivative of.
+- `f`: Function to estimate derivative of.
 - `x::T`: Input to estimate derivative at.
 
 # Returns
@@ -188,12 +188,12 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 # We loop over all concrete subtypes of `FiniteDifferenceMethod` for Julia v1.0 compatibility.
 for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
     @eval begin
-        function (m::$T)(f::TF, x::Real) where TF<:Function
+        function (m::$T)(f::TF, x::Real) where TF
             x = float(x)  # Assume that converting to float is desired, if it isn't already.
             step = first(estimate_step(m, f, x))
             return m(f, x, step)
         end
-        function (m::$T{P,0})(f::TF, x::Real) where {P,TF<:Function}
+        function (m::$T{P,0})(f::TF, x::Real) where {P,TF}
             # The automatic step size calculation fails if `Q == 0`, so handle that edge
             # case.
             return f(x)
@@ -202,13 +202,13 @@ for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
 end
 
 """
-    (m::FiniteDifferenceMethod)(f::Function, x::T, step::Real) where T<:AbstractFloat
+    (m::FiniteDifferenceMethod)(f, x::T, step::Real) where T<:AbstractFloat
 
 Estimate the derivative of `f` at `x` using the finite differencing method `m` and a given
 step size.
 
 # Arguments
-- `f::Function`: Function to estimate derivative of.
+- `f`: Function to estimate derivative of.
 - `x::T`: Input to estimate derivative at.
 - `step::Real`: Step size.
 
@@ -235,7 +235,7 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 # We loop over all concrete subtypes of `FiniteDifferenceMethod` for 1.0 compatibility.
 for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
     @eval begin
-        function (m::$T{P,Q})(f::TF, x::Real, step::Real) where {P,Q,TF<:Function}
+        function (m::$T{P,Q})(f::TF, x::Real, step::Real) where {P,Q,TF}
             x = float(x)  # Assume that converting to float is desired, if it isn't already.
             fs = _eval_function(m, f, x, step)
             return _compute_estimate(m, fs, x, step, m.coefs)
@@ -245,7 +245,7 @@ end
 
 function _eval_function(
     m::FiniteDifferenceMethod, f::TF, x::T, step::Real,
-) where {TF<:Function,T<:AbstractFloat}
+) where {TF,T<:AbstractFloat}
     return f.(x .+ T(step) .* m.grid)
 end
 
@@ -336,7 +336,7 @@ end
 """
     function estimate_step(
         m::FiniteDifferenceMethod,
-        f::Function,
+        f,
         x::T
     ) where T<:AbstractFloat
 
@@ -345,7 +345,7 @@ estimate of the derivative.
 
 # Arguments
 - `m::FiniteDifferenceMethod`: Finite difference method to estimate the step size for.
-- `f::Function`: Function to evaluate the derivative of.
+- `f`: Function to evaluate the derivative of.
 - `x::T`: Point to estimate the derivative at.
 
 # Returns
@@ -355,13 +355,13 @@ estimate of the derivative.
 """
 function estimate_step(
     m::UnadaptedFiniteDifferenceMethod, f::TF, x::T,
-) where {TF<:Function,T<:AbstractFloat}
+) where {TF,T<:AbstractFloat}
     step, acc = _compute_step_acc_default(m, x)
     return _limit_step(m, x, step, acc)
 end
 function estimate_step(
     m::AdaptedFiniteDifferenceMethod{P,Q}, f::TF, x::T,
-) where {P,Q,TF<:Function,T<:AbstractFloat}
+) where {P,Q,TF,T<:AbstractFloat}
     ∇f_magnitude, f_magnitude = _estimate_magnitudes(m.bound_estimator, f, x)
     if ∇f_magnitude == 0.0 || f_magnitude == 0.0
         step, acc = _compute_step_acc_default(m, x)
@@ -373,7 +373,7 @@ end
 
 function _estimate_magnitudes(
     m::FiniteDifferenceMethod{P,Q}, f::TF, x::T,
-) where {P,Q,TF<:Function,T<:AbstractFloat}
+) where {P,Q,TF,T<:AbstractFloat}
     step = first(estimate_step(m, f, x))
     fs = _eval_function(m, f, x, step)
     # Estimate magnitude of `∇f` in a neighbourhood of `x`.
@@ -551,7 +551,7 @@ end
 """
     extrapolate_fdm(
         m::FiniteDifferenceMethod,
-        f::Function,
+        f,
         x::Real,
         initial_step::Real=10,
         power::Int=1,
@@ -567,7 +567,7 @@ automatically sets `power = 2` if `m` is symmetric and `power = 1`. Moreover, it
 
 # Arguments
 - `m::FiniteDifferenceMethod`: Finite difference method to estimate the step size for.
-- `f::Function`: Function to evaluate the derivative of.
+- `f`: Function to evaluate the derivative of.
 - `x::Real`: Point to estimate the derivative at.
 - `initial_step::Real=10`: Initial step size.
 
@@ -576,7 +576,7 @@ automatically sets `power = 2` if `m` is symmetric and `power = 1`. Moreover, it
 """
 function extrapolate_fdm(
     m::FiniteDifferenceMethod,
-    f::Function,
+    f,
     x::Real,
     initial_step::Real=10;
     power::Int=1,
