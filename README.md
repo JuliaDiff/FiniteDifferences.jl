@@ -307,7 +307,7 @@ julia> jvp(central_fdm(5, 1), f, (x, v)) - a * v
  -8.881784197001252e-16
  -3.22519788653608e-14
 
-julia> j′vp(central_fdm(5, 1), f, x, v)[1] - a'x
+julia> j′vp(central_fdm(5, 1), f, v, x)[1] - a'x
 3-element Vector{Float64}:
  -2.1316282072803006e-14
   2.4646951146678475e-14
