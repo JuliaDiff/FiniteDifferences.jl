@@ -88,6 +88,8 @@ end
         test_to_vec(reshape([1.0, randn(T, 5, 4, 3), randn(T, 4, 3), 2.0], 2, 2); check_inferred=false)
         test_to_vec(UpperTriangular(randn(T, 13, 13)))
         test_to_vec(Diagonal(randn(T, 7)))
+        test_to_vec(Tridiagonal(randn(T, 3), randn(T, 4), randn(T, 3)))
+
         test_to_vec(DummyType(randn(T, 2, 9)))
         test_to_vec(SVector{2, T}(1.0, 2.0); check_inferred=false)
         test_to_vec(SMatrix{2, 2, T}(1.0, 2.0, 3.0, 4.0); check_inferred=false)

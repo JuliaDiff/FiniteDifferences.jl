@@ -111,13 +111,25 @@ function to_vec(x::T) where {T<:LinearAlgebra.HermOrSym}
     return x_vec, HermOrSym_from_vec
 end
 
-function to_vec(X::Diagonal)
-    x_vec, back = to_vec(Matrix(X))
+function to_vec(x::Diagonal)
+    x_vec, back = to_vec(Matrix(x))
     function Diagonal_from_vec(x_vec)
         return Diagonal(back(x_vec))
     end
     return x_vec, Diagonal_from_vec
 end
+
+function to_vec(x::Tridiagonal)
+    x_vec, back = to_vec((x.dl, x.d, x.du))
+    # Other field (du2) of a Tridiagonal is not part of its value and is really a kind of cache
+    function Tridiagonal_from_vec(x_vec)
+        return Tridiagonal(back(x_vec)...)
+    end
+    return x_vec, Tridiagonal_from_vec
+end
+
+
+
 
 function to_vec(X::Transpose)
     x_vec, back = to_vec(Matrix(X))
