@@ -67,9 +67,9 @@ difference method, `bound_estimator`, will be tasked with estimating the `P`th o
 derivative in a _neighbourhood_, not just at some `x`. To do this, it will use a careful
 reweighting of the function evaluations to estimate the `P`th order derivative at, in the
 case of a central method, `x - h`, `x`, and `x + h`, where `h` is the step size. The
-coeffients for this estimate, the _neighbourhood estimate_, are given by the three sets of
-coeffients in `bound_estimator.coefs_neighbourhood`. The round-off error is estimated by the
-round-off error of the function evaluations performed by `bound_estimator`. The trunction
+coefficients for this estimate, the _neighbourhood estimate_, are given by the three sets of
+coefficients in `bound_estimator.coefs_neighbourhood`. The round-off error is estimated by the
+round-off error of the function evaluations performed by `bound_estimator`. The truncation
 error is amplified by `condition`, and the round-off error is amplified by `factor`. The
 quantities `∇f_magnitude_mult` and `f_error_mult` are precomputed quantities that facilitate
 the step size adaptation procedure.
@@ -490,7 +490,7 @@ for direction in [:forward, :central, :backward]
         geom::Bool=false
     )
 
-Contruct a finite difference method at a $($(Meta.quot(direction))) grid of `p` points.
+Construct a finite difference method at a $($(Meta.quot(direction))) grid of `p` points.
 
 # Arguments
 - `p::Int`: Number of grid points.

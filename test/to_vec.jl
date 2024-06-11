@@ -146,7 +146,7 @@ end
                 test_to_vec(cholesky(P))
 
                 # Special treatment for QR since it is represented by a matrix
-                # with some arbirtrary values.
+                # with some arbitrary values.
                 F = qr(M)
                 @inferred to_vec(F)
                 F_vec, back = to_vec(F)

@@ -61,7 +61,7 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
         @test _jvp(fdm, f, x, ẋ) ≈ J_exact * ẋ
         @test _j′vp(fdm, f, ȳ, x) ≈ transpose(J_exact) * ȳ
 
-        # Check that no mutation occured that wasn't reverted.
+        # Check that no mutation occurred that wasn't reverted.
         @test xc == x
     end
 

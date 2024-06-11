@@ -102,7 +102,7 @@ rand_tangent(args...) = @test_deprecated FiniteDifferences.rand_tangent(args...)
         )
     end
 
-    @testset "compsition of addition" begin
+    @testset "composition of addition" begin
         x = Foo(1.5, 2, Foo(1.1, 3, [1.7, 1.4, 0.9]))
         @test x + rand_tangent(x) isa typeof(x)
         @test x + (rand_tangent(x) + rand_tangent(x)) isa typeof(x)
