@@ -8,9 +8,9 @@ end
 """
     rand_tangent([rng::AbstractRNG,] x)
 
-Returns a arbitary tangent vector _appropriate_ for the primal value `x`.
+Returns an arbitrary tangent vector _appropriate_ for the primal value `x`.
 Note that despite the name, no promises on the statistical randomness are made.
-Rather it is an arbitary value, that is generated using the `rng`.
+Rather it is an arbitrary value, that is generated using the `rng`.
 """
 rand_tangent(x) = rand_tangent(Random.GLOBAL_RNG, x)
 

@@ -196,7 +196,7 @@ end
 
 function to_vec(x::F) where {F <: SVD}
     # Convert the vector S to a matrix so we can work with a vector of matrices
-    # only and inferrence work
+    # only and inference work
     v = [x.U, reshape(x.S, length(x.S), 1), x.Vt]
     x_vec, back = to_vec(v)
     function SVD_from_vec(v)
@@ -216,7 +216,7 @@ end
 
 function to_vec(x::S) where {U, S <: Union{LinearAlgebra.QRCompactWYQ{U}, LinearAlgebra.QRCompactWY{U}}}
     # x.T is composed of upper triangular blocks. The subdiagonals elements
-    # of the blocks are abitrary. We make sure to set all of them to zero
+    # of the blocks are arbitrary. We make sure to set all of them to zero
     # to avoid NaN.
     blocksize, cols = size(x.T)
     T = zeros(U, blocksize, cols)
