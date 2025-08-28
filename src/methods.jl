@@ -399,7 +399,7 @@ function _compute_step_acc(
     # Set the step size by minimising an upper bound on the error of the estimate.
     C₁ = f_error * m.f_error_mult * m.factor
     C₂ = ∇f_magnitude * m.∇f_magnitude_mult
-    step = (Q / (P - Q) * (C₁ / C₂))^(1 / P)
+    step = (Q / (P - Q) * (C₁ / C₂))^(1 // P)
     # Estimate the accuracy of the method.
     acc = C₁ * step^(-Q) + C₂ * step^(P - Q)
     return step, acc
