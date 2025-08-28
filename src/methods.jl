@@ -107,9 +107,9 @@ end
     FiniteDifferenceMethod(
         grid::AbstractVector{Int},
         q::Int;
-        condition::Real=DEFAULT_CONDITION,
-        factor::Real=DEFAULT_FACTOR,
-        max_range::Real=Inf
+        condition::Number=DEFAULT_CONDITION,
+        factor::Number=DEFAULT_FACTOR,
+        max_range::Number=Inf
     )
 
 Construct a finite difference method.
@@ -120,9 +120,9 @@ Construct a finite difference method.
 - `q::Int`: Order of the derivative to estimate.
 
 # Keywords
-- `condition::Real`: Condition number. See [`DEFAULT_CONDITION`](@ref).
-- `factor::Real`: Factor number. See [`DEFAULT_FACTOR`](@ref).
-- `max_range::Real=Inf`: Maximum distance that a function is evaluated from the input at
+- `condition::Number`: Condition number. See [`DEFAULT_CONDITION`](@ref).
+- `factor::Number`: Factor number. See [`DEFAULT_FACTOR`](@ref).
+- `max_range::Number=Inf`: Maximum distance that a function is evaluated from the input at
     which the derivative is estimated.
 
 # Returns
@@ -131,9 +131,9 @@ Construct a finite difference method.
 function FiniteDifferenceMethod(
     grid::SVector{P,Int},
     q::Int;
-    condition::Real=DEFAULT_CONDITION,
-    factor::Real=DEFAULT_FACTOR,
-    max_range::Real=Inf,
+    condition::Number=DEFAULT_CONDITION,
+    factor::Number=DEFAULT_FACTOR,
+    max_range::Number=Inf,
 ) where P
     _check_p_q(P, q)
     coefs, coefs_neighbourhood, ∇f_magnitude_mult, f_error_mult = _coefs_mults(grid, q)
@@ -153,7 +153,7 @@ function FiniteDifferenceMethod(grid::AbstractVector{Int}, q::Int; kw_args...)
 end
 
 """
-    (m::FiniteDifferenceMethod)(f, x::T) where T<:AbstractFloat
+    (m::FiniteDifferenceMethod)(f, x::T) where T<:Number
 
 Estimate the derivative of `f` at `x` using the finite differencing method `m` and an
 automatically determined step size.
@@ -188,12 +188,12 @@ julia> FiniteDifferences.estimate_step(fdm, sin, 1.0)  # Computes step size and 
 # We loop over all concrete subtypes of `FiniteDifferenceMethod` for Julia v1.0 compatibility.
 for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
     @eval begin
-        function (m::$T)(f::TF, x::Real) where TF
+        function (m::$T)(f::TF, x::Number) where TF
             x = float(x)  # Assume that converting to float is desired, if it isn't already.
             step = first(estimate_step(m, f, x))
             return m(f, x, step)
         end
-        function (m::$T{P,0})(f::TF, x::Real) where {P,TF}
+        function (m::$T{P,0})(f::TF, x::Number) where {P,TF}
             # The automatic step size calculation fails if `Q == 0`, so handle that edge
             # case.
             return f(x)
@@ -202,7 +202,7 @@ for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
 end
 
 """
-    (m::FiniteDifferenceMethod)(f, x::T, step::Real) where T<:AbstractFloat
+    (m::FiniteDifferenceMethod)(f, x::T, step::Number) where T<:Number
 
 Estimate the derivative of `f` at `x` using the finite differencing method `m` and a given
 step size.
@@ -210,7 +210,7 @@ step size.
 # Arguments
 - `f`: Function to estimate derivative of.
 - `x::T`: Input to estimate derivative at.
-- `step::Real`: Step size.
+- `step::Number`: Step size.
 
 # Returns
 - Estimate of the derivative.
@@ -235,7 +235,7 @@ julia> fdm(sin, 1, 1e-3) - cos(1)  # Check the error.
 # We loop over all concrete subtypes of `FiniteDifferenceMethod` for 1.0 compatibility.
 for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
     @eval begin
-        function (m::$T{P,Q})(f::TF, x::Real, step::Real) where {P,Q,TF}
+        function (m::$T{P,Q})(f::TF, x::Number, step::Number) where {P,Q,TF}
             x = float(x)  # Assume that converting to float is desired, if it isn't already.
             fs = _eval_function(m, f, x, step)
             return _compute_estimate(m, fs, x, step, m.coefs)
@@ -244,8 +244,8 @@ for T in (UnadaptedFiniteDifferenceMethod, AdaptedFiniteDifferenceMethod)
 end
 
 function _eval_function(
-    m::FiniteDifferenceMethod, f::TF, x::T, step::Real,
-) where {TF,T<:AbstractFloat}
+    m::FiniteDifferenceMethod, f::TF, x::T, step::Number,
+) where {TF,T<:Number}
     return f.(x .+ T(step) .* m.grid)
 end
 
@@ -253,9 +253,9 @@ function _compute_estimate(
     m::FiniteDifferenceMethod{P,Q},
     fs::SVector{P,TF},
     x::T,
-    step::Real,
+    step::Number,
     coefs::SVector{P,Float64},
-) where {P,Q,TF,T<:AbstractFloat}
+) where {P,Q,TF,T<:Number}
     # If we substitute `T.(coefs)` in the expression below, then allocations occur. We
     # therefore perform the broadcasting first. See
     # https://github.com/JuliaLang/julia/issues/39151.
@@ -338,7 +338,7 @@ end
         m::FiniteDifferenceMethod,
         f,
         x::T
-    ) where T<:AbstractFloat
+    ) where T<:Number
 
 Estimate the step size for a finite difference method `m`. Also estimates the error of the
 estimate of the derivative.
@@ -349,19 +349,19 @@ estimate of the derivative.
 - `x::T`: Point to estimate the derivative at.
 
 # Returns
-- `Tuple{<:AbstractFloat, <:AbstractFloat}`: Estimated step size and an estimate of the
+- `Tuple{<:Number, <:Number}`: Estimated step size and an estimate of the
     error of the finite difference estimate. The error will be `NaN` if the method failed
     to estimate the error.
 """
 function estimate_step(
     m::UnadaptedFiniteDifferenceMethod, f::TF, x::T,
-) where {TF,T<:AbstractFloat}
+) where {TF,T<:Number}
     step, acc = _compute_step_acc_default(m, x)
     return _limit_step(m, x, step, acc)
 end
 function estimate_step(
     m::AdaptedFiniteDifferenceMethod{P,Q}, f::TF, x::T,
-) where {P,Q,TF,T<:AbstractFloat}
+) where {P,Q,TF,T<:Number}
     ∇f_magnitude, f_magnitude = _estimate_magnitudes(m.bound_estimator, f, x)
     if ∇f_magnitude == 0.0 || f_magnitude == 0.0
         step, acc = _compute_step_acc_default(m, x)
@@ -373,7 +373,7 @@ end
 
 function _estimate_magnitudes(
     m::FiniteDifferenceMethod{P,Q}, f::TF, x::T,
-) where {P,Q,TF,T<:AbstractFloat}
+) where {P,Q,TF,T<:Number}
     step = first(estimate_step(m, f, x))
     fs = _eval_function(m, f, x, step)
     # Estimate magnitude of `∇f` in a neighbourhood of `x`.
@@ -388,13 +388,13 @@ function _estimate_magnitudes(
     return ∇f_magnitude, f_magnitude
 end
 
-function _compute_step_acc_default(m::FiniteDifferenceMethod, x::T) where {T<:AbstractFloat}
+function _compute_step_acc_default(m::FiniteDifferenceMethod, x::T) where {T<:Number}
     # Compute a default step size using a heuristic and [`DEFAULT_CONDITION`](@ref).
     return _compute_step_acc(m, m.condition, eps(T))
 end
 
 function _compute_step_acc(
-    m::FiniteDifferenceMethod{P,Q}, ∇f_magnitude::Real, f_error::Real,
+    m::FiniteDifferenceMethod{P,Q}, ∇f_magnitude::Number, f_error::Number,
 ) where {P,Q}
     # Set the step size by minimising an upper bound on the error of the estimate.
     C₁ = f_error * m.f_error_mult * m.factor
@@ -406,8 +406,8 @@ function _compute_step_acc(
 end
 
 function _limit_step(
-    m::FiniteDifferenceMethod, x::T, step::Real, acc::Real,
-) where {T<:AbstractFloat}
+    m::FiniteDifferenceMethod, x::T, step::Number, acc::Number,
+) where {T<:Number}
     # First, limit the step size based on the maximum range.
     step_max = m.max_range / maximum(abs.(m.grid))
     if step > step_max
@@ -433,9 +433,9 @@ for direction in [:forward, :central, :backward]
             p::Int,
             q::Int;
             adapt::Int=1,
-            condition::Real=DEFAULT_CONDITION,
-            factor::Real=DEFAULT_FACTOR,
-            max_range::Real=Inf,
+            condition::Number=DEFAULT_CONDITION,
+            factor::Number=DEFAULT_FACTOR,
+            max_range::Number=Inf,
             geom::Bool=false
         )
             _check_p_q(p, q)
@@ -484,9 +484,9 @@ for direction in [:forward, :central, :backward]
         p::Int,
         q::Int;
         adapt::Int=1,
-        condition::Real=DEFAULT_CONDITION,
-        factor::Real=DEFAULT_FACTOR,
-        max_range::Real=Inf,
+        condition::Number=DEFAULT_CONDITION,
+        factor::Number=DEFAULT_FACTOR,
+        max_range::Number=Inf,
         geom::Bool=false
     )
 
@@ -500,9 +500,9 @@ Construct a finite difference method at a $($(Meta.quot(direction))) grid of `p`
 - `adapt::Int=1`: Use another finite difference method to estimate the magnitude of the
     `p`th order derivative, which is important for the step size computation. Recurse
     this procedure `adapt` times.
-- `condition::Real`: Condition number. See [`DEFAULT_CONDITION`](@ref).
-- `factor::Real`: Factor number. See [`DEFAULT_FACTOR`](@ref).
-- `max_range::Real=Inf`: Maximum distance that a function is evaluated from the input at
+- `condition::Number`: Condition number. See [`DEFAULT_CONDITION`](@ref).
+- `factor::Number`: Factor number. See [`DEFAULT_FACTOR`](@ref).
+- `max_range::Number=Inf`: Maximum distance that a function is evaluated from the input at
     which the derivative is estimated.
 - `geom::Bool`: Use geometrically spaced points instead of linearly spaced points.
 
@@ -552,10 +552,10 @@ end
     extrapolate_fdm(
         m::FiniteDifferenceMethod,
         f,
-        x::Real,
-        initial_step::Real=10,
+        x::Number,
+        initial_step::Number=10,
         power::Int=1,
-        breaktol::Real=Inf,
+        breaktol::Number=Inf,
         kw_args...
     )
 
@@ -568,19 +568,19 @@ automatically sets `power = 2` if `m` is symmetric and `power = 1`. Moreover, it
 # Arguments
 - `m::FiniteDifferenceMethod`: Finite difference method to estimate the step size for.
 - `f`: Function to evaluate the derivative of.
-- `x::Real`: Point to estimate the derivative at.
-- `initial_step::Real=10`: Initial step size.
+- `x::Number`: Point to estimate the derivative at.
+- `initial_step::Number=10`: Initial step size.
 
 # Returns
-- `Tuple{<:AbstractFloat, <:AbstractFloat}`: Estimate of the derivative and error.
+- `Tuple{<:Number, <:Number}`: Estimate of the derivative and error.
 """
 function extrapolate_fdm(
     m::FiniteDifferenceMethod,
     f,
-    x::Real,
-    initial_step::Real=10;
+    x::Number,
+    initial_step::Number=10;
     power::Int=1,
-    breaktol::Real=Inf,
+    breaktol::Number=Inf,
     kw_args...
 )
     (power == 1 && _is_symmetric(m)) && (power = 2)
