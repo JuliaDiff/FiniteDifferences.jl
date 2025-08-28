@@ -7,6 +7,7 @@ using Random
 using Richardson
 using SparseArrays
 using StaticArrays
+using Unitful
 
 export to_vec, grad, jacobian, jvp, j′vp
 
