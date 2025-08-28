@@ -260,7 +260,12 @@ function _compute_estimate(
     # therefore perform the broadcasting first. See
     # https://github.com/JuliaLang/julia/issues/39151.
     _coefs = T.(coefs)
-    return sum(fs .* _coefs) ./ T(step)^Q
+    # NOTE the denominator: while doing T(step)^Q should technically be possible and correct,
+    # without flipping the order of ^ Q and T(), the current code crashes in _limit_step
+    # because of dimension mismatch. However, the output now has wrong units.
+    #
+    # TODO: fix the output units. The numerical value is correct in a simple test.
+    return sum(fs .* _coefs) ./ T(step ^ Q)
 end
 
 # Check the method and derivative orders for consistency.
