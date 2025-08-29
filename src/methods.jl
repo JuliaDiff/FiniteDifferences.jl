@@ -261,7 +261,7 @@ function _compute_estimate(
     # https://github.com/JuliaLang/julia/issues/39151.
     #
     # We strip units because the estimate coefficients are just weights for values of f.
-    _coefs = ustrip(T.(coefs))
+    _coefs = ustrip.(T.(coefs))
     return sum(fs .* _coefs) ./ T(step) ^ Q
 end
 
@@ -360,7 +360,7 @@ function estimate_step(
 ) where {TF,T<:Number}
     step, acc = withUnit.(
         unit(x),
-        _compute_step_acc_default(m, x) .* unit(x)
+        _compute_step_acc_default(m, x)
     )
     return _limit_step(m, x, step, acc)
 end
