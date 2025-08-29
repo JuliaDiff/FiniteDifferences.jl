@@ -259,13 +259,10 @@ function _compute_estimate(
     # If we substitute `T.(coefs)` in the expression below, then allocations occur. We
     # therefore perform the broadcasting first. See
     # https://github.com/JuliaLang/julia/issues/39151.
-    _coefs = T.(coefs)
-    # NOTE the denominator: while doing T(step)^Q should technically be possible and correct,
-    # without flipping the order of ^ Q and T(), the current code crashes in _limit_step
-    # because of dimension mismatch. However, the output now has wrong units.
     #
-    # TODO: fix the output units. The numerical value is correct in a simple test.
-    return sum(fs .* _coefs) ./ T(step ^ Q)
+    # We strip units because the estimate coefficients are just weights for values of f.
+    _coefs = ustrip(T.(coefs))
+    return sum(fs .* _coefs) ./ T(step) ^ Q
 end
 
 # Check the method and derivative orders for consistency.
@@ -361,18 +358,27 @@ estimate of the derivative.
 function estimate_step(
     m::UnadaptedFiniteDifferenceMethod, f::TF, x::T,
 ) where {TF,T<:Number}
-    step, acc = _compute_step_acc_default(m, x)
+    step, acc = withUnit.(
+        unit(x),
+        _compute_step_acc_default(m, x) .* unit(x)
+    )
     return _limit_step(m, x, step, acc)
 end
 function estimate_step(
     m::AdaptedFiniteDifferenceMethod{P,Q}, f::TF, x::T,
 ) where {P,Q,TF,T<:Number}
-    ∇f_magnitude, f_magnitude = _estimate_magnitudes(m.bound_estimator, f, x)
-    if ∇f_magnitude == 0.0 || f_magnitude == 0.0
-        step, acc = _compute_step_acc_default(m, x)
-    else
-        step, acc = _compute_step_acc(m, ∇f_magnitude, eps(f_magnitude))
-    end
+    @show ∇f_magnitude, f_magnitude = _estimate_magnitudes(m.bound_estimator, f, x)
+    step, acc = withUnit.(
+        (
+            unit(x),
+            unit(f |> eltype) / unit(x) ^ Q
+        ),
+        if ∇f_magnitude == 0.0 || f_magnitude == 0.0
+            _compute_step_acc_default(m, x)
+        else
+            _compute_step_acc(m, ∇f_magnitude, eps(f_magnitude))
+        end
+    )
     return _limit_step(m, x, step, acc)
 end
 
@@ -413,19 +419,26 @@ end
 function _limit_step(
     m::FiniteDifferenceMethod, x::T, step::Number, acc::Number,
 ) where {T<:Number}
+    xunit = unit(x)
     # First, limit the step size based on the maximum range.
-    step_max = m.max_range / maximum(abs.(m.grid))
+    step_max = withUnit(
+        xunit,
+        m.max_range / maximum(abs.(m.grid))
+    )
     if step > step_max
         step = step_max
-        acc = NaN
+        acc = withUnit(xunit,NaN)
     end
     # Second, prevent very large step sizes, which can occur for high-order methods or
     # slowly-varying functions.
-    step_default, _ = _compute_step_acc_default(m, x)
+    step_default, _ = withUnit.(
+        xunit,
+        _compute_step_acc_default(m, x)
+    )
     step_max_default = 1000step_default
     if step > step_max_default
         step = step_max_default
-        acc = NaN
+        acc = withUnit(xunit,NaN)
     end
     return step, acc
 end
@@ -597,3 +610,21 @@ function extrapolate_fdm(
         kw_args...
     )
 end
+
+"""
+Attaches a given unit to a given value, if it is dimensionless.
+If the value is not dimensionless, attempts a conversion to the given unit.
+"""
+function withUnit(targetUnit, value)
+
+    if Unitful.dimension(value) == Unitful.NoDims
+
+        value .* targetUnit
+
+    else
+
+        Unitful.uconvert(targetUnit, value)
+
+    end # if
+
+end # function
