@@ -367,7 +367,7 @@ end
 function estimate_step(
     m::AdaptedFiniteDifferenceMethod{P,Q}, f::TF, x::T,
 ) where {P,Q,TF,T<:Number}
-    @show ∇f_magnitude, f_magnitude = _estimate_magnitudes(m.bound_estimator, f, x)
+    ∇f_magnitude, f_magnitude = _estimate_magnitudes(m.bound_estimator, f, x)
     step, acc = withUnit.(
         (
             unit(x),
