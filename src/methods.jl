@@ -373,7 +373,7 @@ function estimate_step(
             unit(x),
             unit(f |> eltype) / unit(x) ^ Q
         ),
-        if ∇f_magnitude == 0.0 || f_magnitude == 0.0
+        if ∇f_magnitude == withUnit(∇f_magnitude,0.0) || f_magnitude == withUnit(unit(f_magnitude), 0.0)
             _compute_step_acc_default(m, x)
         else
             _compute_step_acc(m, ∇f_magnitude, eps(f_magnitude))
