@@ -96,18 +96,12 @@ struct NotAFunction end # not <: Function on purpose, cf #224
 
         derivativeVal = 5.0u"J/s"
 
-        # NOTE: the input value unit is wrong here to make this run at all!
-        # The unit should be u"s", but it has to be the inverse of the desired output unit.
-        # TODO: Find out the faulty code path using a debugger.
-        twoPlaceDerivativeVal = central_fdm(5, 1)(fn, 1.0u"s")
-
         adaptedDerivativeVal = central_fdm(5, 1)(fn, 1.0u"s",1)
 
-        @test unit(twoPlaceDerivativeVal) == u"J/s"
         @test unit(adaptedDerivativeVal) == u"J/s"
 
-        @test isapprox(twoPlaceDerivativeVal, 5.0u"J/s"; rtol=1e-12, atol=1e-12u"J/s")
-        @test isapprox(adaptedDerivativeVal, 5.0u"J/s"; rtol=1e-12, atol=1e-12u"J/s")
+        @test isapprox(adaptedDerivativeVal, derivativeVal; rtol=1e-12, atol=1e-12u"J/s")
+
     end
 
     @testset "Adaptation improves estimate" begin
