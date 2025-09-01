@@ -89,6 +89,14 @@ struct NotAFunction end # not <: Function on purpose, cf #224
         @test isapprox(central_fdm(5, 1)(x -> 5, 0), 0; rtol=1e-12, atol=1e-12)
     end
 
+    # Integration test to ensure that Unitful-output functions can be tested.
+    @testset "Unitful output" begin
+        fn(x) = 5u"J/s" * x
+        @show derivativeVal = central_fdm(5, 1)(fn, 1u"s/J")
+        @test unit(derivativeVal) == u"J/s"
+        @test isapprox(derivativeVal, 5u"J/s"; rtol=1e-12, atol=1e-12u"J/s")
+    end
+
     @testset "Adaptation improves estimate" begin
         @test abs(forward_fdm(5, 1, adapt=0)(log, 0.001) - 1000) > 1
         @test forward_fdm(5, 1, adapt=1)(log, 0.001) ≈ 1000
