@@ -619,7 +619,7 @@ function withUnit(targetUnit, value)
 
     if Unitful.dimension(value) == Unitful.NoDims
 
-        value .* targetUnit
+        value * targetUnit
 
     else
 
