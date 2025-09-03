@@ -82,6 +82,8 @@ struct NotAFunction end # not <: Function on purpose, cf #224
     @testset "Test allocations" begin
         m = central_fdm(5, 2, adapt=2)
         @test @ballocated($m(sin, 1)) == 0
+        fn(t) = sin(t / u"s")
+        @test @ballocated($m($fn, 1u"s")) == 0
     end
 
     # Integration test to ensure that Integer-output functions can be tested.
