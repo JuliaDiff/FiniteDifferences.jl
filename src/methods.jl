@@ -261,7 +261,8 @@ function _compute_estimate(
     # https://github.com/JuliaLang/julia/issues/39151.
     #
     # We strip units because the estimate coefficients are just weights for values of f.
-    _coefs = ustrip.(T.(coefs))
+    N = numType(T)
+    _coefs = N.(coefs)
     return sum(fs .* _coefs) ./ T(step) ^ Q
 end
 
@@ -358,27 +359,26 @@ estimate of the derivative.
 function estimate_step(
     m::UnadaptedFiniteDifferenceMethod, f::TF, x::T,
 ) where {TF,T<:Number}
-    step, acc = withUnit.(
-        unit(x),
-        _compute_step_acc_default(m, x)
-    )
+    step, acc = _compute_step_acc_default(m, x)
+    xunit = unit(x)
+    step = withUnit(xunit, step)
+    acc = withUnit(xunit,acc)
     return _limit_step(m, x, step, acc)
 end
 function estimate_step(
     m::AdaptedFiniteDifferenceMethod{P,Q}, f::TF, x::T,
 ) where {P,Q,TF,T<:Number}
     ∇f_magnitude, f_magnitude = _estimate_magnitudes(m.bound_estimator, f, x)
-    step, acc = withUnit.(
-        (
-            unit(x),
-            unit(first(f(x))) / unit(x) ^ Q
-        ),
+    xunit = unit(x)
+    dfunit = unit(first(f(x))) / unit(x) ^ Q
+    step, acc =
         if ∇f_magnitude == withUnit(unit(∇f_magnitude),0.0) || f_magnitude == withUnit(unit(f_magnitude), 0.0)
             _compute_step_acc_default(m, x)
         else
             _compute_step_acc(m, ∇f_magnitude, eps(f_magnitude))
         end
-    )
+    step = withUnit(xunit, step)
+    acc = withUnit(dfunit, acc)
     return _limit_step(m, x, step, acc)
 end
 
@@ -431,10 +431,8 @@ function _limit_step(
     end
     # Second, prevent very large step sizes, which can occur for high-order methods or
     # slowly-varying functions.
-    step_default, _ = withUnit.(
-        xunit,
-        _compute_step_acc_default(m, x)
-    )
+    step_default, _ = _compute_step_acc_default(m, x)
+    step_default = withUnit(xunit, step_default)
     step_max_default = 1000step_default
     if step > step_max_default
         step = step_max_default
@@ -628,3 +626,22 @@ function withUnit(targetUnit, value)
     end # if
 
 end # function
+
+"""
+Retrieves the number type of a quantity, or returns the type itself in the case of a raw number.
+"""
+function numType(x::Number)
+    typeof(x)
+end # function
+
+function numType(x::Type{<:Number})
+    x
+end
+
+function numType(x::Unitful.AbstractQuantity)
+    Unitful.numtype(typeof(x))
+end # function
+
+function numType(x::Type{<:Unitful.AbstractQuantity})
+    Unitful.numtype(x)
+end
