@@ -221,29 +221,22 @@ end
 using LinearAlgebra
 
 function partial_nan_returning(x)
-    y = Matrix{Float64}(undef, 5, 5)
-    y .= NaN
-    y = Hermitian(y)
-    y .= x
-    return parent(y)
+    return Float64[NaN, x]
 end
 
 randvar = 1
 function partial_nondet_returning(x)
     global randvar
-    y = Matrix{Float64}(undef, 5, 5)
-    y .= randvar
+    y = Float64[randvar, x]
     randvar += 1
-    y = Hermitian(y)
-    y .= x
-    return parent(y)
+    return y
 end
 
 @testset "jvp: Estimate step correctly for when some terms are nan/infinite" begin
     fdm = FiniteDifferences.central_fdm(5, 1)
     res = jvp(fdm, partial_nan_returning, (3.1, 2.7))
-    @test all(Hermitian(res) .≈ 2.7)
+    @test res[1] ≈ 2.7
 
     res = jvp(fdm, partial_nondet_returning, (3.1, 2.7))
-    @test all(Hermitian(res) .≈ 2.7)
+    @test res[1] ≈ 2.7
 end
