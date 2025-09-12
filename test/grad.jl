@@ -235,8 +235,8 @@ end
 @testset "jvp: Estimate step correctly for when some terms are nan/infinite" begin
     fdm = FiniteDifferences.central_fdm(5, 1)
     res = jvp(fdm, partial_nan_returning, (3.1, 2.7))
-    @test res[1] ≈ 2.7
+    @test res[2] ≈ 2.7
 
     res = jvp(fdm, partial_nondet_returning, (3.1, 2.7))
-    @test res[1] ≈ 2.7
+    @test res[2] ≈ 2.7
 end
