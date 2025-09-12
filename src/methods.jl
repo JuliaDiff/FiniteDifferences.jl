@@ -391,6 +391,7 @@ function _estimate_magnitudes(
         _compute_estimate(m, fs, x, step, m.coefs_neighbourhood[2]),
         _compute_estimate(m, fs, x, step, m.coefs_neighbourhood[3])
     )
+    ∇fs = finite_or_zero(∇fs)
     ∇f_magnitude = maximum(maximum.(abs, ∇fs))
     # Estimate magnitude of `f` in a neighbourhood of `x`.
     f_magnitude = maximum(maximum.(abs, fs))
