@@ -217,3 +217,26 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
         @test [real(ȳ), imag(ȳ)] ≈ Jy'z̄_vec
     end
 end
+
+using LinearAlgebra
+
+function partial_nan_returning(x)
+    return Float64[NaN, x]
+end
+
+randvar = 1
+function partial_nondet_returning(x)
+    global randvar
+    y = Float64[randvar, x]
+    randvar += 1
+    return y
+end
+
+@testset "jvp: Estimate step correctly for when some terms are nan/infinite" begin
+    fdm = FiniteDifferences.central_fdm(5, 1)
+    res = jvp(fdm, partial_nan_returning, (3.1, 2.7))
+    @test res[2] ≈ 2.7
+
+    res = jvp(fdm, partial_nondet_returning, (3.1, 2.7))
+    @test res[2] ≈ 2.7
+end

@@ -371,17 +371,27 @@ function estimate_step(
     return _limit_step(m, x, step, acc)
 end
 
+function finite_or_zero(fs::AbstractArray{<:Number})
+   ifelse.(isfinite.(fs), fs, zero(fs))
+end
+
+function finite_or_zero(fs::AbstractArray{<:AbstractArray})
+   finite_or_zero.(fs)
+end
+
 function _estimate_magnitudes(
     m::FiniteDifferenceMethod{P,Q}, f::TF, x::T,
 ) where {P,Q,TF,T<:AbstractFloat}
     step = first(estimate_step(m, f, x))
     fs = _eval_function(m, f, x, step)
+    fs = finite_or_zero(fs)
     # Estimate magnitude of `∇f` in a neighbourhood of `x`.
     ∇fs = SVector{3}(
         _compute_estimate(m, fs, x, step, m.coefs_neighbourhood[1]),
         _compute_estimate(m, fs, x, step, m.coefs_neighbourhood[2]),
         _compute_estimate(m, fs, x, step, m.coefs_neighbourhood[3])
     )
+    ∇fs = finite_or_zero(∇fs)
     ∇f_magnitude = maximum(maximum.(abs, ∇fs))
     # Estimate magnitude of `f` in a neighbourhood of `x`.
     f_magnitude = maximum(maximum.(abs, fs))
