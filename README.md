@@ -1,10 +1,10 @@
 # FiniteDifferences.jl: Finite Difference Methods
 
-[![CI](https://github.com/JuliaDiff/FiniteDifferences.jl/workflows/CI/badge.svg?branch=main)](https://github.com/JuliaDiff/FiniteDifferences.jl/actions?query=workflow%3ACI)
-[![Build Status](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl.svg?branch=main)](https://travis-ci.org/JuliaDiff/FiniteDifferences.jl)
+[![CI](https://github.com/JuliaDiff/FiniteDifferences.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaDiff/FiniteDifferences.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![codecov.io](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl/coverage.svg?branch=main)](https://codecov.io/github/JuliaDiff/FiniteDifferences.jl?branch=main)
 [![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/F/FiniteDifferences.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
 
+[![Stable Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliadiff.org/FiniteDifferences.jl/stable/)
 [![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliadiff.org/FiniteDifferences.jl/latest/)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 [![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
