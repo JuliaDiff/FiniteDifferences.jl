@@ -13,4 +13,7 @@ jobs:
       - name: CompatHelper.main()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: julia -e 'using CompatHelper; CompatHelper.main()'
+          # We need an SSH key if we want the PRs that CompatHelper creates to be able to trigger CI workflows themselves.
+          # That is because GITHUB_TOKEN's can't trigger other workflows (see https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow).
+          COMPATHELPER_PRIV: ${{ secrets.DOCUMENTER_KEY }}
+        run: julia -e 'using CompatHelper; CompatHelper.main(; subdirs = ["", "docs"])'
