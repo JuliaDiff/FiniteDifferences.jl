@@ -26,7 +26,7 @@ jobs:
             os: 'macOS-latest'
         include:
           - version: 'min'
-            os: 'macOS-13' # Intel
+            os: 'macOS-15-intel' # Intel
     steps:
       - uses: actions/checkout@v5
       - uses: julia-actions/setup-julia@v2
