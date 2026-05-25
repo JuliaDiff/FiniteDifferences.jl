@@ -280,7 +280,7 @@ function to_vec(d::Dict)
 end
 
 # non-perturbable types
-for T in (:DataType, :CartesianIndex, :AbstractZero)
+for T in (:DataType, :UnionAll, :CartesianIndex, :AbstractZero)
     T_from_vec = Symbol(T, :_from_vec)
     @eval function FiniteDifferences.to_vec(x::$T)
         function $T_from_vec(x_vec::Vector)
