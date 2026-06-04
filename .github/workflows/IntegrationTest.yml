@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.package.repo }}
+    name: ${{ matrix.package.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -15,12 +15,12 @@ jobs:
         julia-version: [1]
         os: [ubuntu-latest]
         package:
-          - {user: JuliaDiff, repo: ChainRulesTestUtils.jl}
-          - {user: JuliaDiff, repo: ChainRules.jl}
-          - {user: JuliaMath, repo: SpecialFunctions.jl}
-          - {user: invenia, repo: BlockDiagonals.jl}
-          - {user: invenia, repo: PDMatsExtras.jl}
-          - {user: PumasAI, repo: DataInterpolations.jl}
+          - {user: JuliaDiff, name: ChainRulesTestUtils}
+          - {user: JuliaDiff, name: ChainRules}
+          - {user: JuliaMath, name: SpecialFunctions}
+          - {user: JuliaArrays, name: BlockDiagonals}
+          - {user: invenia, name: PDMatsExtras}
+          - {user: SciML, name: DataInterpolations}
 
     steps:
       - uses: actions/checkout@v4
@@ -28,21 +28,22 @@ jobs:
         with:
           version: ${{ matrix.julia-version }}
           arch: x64
+      - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@latest
       - name: Clone Downstream
         uses: actions/checkout@v4
         with:
-          repository: ${{ matrix.package.user }}/${{ matrix.package.repo }}
+          repository: ${{ matrix.package.user }}/${{ matrix.package.name }}.jl
           path: downstream
       - name: Load this and run the downstream tests
-        shell: julia --project=downstream {0}
+        shell: julia --project=@temp {0}
         run: |
           using Pkg
           try
             # force it to use this PR's version of the package
-            Pkg.develop(PackageSpec(path="."))  # ResolverError with main deps may be thrown here
+            Pkg.develop([PackageSpec(path="."), PackageSpec(path="downstream")])  # ResolverError with main deps may be thrown here
             Pkg.update()
-            Pkg.test()  # ResolverError with test deps may be thrown here (before test process starts)
+            Pkg.test("${{ matrix.package.name }}")  # ResolverError with test deps may be thrown here (before test process starts)
           catch err
             err isa Pkg.Resolve.ResolverError || rethrow()
             # If we can't resolve that means this is incompatible by SemVer and this is fine

@@ -12,7 +12,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
-ChainRulesCore = "0.10.3, 1"
+ChainRulesCore = "0.10.3, 1, 2"
 LinearAlgebra = "<0.0.1, 1"
 Printf = "<0.0.1, 1"
 Random = "<0.0.1, 1"

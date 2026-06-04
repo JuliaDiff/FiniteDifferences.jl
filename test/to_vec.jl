@@ -190,7 +190,7 @@ end
             if T == Float64
                 test_to_vec((a=5, b=randn(10, 11), c=(5, 4, 3)); check_inferred = VERSION ≥ v"1.2")
             else
-                test_to_vec((a=3 + 2im, b=randn(T, 10, 11), c=(5+im, 2-im, 1+im)); check_inferred = VERSION ≥ v"1.2")
+                test_to_vec((a=3 + 2im, b=randn(T, 10, 11), c=(5+im, 2-im, 1+im)); check_inferred = v"1.2" <= VERSION < v"1.12")
             end
         end
         @testset "Dictionary" begin
