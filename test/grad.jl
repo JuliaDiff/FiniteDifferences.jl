@@ -221,19 +221,42 @@ end
 # https://github.com/JuliaDiff/FiniteDifferences.jl/issues/164
 @testset "jvp / j′vp(::$Op{$T})" for Op in (Symmetric, Hermitian), T in (Float64, ComplexF64)
     rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
-    @testset "uplo = $uplo" for uplo in (:U, :L)
-        X = Op(randn(rng, T, 3, 3), uplo)
+    @testset "uplo = $uplo, parent = $P" for uplo in (:U, :L),
+        P in (identity, Diagonal, UpperTriangular, LowerTriangular, Tridiagonal)
+
+        X = Op(P(randn(rng, T, 3, 3)), uplo)
 
         # The cotangent of `Matrix(X)` is the projection of the output cotangent onto
-        # symmetric/hermitian matrices, without doubling the off-diagonals
+        # matrices of the same structure, without doubling the off-diagonals
         Ȳ = randn(rng, T, 3, 3)
         X̄ = j′vp(fdm, Matrix, Ȳ, X)[1]
         @test X̄ isa Op
-        @test X̄ ≈ (Ȳ .+ (Op === Symmetric ? transpose(Ȳ) : adjoint(Ȳ))) ./ 2
+        @test X̄ ≈ Op(P((Ȳ .+ (Op === Symmetric ? transpose(Ȳ) : adjoint(Ȳ))) ./ 2), uplo)
 
-        Ẋ = Op(randn(rng, T, 3, 3), uplo)
+        Ẋ = Op(P(randn(rng, T, 3, 3)), uplo)
         @test jvp(fdm, Matrix, (X, Ẋ)) ≈ Ẋ
     end
+end
+
+# Structured matrices are vectorized densely, so they can be combined with dense tangents
+@testset "jvp / j′vp(::$name{$T})" for T in (Float64, ComplexF64), (name, P) in (
+    # orthogonal projections of dense matrices onto the structured ones
+    "Tridiagonal" => Tridiagonal,
+    "SymTridiagonal" => Y -> SymTridiagonal((Y .+ transpose(Y)) ./ 2),
+    "Bidiagonal(:U)" => Y -> Bidiagonal(Y, :U),
+    "Bidiagonal(:L)" => Y -> Bidiagonal(Y, :L),
+    "PermutedDimsArray" => Y -> PermutedDimsArray(permutedims(Y), (2, 1)),
+)
+    rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
+    X = P(randn(rng, T, 4, 4))
+
+    Ȳ = randn(rng, T, 4, 4)
+    X̄ = j′vp(fdm, identity, Ȳ, X)[1]
+    @test X̄ isa typeof(X)
+    @test X̄ ≈ P(Ȳ)
+
+    Ẋ = P(randn(rng, T, 4, 4))
+    @test jvp(fdm, identity, (X, Ẋ)) ≈ Ẋ
 end
 
 using LinearAlgebra

@@ -20,6 +20,15 @@ end
 Base.size(x::FillVector) = (x.len,)
 Base.getindex(x::FillVector, n::Int) = x.x
 
+# A dummy square FillMatrix, which is not vectorized densely
+struct FillMatrix <: AbstractMatrix{Float64}
+    x::Float64
+    n::Int
+end
+
+Base.size(x::FillMatrix) = (x.n, x.n)
+Base.getindex(x::FillMatrix, i::Int, j::Int) = x.x
+
 # For testing Tangent{ThreeFields}
 struct ThreeFields
     a
@@ -89,6 +98,9 @@ end
         test_to_vec(UpperTriangular(randn(T, 13, 13)))
         test_to_vec(Diagonal(randn(T, 7)))
         test_to_vec(Tridiagonal(randn(T, 3), randn(T, 4), randn(T, 3)))
+        test_to_vec(SymTridiagonal(randn(T, 4), randn(T, 3)))
+        test_to_vec(Bidiagonal(randn(T, 4), randn(T, 3), :U))
+        test_to_vec(Bidiagonal(randn(T, 4), randn(T, 3), :L))
 
         test_to_vec(DummyType(randn(T, 2, 9)))
         test_to_vec(SVector{2, T}(1.0, 2.0); check_inferred=false)
@@ -105,6 +117,11 @@ end
                 x_vec, back = to_vec(A)
                 @test back(x_vec).uplo == A.uplo
             end
+            @testset "parent = $P" for P in (Diagonal, UpperTriangular, LowerTriangular, Tridiagonal)
+                test_to_vec(Op(P(randn(T, 4, 4)), :U))
+                test_to_vec(Op(P(randn(T, 4, 4)), :L))
+            end
+            @test_throws ArgumentError to_vec(Op(FillMatrix(1.0, 4)))
         end
 
         @testset "$Op" for Op in (Adjoint, Transpose)
