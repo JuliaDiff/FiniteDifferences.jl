@@ -17,38 +17,32 @@ permissions:
 
 jobs:
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.allow-failure == true }}
+    continue-on-error: ${{ matrix.version == 'pre' }}
     strategy:
       fail-fast: false
       matrix:
         version:
-          - "lts"  # Long-term support version
+          - "min"  # Oldest supported version
           - "1"    # Latest Release
+          - "pre"  # Latest prerelease, allowed to fail
         os:
           - ubuntu-latest
           - macOS-latest
           - windows-latest
-        arch:
-          - default
+        exclude:
+          # aarch64 binaries are not available for the oldest supported version
+          - version: "min"
+            os: macOS-latest
         include:
-          - os: ubuntu-latest
-            version: "min"
-            arch: default
-          - os: ubuntu-latest
-            version: "1"
-            arch: x86
-          - os: ubuntu-latest
-            version: "pre"
-            arch: default
-            allow-failure: true
+          - version: "min"
+            os: macOS-15-intel
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
