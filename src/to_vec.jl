@@ -105,12 +105,19 @@ end
 
 function to_vec(x::T) where {T<:LinearAlgebra.HermOrSym}
     x_vec, back = to_vec(Matrix(x))
+    # Structured matrices are vectorized densely, and their `from_vec` projects onto their
+    # structure (e.g. `Diagonal`): reuse it for the parent
+    parent_vec, parent_back = to_vec(parent(x))
+    if length(parent_vec) != length(x_vec)
+        throw(ArgumentError("to_vec($T) requires the parent to be vectorized densely"))
+    end
     function HermOrSym_from_vec(x_vec)
         # Project onto symmetric/hermitian matrices instead of reading only one triangle:
         # that would double the off-diagonals of cotangents, see issue #164
         X = back(x_vec)
         X_sym = (X .+ (T <: Symmetric ? transpose(X) : adjoint(X))) ./ 2
-        return T(X_sym, x.uplo)
+        X_parent = parent_back(first(to_vec(X_sym)))
+        return T(X_parent, Symbol(x.uplo))
     end
     return x_vec, HermOrSym_from_vec
 end
@@ -124,16 +131,30 @@ function to_vec(x::Diagonal)
 end
 
 function to_vec(x::Tridiagonal)
-    x_vec, back = to_vec((x.dl, x.d, x.du))
-    # Other field (du2) of a Tridiagonal is not part of its value and is really a kind of cache
+    x_vec, back = to_vec(Matrix(x))
     function Tridiagonal_from_vec(x_vec)
-        return Tridiagonal(back(x_vec)...)
+        return Tridiagonal(back(x_vec))
     end
     return x_vec, Tridiagonal_from_vec
 end
 
+function to_vec(x::T) where {T<:SymTridiagonal}
+    x_vec, back = to_vec(Matrix(x))
+    function SymTridiagonal_from_vec(x_vec)
+        # Average the off-diagonals instead of reading only one of them, see issue #164
+        X = back(x_vec)
+        return T(diag(X), (diag(X, 1) .+ diag(X, -1)) ./ 2)
+    end
+    return x_vec, SymTridiagonal_from_vec
+end
 
-
+function to_vec(x::Bidiagonal)
+    x_vec, back = to_vec(Matrix(x))
+    function Bidiagonal_from_vec(x_vec)
+        return Bidiagonal(back(x_vec), Symbol(x.uplo))
+    end
+    return x_vec, Bidiagonal_from_vec
+end
 
 function to_vec(X::Transpose)
     x_vec, back = to_vec(Matrix(X))
@@ -163,10 +184,12 @@ function to_vec(x::Adjoint{<:Any, <:AbstractVector})
     return x_vec, Adjoint_from_vec
 end
 
-function to_vec(X::T) where {T<:PermutedDimsArray}
-    x_vec, back = to_vec(parent(X))
+function to_vec(X::T) where {iperm, T<:PermutedDimsArray{<:Any, <:Any, <:Any, iperm}}
+    # Vectorize in the order of `X`, not of its parent, so `X` and tangents of other types
+    # (e.g. `Array`) are vectorized consistently
+    x_vec, back = to_vec(collect(X))
     function PermutedDimsArray_from_vec(x_vec)
-        X_parent = back(x_vec)
+        X_parent = permutedims(back(x_vec), iperm)
         return T(X_parent)
     end
     return x_vec, PermutedDimsArray_from_vec
