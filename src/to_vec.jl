@@ -106,7 +106,11 @@ end
 function to_vec(x::T) where {T<:LinearAlgebra.HermOrSym}
     x_vec, back = to_vec(Matrix(x))
     function HermOrSym_from_vec(x_vec)
-        return T(back(x_vec), x.uplo)
+        # Project onto symmetric/hermitian matrices instead of reading only one triangle:
+        # that would double the off-diagonals of cotangents, see issue #164
+        X = back(x_vec)
+        X_sym = (X .+ (T <: Symmetric ? transpose(X) : adjoint(X))) ./ 2
+        return T(X_sym, x.uplo)
     end
     return x_vec, HermOrSym_from_vec
 end

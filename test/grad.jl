@@ -218,6 +218,24 @@ using FiniteDifferences: grad, jacobian, _jvp, jvp, j′vp, _j′vp, to_vec
     end
 end
 
+# https://github.com/JuliaDiff/FiniteDifferences.jl/issues/164
+@testset "jvp / j′vp(::$Op{$T})" for Op in (Symmetric, Hermitian), T in (Float64, ComplexF64)
+    rng, fdm = MersenneTwister(123456), central_fdm(5, 1)
+    @testset "uplo = $uplo" for uplo in (:U, :L)
+        X = Op(randn(rng, T, 3, 3), uplo)
+
+        # The cotangent of `Matrix(X)` is the projection of the output cotangent onto
+        # symmetric/hermitian matrices, without doubling the off-diagonals
+        Ȳ = randn(rng, T, 3, 3)
+        X̄ = j′vp(fdm, Matrix, Ȳ, X)[1]
+        @test X̄ isa Op
+        @test X̄ ≈ (Ȳ .+ (Op === Symmetric ? transpose(Ȳ) : adjoint(Ȳ))) ./ 2
+
+        Ẋ = Op(randn(rng, T, 3, 3), uplo)
+        @test jvp(fdm, Matrix, (X, Ẋ)) ≈ Ẋ
+    end
+end
+
 using LinearAlgebra
 
 function partial_nan_returning(x)
