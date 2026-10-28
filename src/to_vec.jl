@@ -117,7 +117,7 @@ function to_vec(x::T) where {T<:LinearAlgebra.HermOrSym}
         X = back(x_vec)
         X_sym = (X .+ (T <: Symmetric ? transpose(X) : adjoint(X))) ./ 2
         X_parent = parent_back(first(to_vec(X_sym)))
-        return (T <: Symmetric ? Symmetric : Hermitian)(X_parent, Symbol(x.uplo))
+        return T(X_parent, Symbol(x.uplo))
     end
     return x_vec, HermOrSym_from_vec
 end
