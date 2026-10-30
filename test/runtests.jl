@@ -7,6 +7,7 @@ using Random
 using SparseArrays
 using StaticArrays
 using Test
+using Unitful
 
 
 Random.seed!(1)

@@ -10,6 +10,7 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Richardson = "708f8203-808e-40c0-ba2d-98a6953ed40d"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
 ChainRulesCore = "0.10.3, 1"
@@ -19,6 +20,7 @@ Random = "<0.0.1, 1"
 Richardson = "1.2"
 SparseArrays = "<0.0.1, 1"
 StaticArrays = "0.12, 1.0"
+Unitful = "1.24.0"
 julia = "1"
 
 [extras]

@@ -82,11 +82,28 @@ struct NotAFunction end # not <: Function on purpose, cf #224
     @testset "Test allocations" begin
         m = central_fdm(5, 2, adapt=2)
         @test @ballocated($m(sin, 1)) == 0
+        fn(t) = sin(t / u"s")
+        @test @ballocated($m($fn, 1u"s")) == 0
     end
 
     # Integration test to ensure that Integer-output functions can be tested.
     @testset "Integer output" begin
         @test isapprox(central_fdm(5, 1)(x -> 5, 0), 0; rtol=1e-12, atol=1e-12)
+    end
+
+    # Integration test to ensure that Unitful-output functions can be tested.
+    @testset "Unitful output" begin
+
+        fn(x) = 5.0u"J/s" * x
+
+        derivativeVal = 5.0u"J/s"
+
+        adaptedDerivativeVal = central_fdm(5, 1)(fn, 1.0u"s",1)
+
+        @test unit(adaptedDerivativeVal) == u"J/s"
+
+        @test isapprox(adaptedDerivativeVal, derivativeVal; rtol=1e-12, atol=1e-12u"J/s")
+
     end
 
     @testset "Adaptation improves estimate" begin
